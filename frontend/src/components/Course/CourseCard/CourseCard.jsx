@@ -86,7 +86,7 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
             <span>{course.level}</span>
         </div>
 
-        <h3 className="text-lg font-black text-slate-900 leading-tight mb-4 group-hover:text-blue-600 transition-colors line-clamp-2">
+        <h3 className="text-left text-lg font-black text-slate-900 leading-tight mb-4 group-hover:text-blue-600 transition-colors line-clamp-2">
           {course.title}
         </h3>
 
