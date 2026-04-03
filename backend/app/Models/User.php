@@ -22,6 +22,16 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+    public function faculty()
+    {
+        return $this->belongsTo(Faculty::class);
+    }
+
     protected function casts(): array
     {
         return [
