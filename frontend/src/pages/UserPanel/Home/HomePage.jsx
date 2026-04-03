@@ -110,26 +110,7 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
               </motion.div>
             </motion.div>
 
-            {/* Правая часть (Tech Cards) */}
-            <motion.div className="flex-1 relative" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.8 }}>
-              <div className="grid grid-cols-2 gap-6 relative z-10">
-                <div className="space-y-6 pt-12">
-                   <TechCard icon={<Cpu />} title="Технологии" delay={0.2} />
-                   <TechCard icon={<Palette />} title="Дизайн" delay={0.4} />
-                </div>
-                <div className="space-y-6">
-                   <TechCard icon={<Compass />} title="Туризм" delay={0.6} />
-                   <TechCard icon={<History />} title="Культура" delay={0.8} />
-                </div>
-                <motion.div 
-                  animate={{ y: [0, -15, 0], rotate: [0, 5, 0] }}
-                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-yellow-400 rounded-[2.5rem] shadow-[0_20px_50px_rgba(250,204,21,0.5)] flex items-center justify-center p-6 z-40 border-[6px] border-indigo-700"
-                >
-                   <GraduationCap size={64} className="text-indigo-900" />
-                </motion.div>
-              </div>
-            </motion.div>
+          
           </div>
         </div>
 
