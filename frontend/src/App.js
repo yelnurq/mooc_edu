@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import MainLayout from './components/Layouts/MainLayout'; // Укажи правильный путь к файлу лейаута
 import CoursesPage from './pages/UserPanel/Courses/AllCoursesPage/Courses';
 import './App.css';
+import HomePage from './pages/UserPanel/Home/HomePage';
 
 function App() {
   return (
@@ -11,7 +12,7 @@ function App() {
           {/* Все маршруты внутри MainLayout будут отображаться с TopBar и Sidebar */}
           <Route element={<MainLayout />}>
             {/* Редирект с корня на курсы */}
-            <Route path="/" element={<Navigate to="/courses" replace />} />
+            <Route path="/" element={<HomePage/>} />
             
             {/* Страница всех курсов */}
             <Route path="/courses" element={<CoursesPage />} />

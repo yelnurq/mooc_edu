@@ -5,9 +5,7 @@ import { Play, VolumeX, Heart, ArrowRight, Clock, BookOpen } from 'lucide-react'
 export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
   const [showPreview, setShowPreview] = useState(false);
   const timeoutRef = useRef(null);
-  const videoRef = useRef(null);
 
-  // Задержка перед воспроизведением
   const handleMouseEnter = () => {
     timeoutRef.current = setTimeout(() => {
       setShowPreview(true);
@@ -19,44 +17,49 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
     setShowPreview(false);
   };
 
+  // Фейковая ссылка на YouTube (используем embed версию с параметрами)
+  // controls=0 (скрыть кнопки), autoplay=1 (автозапуск), mute=1 (без звука), loop=1 (по кругу)
+  const videoId = "dQw4w9WgXcQ"; // Классика, либо поставь любой другой ID
+  const youtubeSrc = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&rel=0&modestbranding=1`;
+
   return (
     <div 
       className="group bg-white rounded-[2.5rem] border border-slate-200/60 flex flex-col hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-500 overflow-hidden relative"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* --- Media / Video Area --- */}
+      {/* --- Media Area --- */}
       <div className="relative h-56 m-2.5 rounded-[2rem] overflow-hidden bg-slate-900">
-        {/* Основная обложка */}
         <img 
           src={course.image} 
           alt="" 
-          className={`w-full h-full object-cover transition-all duration-700 ${showPreview ? 'scale-110 blur-sm opacity-50' : 'scale-100'}`} 
+          className={`w-full h-full object-cover transition-all duration-700 ${showPreview ? 'scale-110 blur-md opacity-30' : 'scale-100'}`} 
         />
         
-        {/* Плеер (появляется через Framer Motion) */}
+        {/* YouTube Preview Wrapper */}
         <AnimatePresence>
           {showPreview && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-10 bg-black"
+              className="absolute inset-0 z-10 pointer-events-none" // pointer-events-none чтобы клики не уходили в iframe
             >
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                loop
-                playsInline
-                className="w-full h-full object-cover"
-                src="https://assets.mixkit.co/videos/preview/mixkit-software-developer-working-on-his-laptop-34440-large.mp4" // Тестовый ролик (замени на свой)
+              <iframe
+                className="w-full h-[150%] -translate-y-[15%] pointer-events-none" // Увеличиваем высоту и смещаем, чтобы скрыть черные полосы YouTube
+                src={youtubeSrc}
+                title="Course Preview"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               />
-              {/* Overlay элементы видео */}
-              <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center">
-                <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10">
+              
+              {/* Overlay для стиля */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
+              
+              <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center z-20">
+                <div className="flex items-center gap-2 bg-blue-600 px-2 py-1 rounded-lg shadow-lg">
                    <Play size={10} className="text-white fill-white" />
-                   <span className="text-[10px] font-black text-white uppercase tracking-tighter">Preview Mode</span>
+                   <span className="text-[9px] font-black text-white uppercase tracking-wider">Live Preview</span>
                 </div>
                 <VolumeX size={14} className="text-white/50" />
               </div>
@@ -64,7 +67,6 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
           )}
         </AnimatePresence>
 
-        {/* Кнопка избранного всегда сверху */}
         <button 
           onClick={(e) => {
             e.stopPropagation();
