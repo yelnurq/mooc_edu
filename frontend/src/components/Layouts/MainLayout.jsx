@@ -103,24 +103,7 @@ const MainLayout = () => {
 
           <div className="flex items-center gap-6">
             {/* Search Box */}
-            <div className="relative hidden md:block" ref={searchRef}>
-              <div className="flex items-center gap-3 bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 focus-within:border-blue-400 focus-within:bg-white focus-within:shadow-inner transition-all group">
-                <Search size={16} className="text-slate-400 group-focus-within:text-blue-500" />
-                <input 
-                  type="text" 
-                  placeholder="Поиск курса..." 
-                  className="bg-transparent border-none text-[11px] font-bold focus:outline-none w-40 lg:w-56"
-                  value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setShowResults(true); }}
-                />
-              </div>
-              {/* Результаты поиска (абсолютный блок) */}
-              {showResults && searchQuery && (
-                <div className="absolute top-full right-0 mt-3 w-80 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 overflow-hidden">
-                   {/* ... (ваш код filteredResults) */}
-                </div>
-              )}
-            </div>
+              
 
             {/* Profile / Login */}
             <div className="flex items-center gap-3 pl-6 border-l border-slate-100">
