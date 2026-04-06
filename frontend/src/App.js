@@ -4,6 +4,9 @@ import CoursesPage from './pages/UserPanel/Courses/AllCoursesPage/Courses';
 import './App.css';
 import HomePage from './pages/UserPanel/Home/HomePage';
 import CourseDetailPage from './pages/UserPanel/Courses/CourseDetailPage/Course';
+import CourseAppPage from './pages/UserPanel/Courses/CourseDetailPage/CourseApp';
+import AppLayout from './components/Layouts/AppLayout';
+import LoginPage from './pages/Auth/Login';
 
 function App() {
   return (
@@ -20,12 +23,16 @@ function App() {
             
             {/* Детальная страница курса */}
             <Route path="/courses/:id" element={<CourseDetailPage />} />
-            {/* Другие разделы, если понадобятся (новости, о нас и т.д.) */}
             <Route path="/news" element={<div className="p-10">Раздел новостей</div>} />
           </Route>
-
+      <Route element={<AppLayout />}>
+        {/* Путь для обучения */}
+        <Route path="/courses/:id/learn" element={<CourseAppPage />} />
+        {/* Здесь же можно добавить Dashboard, Настройки и т.д. */}
+        {/* <Route path="/dashboard" element={<Dashboard />} /> */}
+      </Route>
           {/* Отдельные маршруты без общего лейаута (например, логин) */}
-          <Route path="/login" element={<div>Страница входа</div>} />
+          <Route path="/login" element={<LoginPage/>} />
 
           {/* 404 Страница */}
           <Route path="*" element={<div className="p-10 text-center font-bold">404: Страница не найдена</div>} />
