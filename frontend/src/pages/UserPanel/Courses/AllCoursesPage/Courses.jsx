@@ -19,40 +19,32 @@ const CoursesPage = () => {
   const categories = ['Все', 'Backend', 'Frontend', 'System Admin', 'Design', 'Mobile', 'DevOps'];
   const levels = ['Все', 'Новичок', 'Средний', 'Продвинутый'];
 
-  useEffect(() => {
+ useEffect(() => {
     const fetchCourses = async () => {
       setLoading(true);
       try {
+        // Запрос к твоему Laravel API
         const response = await api.get('/courses'); 
-        setCourses(response.data);
-      } catch (error) {
-        // Фоллбек на мок-данные
-        const mockData = Array.from({ length: 48 }).map((_, i) => ({
-          id: i,
-          title: [
-            'Mastering Laravel 11: Архитектура систем',
-            'React + Next.js: Полный гид по SSR',
-            'Администрирование Linux & Docker',
-            'UI/UX Design: От вайрфреймов до прототипа',
-            'Golang для высоконагруженных систем',
-            'Python & Django: Построение API'
-          ][i % 6],
-          category: categories[Math.floor(Math.random() * (categories.length - 1)) + 1],
-          level: levels[Math.floor(Math.random() * (levels.length - 1)) + 1],
-          duration: Math.floor(Math.random() * 60) + 5,
-          lessons: Math.floor(Math.random() * 40) + 10,
-          rating: (Math.random() * (5 - 4.2) + 4.2).toFixed(1),
-          isHot: i % 7 === 0,
-          isNew: i % 10 === 0,
-          author: {
-            name: ['Зейнолла Елнұр', 'Арман Ибраев', 'Алиса Власова'][i % 3],
-            avatar: `https://i.pravatar.cc/150?u=${i}`
-          },
-          image: `https://picsum.photos/seed/${i + 50}/800/600`
+        
+        // Преобразуем данные из БД, добавляя дефолтные значения для красоты, 
+        // если в таблице нет рейтинга или автора
+        const dataFromDb = response.data.map(course => ({
+          ...course,
+          category: course.category || 'Backend', // Если в БД нет категории
+          level: course.level || 'Средний',        // Если в БД нет уровня
+          rating: course.rating || '5.0',
+          lessons_count: course.modules?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || 0,
+          author: course.author || { name: 'Администратор', avatar: 'https://i.pravatar.cc/150?u=admin' },
+          image: course.image || `https://picsum.photos/seed/${course.id}/800/600`
         }));
-        setCourses(mockData);
+
+        setCourses(dataFromDb);
+      } catch (error) {
+        console.error("Ошибка при загрузке курсов:", error);
+        // Если API упал, можно оставить пустой массив или вывести уведомление
+        setCourses([]);
       } finally {
-        setTimeout(() => setLoading(false), 800);
+        setLoading(false);
       }
     };
     fetchCourses();
@@ -60,19 +52,22 @@ const CoursesPage = () => {
 
   const filteredCourses = useMemo(() => {
     let result = courses.filter(course => {
-      const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            course.author.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const title = course.title || '';
+      const authorName = course.author?.name || '';
+      
+      const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            authorName.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCat = selectedCategory === 'Все' || course.category === selectedCategory;
       const matchesLvl = selectedLevel === 'Все' || course.level === selectedLevel;
+      
       return matchesSearch && matchesCat && matchesLvl;
     });
 
-    if (sortBy === 'duration') result.sort((a, b) => b.duration - a.duration);
-    if (sortBy === 'new') result.sort((a, b) => b.isNew - a.isNew);
+    if (sortBy === 'duration') result.sort((a, b) => (b.duration || 0) - (a.duration || 0));
+    if (sortBy === 'new') result.sort((a, b) => b.id - a.id); // Новые — те, что созданы позже (больше ID)
     
     return result;
   }, [courses, searchQuery, selectedCategory, selectedLevel, sortBy]);
-
   const toggleFavorite = (id) => {
     setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
   };
@@ -202,6 +197,7 @@ const CoursesPage = () => {
                     isFavorite={favorites.includes(course.id)} 
                     />
                 ))}
+                
                 </div>
 
                 {/* Load More */}

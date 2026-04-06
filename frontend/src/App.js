@@ -3,6 +3,7 @@ import MainLayout from './components/Layouts/MainLayout'; // Укажи прав
 import CoursesPage from './pages/UserPanel/Courses/AllCoursesPage/Courses';
 import './App.css';
 import HomePage from './pages/UserPanel/Home/HomePage';
+import CourseDetailPage from './pages/UserPanel/Courses/CourseDetailPage/Course';
 
 function App() {
   return (
@@ -18,8 +19,7 @@ function App() {
             <Route path="/courses" element={<CoursesPage />} />
             
             {/* Детальная страница курса */}
-            <Route path="/courses/:id" element={<div>Страница конкретного курса</div>} />
-            
+            <Route path="/courses/:id" element={<CourseDetailPage />} />
             {/* Другие разделы, если понадобятся (новости, о нас и т.д.) */}
             <Route path="/news" element={<div className="p-10">Раздел новостей</div>} />
           </Route>

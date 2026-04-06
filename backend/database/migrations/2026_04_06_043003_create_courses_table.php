@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->text('description')->nullable();
+            $table->string('promo_video_url')->nullable();
+            $table->string('syllabus_path')->nullable();
             $table->timestamps();
         });
     }

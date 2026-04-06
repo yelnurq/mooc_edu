@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CourseController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -16,3 +17,9 @@ Route::middleware(["token"])->group(function(){
     Route::post('/logout', [AuthController::class, "logout"]);
 
 });
+
+Route::get('/courses', [CourseController::class, 'index']);           
+Route::post('/courses', [CourseController::class, 'store']);           // Создать курс
+Route::get('/courses/{id}', [CourseController::class, 'show']);        // Получить всё дерево курса
+Route::post('/courses/{id}/modules', [CourseController::class, 'addModule']); // Добавить модуль
+Route::post('/modules/{id}/lessons', [CourseController::class, 'addLesson']); // Добавить урок (PDF/Видео)
