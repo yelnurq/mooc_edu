@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\Lesson;
+use App\Models\Token;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,14 +14,16 @@ class CourseController extends Controller
 {
 
 
-/**
- * Получить курсы текущего студента (для Dashboard)
- */
+    private function getAuthenticatedUser(Request $request)
+    {
+        $bearerToken = $request->bearerToken();
+        if (!$bearerToken) return null;
 
+        $tokenRecord = Token::where("token", $bearerToken)->first();
+        if (!$tokenRecord) return null;
 
-/**
- * Метод для АДМИНА: связать студента с курсом
- */
+        return User::find($tokenRecord->user_id);
+    }
 public function adminEnroll(Request $request)
 {
     // Проверка прав админа (предположим, у тебя есть middleware 'admin')
@@ -57,51 +60,119 @@ public function myCourses()
 /**
  * Обновленный метод show с проверкой доступа
  */
-public function show($id)
+public function show(Request $request, $id)
 {
-    $user = Auth::user();
+    // 1. Получаем юзера через твой кастомный метод
+    $user = $this->getAuthenticatedUser($request);
     
-    // Загружаем курс
-    $course = Course::with(['modules.lessons', 'resources'])->find($id);
-    if (!$course) return response()->json(['message' => 'Курс не найден'], 404);
-
-    // Проверяем, записан ли текущий юзер
-    $isEnrolled = false;
-    if ($user) {
-        $isEnrolled = $user->courses()->where('course_id', $id)->exists();
+    // 2. Если юзер не найден — сразу 401
+    if (!$user) {
+        return response()->json(['message' => 'Пользователь не авторизован'], 401);
     }
 
-    // Обработка путей для ресурсов
+    // 3. Загружаем курс со всеми связями
+    $course = \App\Models\Course::with(['modules.lessons', 'resources'])->find($id);
+    
+    if (!$course) {
+        return response()->json(['message' => 'Курс не найден'], 404);
+    }
+
+    // 4. ПРОВЕРКА ПОДПИСКИ (теперь $user точно объект)
+    $isEnrolled = $user->courses()->where('course_id', $id)->exists();
+
+    if (!$isEnrolled) {
+        return response()->json([
+            'message' => 'Доступ запрещен. Вы не подписаны на этот курс.',
+            'is_enrolled' => false
+        ], 403);
+    }
+
+    // 5. Если дошли сюда — юзер подписан. Собираем прогресс.
+    // Вытягиваем ID всех уроков курса
+    $courseLessonIds = $course->modules->flatMap(function($module) {
+        return $module->lessons->pluck('id');
+    })->toArray();
+
+    // Получаем пройденные уроки именно этого курса для этого юзера
+    $completedLessonsIds = \Illuminate\Support\Facades\DB::table('lesson_user')
+        ->where('user_id', $user->id)
+        ->whereIn('lesson_id', $courseLessonIds)
+        ->pluck('lesson_id')
+        ->map(fn($id) => (int)$id) // Принудительно в число для React
+        ->values()
+        ->toArray();
+
+    // 6. Обработка путей (PDF и видео)
     $course->resources->transform(function ($resource) {
-        if ($resource->type === 'pdf') {
+        if ($resource->type === 'pdf' && $resource->file_path) {
             $resource->file_url = asset('storage/' . $resource->file_path);
         }
         return $resource;
     });
 
-    // Обработка путей для уроков внутри модулей
-    $course->modules->each(function ($module) use ($isEnrolled) {
-        $module->lessons->transform(function ($lesson) use ($isEnrolled) {
+    $course->modules->each(function ($module) {
+        $module->lessons->transform(function ($lesson) {
             if ($lesson->type === 'pdf' && $lesson->file_path) {
                 $lesson->file_url = asset('storage/' . $lesson->file_path);
-            }
-            
-            // Если юзер НЕ записан, можно скрыть чувствительные данные (например, прямые ссылки)
-            if (!$isEnrolled) {
-                $lesson->video_url = null; 
-                $lesson->file_url = null;
             }
             return $lesson;
         });
     });
 
-    // Добавляем флаг доступа в ответ
-    $course->is_enrolled = $isEnrolled;
+    // 7. Добавляем мета-данные в ответ
+    $course->is_enrolled = true;
+    $course->completed_lessons_ids = $completedLessonsIds;
 
     return response()->json($course);
 }
-
 // Новый метод для добавления общего ресурса
+public function completeLesson($lessonId)
+{
+    $user = Auth::user();
+
+    // 1. Загружаем урок вместе с модулем, чтобы достать course_id
+    $lesson = Lesson::with('module')->find($lessonId);
+
+    if (!$lesson || !$lesson->module) {
+        return response()->json(['message' => 'Урок или модуль не найден'], 404);
+    }
+
+    $courseId = $lesson->module->course_id;
+
+    // 2. Отмечаем урок как пройденный (таблица lesson_user)
+    // Используем syncWithoutDetaching, чтобы не дублировать записи
+    $user->completedLessons()->syncWithoutDetaching([$lessonId]);
+
+    // 3. Считаем общий прогресс курса
+    // Получаем все ID уроков этого курса
+    $allLessonIds = Lesson::whereHas('module', function($query) use ($courseId) {
+        $query->where('course_id', $courseId);
+    })->pluck('id');
+
+    $totalLessonsCount = $allLessonIds->count();
+
+    // Считаем, сколько из этих уроков прошел юзер
+    $completedLessonsCount = $user->completedLessons()
+        ->whereIn('lesson_id', $allLessonIds)
+        ->count();
+
+    // Вычисляем процент
+    $progressPercent = ($totalLessonsCount > 0) 
+        ? round(($completedLessonsCount / $totalLessonsCount) * 100) 
+        : 0;
+
+    // 4. Обновляем прогресс в сводной таблице course_user
+    $user->courses()->updateExistingPivot($courseId, [
+        'progress' => $progressPercent
+    ]);
+
+    return response()->json([
+        'status' => 'success',
+        'progress' => $progressPercent,
+        'completed_lessons_count' => $completedLessonsCount
+    ]);
+}
+
 public function addResource(Request $request, $courseId)
 {
     $request->validate([

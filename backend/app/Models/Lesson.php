@@ -13,4 +13,8 @@ class Lesson extends Model {
     public function getFileUrlAttribute() {
         return $this->file_path ? asset('storage/' . $this->file_path) : null;
     }
+    // App\Models\Lesson.php
+public function module() {
+    return $this->belongsTo(Module::class);
+}
 }

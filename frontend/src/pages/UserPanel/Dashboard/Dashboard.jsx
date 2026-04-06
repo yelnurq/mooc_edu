@@ -191,7 +191,7 @@ const ActiveCourseHero = ({ course }) => (
 );
 
 const CourseRowItem = ({ course }) => (
-  <Link to={`/courses/${course.id}/learn`} className="group flex items-center gap-6 p-5 rounded-2xl hover:bg-slate-50 transition-all border-b border-slate-50 last:border-none">
+  <Link to={`/app/courses/${course.id}`} className="group flex items-center gap-6 p-5 rounded-2xl hover:bg-slate-50 transition-all border-b border-slate-50 last:border-none">
     <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center group-hover:bg-white transition-colors border border-transparent group-hover:border-slate-200">
       <BookOpen size={18} className="text-slate-400 group-hover:text-slate-900" />
     </div>

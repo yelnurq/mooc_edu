@@ -18,9 +18,13 @@ Route::middleware(["token"])->group(function(){
     Route::post('/logout', [AuthController::class, "logout"]);
     Route::post('/admin/enroll', [CourseController::class, 'adminEnroll']);
     Route::get('/my-courses', [CourseController::class, 'myCourses']);
+    
     Route::get('/admin/users', function () {
             return User::select('id', 'name', 'email')->get();
-        });
+    });
+
+    Route::post('/lessons/{lesson}/complete', [CourseController::class, 'completeLesson']);
+
 });
 
 
