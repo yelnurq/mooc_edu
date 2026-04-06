@@ -10,6 +10,13 @@ class Course extends Model {
     public function modules() {
         return $this->hasMany(Module::class)->orderBy('order');
     }
-
+    public function students()
+    {
+        return $this->belongsToMany(User::class)->withPivot('progress')->withTimestamps();
+    }
+public function lessons()
+{
+    return $this->hasManyThrough(Lesson::class, Module::class);
+}
     public function resources() { return $this->hasMany(CourseResource::class)->orderBy('order'); }
 }

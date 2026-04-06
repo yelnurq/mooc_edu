@@ -5,27 +5,98 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\Lesson;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-
+use Illuminate\Support\Facades\Auth;
 class CourseController extends Controller
 {
-    // Получить курс со всеми модулями и уроками
-    // В методе show и index добавляем загрузку ресурсов
+
+
+/**
+ * Получить курсы текущего студента (для Dashboard)
+ */
+
+
+/**
+ * Метод для АДМИНА: связать студента с курсом
+ */
+public function adminEnroll(Request $request)
+{
+    // Проверка прав админа (предположим, у тебя есть middleware 'admin')
+    $request->validate([
+        'user_id'   => 'required|exists:users,id',
+        'course_id' => 'required|exists:courses,id',
+    ]);
+
+    $course = Course::findOrFail($request->course_id);
+    $user = User::findOrFail($request->user_id);
+
+    // Проверяем, не записан ли уже
+    if ($user->courses()->where('course_id', $request->course_id)->exists()) {
+        return response()->json(['message' => 'Студент уже записан на этот курс'], 400);
+    }
+
+    // Привязываем
+    $user->courses()->attach($request->course_id);
+
+    return response()->json([
+        'message' => "Студент {$user->name} успешно зачислен на курс {$course->title}"
+    ], 200);
+}
+public function myCourses()
+{
+    $user = Auth::user();
+    $courses = $user->courses()->withCount(['modules as lessons_count' => function($query) {
+        $query->join('lessons', 'modules.id', '=', 'lessons.module_id');
+    }])->get();
+
+    return response()->json($courses);
+}
+
+/**
+ * Обновленный метод show с проверкой доступа
+ */
 public function show($id)
 {
-    // Загружаем курс вместе с модулями и ОБЩИМИ ресурсами
-    $course = Course::with(['modules.lessons', 'resources'])->find($id);
+    $user = Auth::user();
     
-    if (!$course) return response()->json(['message' => 'Не найден'], 404);
+    // Загружаем курс
+    $course = Course::with(['modules.lessons', 'resources'])->find($id);
+    if (!$course) return response()->json(['message' => 'Курс не найден'], 404);
 
-    // Превращаем пути в URL для всех ресурсов
+    // Проверяем, записан ли текущий юзер
+    $isEnrolled = false;
+    if ($user) {
+        $isEnrolled = $user->courses()->where('course_id', $id)->exists();
+    }
+
+    // Обработка путей для ресурсов
     $course->resources->transform(function ($resource) {
         if ($resource->type === 'pdf') {
             $resource->file_url = asset('storage/' . $resource->file_path);
         }
         return $resource;
     });
+
+    // Обработка путей для уроков внутри модулей
+    $course->modules->each(function ($module) use ($isEnrolled) {
+        $module->lessons->transform(function ($lesson) use ($isEnrolled) {
+            if ($lesson->type === 'pdf' && $lesson->file_path) {
+                $lesson->file_url = asset('storage/' . $lesson->file_path);
+            }
+            
+            // Если юзер НЕ записан, можно скрыть чувствительные данные (например, прямые ссылки)
+            if (!$isEnrolled) {
+                $lesson->video_url = null; 
+                $lesson->file_url = null;
+            }
+            return $lesson;
+        });
+    });
+
+    // Добавляем флаг доступа в ответ
+    $course->is_enrolled = $isEnrolled;
 
     return response()->json($course);
 }

@@ -8,6 +8,7 @@ import CourseAppPage from './pages/UserPanel/Courses/CourseDetailPage/CourseApp'
 import AppLayout from './components/Layouts/AppLayout';
 import LoginPage from './pages/Auth/Login';
 import Dashboard from './pages/UserPanel/Dashboard/Dashboard';
+import AdminEnrollment from './pages/AdminPanel/Courses/Enroll/Enroll';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/app/courses/:id" element={<CourseAppPage />} />
         {/* Здесь же можно добавить Dashboard, Настройки и т.д. */}
         <Route path="/app/dashboard" element={<Dashboard />} />
+        <Route path="/app/admin/enroll" element={<AdminEnrollment />} />
       </Route>
           {/* Отдельные маршруты без общего лейаута (например, логин) */}
           <Route path="/login" element={<LoginPage/>} />

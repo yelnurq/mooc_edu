@@ -14,52 +14,50 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    // ЛОГИКА АВТОПОДСТАНОВКИ ДОМЕНА
-    let formattedEmail = email.trim();
-    if (formattedEmail && !formattedEmail.includes('@')) {
-      formattedEmail = `${formattedEmail}@kaztbu.edu.kz`;
-    }
+  let formattedEmail = email.trim();
+  if (formattedEmail && !formattedEmail.includes('@')) {
+    formattedEmail = `${formattedEmail}@kaztbu.edu.kz`;
+  }
 
-    try {
-      const response = await fetch('http://localhost:8000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ email: formattedEmail, password }),
-      });
+  try {
+    const response = await fetch('http://localhost:8000/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ email: formattedEmail, password }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (response.ok) {
-        localStorage.setItem('token', data.access_token.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+    if (response.ok) {
+      // ИСПРАВЛЕНИЕ: data.access_token — это уже сама строка токена
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
      
-        const role = data.user.role;
+      const role = data.user.role;
+      const adminRoles = ['super_admin', 'academic_office', 'dean', 'head_of_dept'];
 
-        // Список ролей, которые имеют доступ к админ-панели
-        const adminRoles = ['super_admin', 'academic_office', 'dean', 'head_of_dept'];
-
-        if (adminRoles.includes(role)) {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
+      if (adminRoles.includes(role)) {
+        navigate('/admin');
       } else {
-        setError(data.message || 'Ошибка авторизации. Проверьте данные.');
+        navigate('/dashboard');
       }
-      
-    } catch (err) {
-      setError('Не удалось связаться с сервером. Проверьте соединение.');
-    } finally {
-      setLoading(false);
+    } else {
+      setError(data.message || 'Ошибка авторизации.');
     }
-  };
+    
+  } catch (err) {
+    setError('Не удалось связаться с сервером.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 font-sans">
@@ -138,53 +136,6 @@ const LoginPage = () => {
             </button>
           </form>
 
-          {/* БЛОК БЫСТРОГО ВХОДА — УДАЛИ ПЕРЕД ДЕПЛОЕМ */}
-          <div className="mt-8 pt-6 border-t border-dashed border-slate-100 space-y-4">
-            <p className="text-[10px] font-black text-slate-300 uppercase text-center tracking-widest">
-              Dev Mode: Быстрый доступ
-            </p>
-            
-            {/* Деканы */}
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: 'ТФ', email: 'dean.tf@kpi.test' },
-                { label: 'ФЭиБ', email: 'dean.feb@kpi.test' },
-                { label: 'ФИиИТ', email: 'dean.fiit@kpi.test' }
-              ].map((dean) => (
-                <button key={dean.email} type="button" onClick={() => { setEmail(dean.email); setPassword('password123'); }}
-                  className="py-2 bg-blue-50/50 hover:bg-blue-100 text-[9px] font-bold text-blue-600 rounded-lg transition-all uppercase">
-                  {dean.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Академ. отдел и Админ */}
-            <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => { setEmail('academic.study@kpi.test'); setPassword('password123'); }}
-                className="py-2 bg-slate-50 hover:bg-slate-100 text-[9px] font-bold text-slate-500 rounded-lg transition-all uppercase">
-                Учебная работа
-              </button>
-              <button type="button" onClick={() => { setEmail('academic.study@kpi.test1'); setPassword('password123'); }}
-                className="py-2 bg-slate-50 hover:bg-slate-100 text-[9px] font-bold text-slate-500 rounded-lg transition-all uppercase">
-                Орг-метод
-              </button>
-              <button type="button" onClick={() => { setEmail('test@kpi.test'); setPassword('test@kpi.test'); }}
-                className="py-2 bg-emerald-50 hover:bg-emerald-100 text-[9px] font-bold text-emerald-600 rounded-lg transition-all uppercase">
-                Yelnur Z
-              </button>
-              <button type="button" onClick={() => { setEmail('admin@kpi.test'); setPassword('admin@kpi.test'); }}
-                className="py-2 bg-rose-50 hover:bg-rose-100 text-[9px] font-bold text-rose-600 rounded-lg transition-all uppercase">
-                Admin
-              </button>
-            </div>
-          </div>
-          {/* КОНЕЦ БЛОКА БЫСТРОГО ВХОДА */}
-
-          <div className="mt-8 pt-8 border-t border-slate-50 text-center">
-            <a href="#" className="text-[10px] font-bold text-slate-400 uppercase hover:text-blue-600 transition-colors tracking-widest">
-              Забыли пароль?
-            </a>
-          </div>
         </div>
 
         <p className="text-center mt-10 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] opacity-50">

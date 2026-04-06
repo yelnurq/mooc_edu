@@ -25,8 +25,11 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Department::class);
     }
+    public function courses()
+    {
+        return $this->belongsToMany(Course::class)->withPivot('progress')->withTimestamps();
+    }
     
-
     protected function casts(): array
     {
         return [
