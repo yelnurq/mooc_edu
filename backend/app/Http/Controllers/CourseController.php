@@ -125,6 +125,69 @@ public function show(Request $request, $id)
 
     return response()->json($course);
 }
+public function showPublic(Request $request, $id)
+{
+    // 1. Пытаемся получить юзера (через ваш кастомный метод)
+    $user = $this->getAuthenticatedUser($request);
+
+    // 2. Загружаем курс со всеми связями
+    $course = \App\Models\Course::with(['modules.lessons', 'resources'])->find($id);
+
+    if (!$course) {
+        return response()->json(['message' => 'Курс не найден'], 404);
+    }
+
+    // 3. Проверка подписки
+    $isEnrolled = $user ? $user->courses()->where('course_id', $id)->exists() : false;
+
+    // 4. РЕСУРСЫ (course_resources) — показываем ВСЕМ
+    // Эти файлы доступны даже гостю
+    $course->resources->transform(function ($resource) {
+        if ($resource->file_path) {
+            $resource->file_url = asset('storage/' . $resource->file_path);
+        }
+        // Если в таблице есть video_url, он тоже пройдет
+        return $resource;
+    });
+
+    // 5. УРОКИ (lessons) — только названия для неподписанных
+    $course->modules->each(function ($module) use ($isEnrolled) {
+        $module->lessons->transform(function ($lesson) use ($isEnrolled) {
+            if (!$isEnrolled) {
+                // ДЛЯ ВСЕХ (Публично): удаляем всё, кроме метаданных
+                $lesson->makeHidden(['file_path', 'video_url', 'content']); // Прячем поля модели
+                $lesson->file_url = null; // Ссылка не генерируется
+                $lesson->is_locked = true; 
+            } else {
+                // ДЛЯ ПОДПИСАННЫХ: генерируем ссылки
+                if ($lesson->type === 'pdf' && $lesson->file_path) {
+                    $lesson->file_url = asset('storage/' . $lesson->file_path);
+                }
+                $lesson->is_locked = false;
+            }
+            return $lesson;
+        });
+    });
+
+    // 6. Доп. данные для фронтенда
+    $course->is_enrolled = $isEnrolled;
+    
+    // Прогресс считаем только если есть подписка
+    if ($isEnrolled && $user) {
+        $courseLessonIds = $course->modules->flatMap(fn($m) => $m->lessons->pluck('id'))->toArray();
+        
+        $course->completed_lessons_ids = \Illuminate\Support\Facades\DB::table('lesson_user')
+            ->where('user_id', $user->id)
+            ->whereIn('lesson_id', $courseLessonIds)
+            ->pluck('lesson_id')
+            ->map(fn($id) => (int)$id)
+            ->values();
+    } else {
+        $course->completed_lessons_ids = [];
+    }
+
+    return response()->json($course);
+}
 // Новый метод для добавления общего ресурса
 public function completeLesson($lessonId)
 {

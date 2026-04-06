@@ -53,9 +53,9 @@ const AppLayout = () => {
           </button>
           <div className="h-8 w-px bg-slate-100 hidden md:block" />
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition-colors shadow-sm">
-              <Sparkles size={18} className="text-white fill-white" />
-            </div>
+             <div className="w-10 h-10">
+                <img src="/images/icons/logo.png" alt="Logo" className="h-full w-full object-contain" />
+              </div>
             <span className="font-bold text-sm tracking-tight text-slate-900 uppercase">
               KAZ<span className="text-blue-600">TBU</span>
             </span>

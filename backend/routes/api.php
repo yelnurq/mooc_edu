@@ -31,5 +31,6 @@ Route::middleware(["token"])->group(function(){
 Route::get('/courses', [CourseController::class, 'index']);           
 Route::post('/courses', [CourseController::class, 'store']);           // Создать курс
 Route::get('/courses/{id}', [CourseController::class, 'show']);        // Получить всё дерево курса
+Route::get('/courses/public/{id}', [CourseController::class, 'showPublic']);        // Получить всё дерево курса
 Route::post('/courses/{id}/modules', [CourseController::class, 'addModule']); // Добавить модуль
 Route::post('/modules/{id}/lessons', [CourseController::class, 'addLesson']); // Добавить урок (PDF/Видео)

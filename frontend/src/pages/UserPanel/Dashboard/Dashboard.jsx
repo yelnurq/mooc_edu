@@ -173,10 +173,7 @@ const Dashboard = () => {
                       </h2>
                       <ActiveCourseHero course={courses[0]} />
                     </section>
-                    <section className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4">
-                      <StatCard title="Lessons Done" value="48" total="120" icon={<BookOpen size={18}/>} />
-                      <StatCard title="Avg Score" value="85%" total="100%" icon={<Trophy size={18}/>} />
-                    </section>
+                 
                   </>
                 ) : (
                   <section className="grid grid-cols-1 gap-1">

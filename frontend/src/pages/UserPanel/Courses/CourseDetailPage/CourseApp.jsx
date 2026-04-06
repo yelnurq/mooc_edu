@@ -61,14 +61,18 @@ const CourseAppPage = () => {
     return course?.modules?.flatMap(m => m.lessons) || [];
   }, [course]);
 
+  // РАСЧЕТ ПРОГРЕССА
+  const progressPercentage = useMemo(() => {
+    if (!flatLessons.length) return 0;
+    const completedCount = completedLessons.length;
+    return Math.round((completedCount / flatLessons.length) * 100);
+  }, [flatLessons, completedLessons]);
+
   const currentIndex = flatLessons.findIndex(l => Number(l.id) === Number(activeLesson?.id));
 
-  // Проверка: доступен ли урок для просмотра
   const isLessonLocked = (lessonId) => {
     const lessonIdx = flatLessons.findIndex(l => Number(l.id) === Number(lessonId));
-    if (lessonIdx <= 0) return false; // Первый урок всегда открыт
-    
-    // Урок закрыт, если предыдущий урок не находится в массиве завершенных
+    if (lessonIdx <= 0) return false;
     const prevLesson = flatLessons[lessonIdx - 1];
     return !completedLessons.includes(Number(prevLesson.id));
   };
@@ -110,6 +114,7 @@ const CourseAppPage = () => {
 
   return (
     <div className="h-full flex bg-white overflow-hidden relative">
+      {/* SIDEBAR */}
       <aside className={`absolute lg:relative z-50 h-full bg-slate-50 border-r transition-all duration-300 ${isSidebarOpen ? 'w-80' : 'w-0 -translate-x-full lg:w-0 lg:opacity-0'}`}>
         <div className="w-80 h-full flex flex-col">
           <div className="p-6 border-b flex justify-between items-center bg-white">
@@ -162,16 +167,21 @@ const CourseAppPage = () => {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col bg-white overflow-y-auto relative custom-scrollbar">
-        <div className="px-8 py-4 flex items-center justify-between border-b sticky top-0 z-30 bg-white/80 backdrop-blur-md">
+      {/* MAIN CONTENT */}
+      <main className="flex-1 flex flex-col bg-white overflow-hidden relative">
+        {/* HEADER */}
+        <div className="px-8 py-4 flex items-center justify-between border-b bg-white z-30">
           <div className="flex items-center gap-4">
             {!isSidebarOpen && <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-slate-100 rounded-xl"><Menu size={20} /></button>}
-            <h2 className="text-sm font-black text-slate-900">{activeLesson?.title}</h2>
+            <div className="flex flex-col">
+                <h2 className="text-sm font-black text-slate-900 truncate max-w-[200px] md:max-w-md">{activeLesson?.title}</h2>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Урок {currentIndex + 1} из {flatLessons.length}</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
             {activeLesson && !completedLessons.includes(Number(activeLesson.id)) ? (
-              <button onClick={handleCompleteLesson} disabled={completing} className="bg-green-500 text-white px-5 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
+              <button onClick={handleCompleteLesson} disabled={completing} className="bg-green-500 text-white px-5 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 transition-transform active:scale-95">
                 {completing ? '...' : <><Check size={14}/> Завершить</>}
               </button>
             ) : (
@@ -189,8 +199,17 @@ const CourseAppPage = () => {
           </div>
         </div>
 
-        <div className="flex-1 bg-slate-50 flex items-center justify-center p-0 md:p-10">
-          <div className="w-full max-w-5xl aspect-video bg-black shadow-2xl rounded-0 md:rounded-[2.5rem] overflow-hidden border-8 border-white">
+        {/* НОВЫЙ ПРОГРЕСС БАР (МЕЖДУ ШАПКОЙ И КОНТЕНТОМ) */}
+        <div className="w-full h-1.5 bg-slate-100 relative shrink-0">
+          <div 
+            className="absolute top-0 left-0 h-full bg-blue-600 transition-all duration-700 ease-in-out shadow-[0_0_10px_rgba(37,99,235,0.3)]" 
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+
+        {/* CONTENT AREA */}
+        <div className="flex-1 bg-slate-50 flex items-center justify-center p-0 md:p-10 overflow-y-auto custom-scrollbar">
+          <div className="w-full max-w-5xl aspect-video bg-black shadow-2xl rounded-0 md:rounded-[2.5rem] overflow-hidden border-8 border-white relative">
             {activeLesson?.type === 'pdf' ? (
               <iframe src={activeLesson.file_url ? `${activeLesson.file_url}#toolbar=0` : ''} className="w-full h-full border-none bg-white" key={`pdf-${activeLesson.id}`} />
             ) : (
@@ -198,7 +217,6 @@ const CourseAppPage = () => {
             )}
           </div>
         </div>
-
       </main>
     </div>
   );

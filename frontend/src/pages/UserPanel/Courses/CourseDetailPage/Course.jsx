@@ -21,7 +21,8 @@ const CourseDetailPage = () => {
   useEffect(() => {
     const fetchCourseData = async () => {
       try {
-        const response = await api.get(`/courses/${id}`);
+        // Вызываем публичный метод (Backend должен возвращать is_enrolled и is_locked)
+        const response = await api.get(`/courses/public/${id}`);
         setCourse(response.data);
       } catch (error) {
         console.error("Ошибка при загрузке курса:", error);
