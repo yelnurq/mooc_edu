@@ -140,82 +140,111 @@ const MainLayout = () => {
         <Outlet />
       </main>
       {/* --- FOOTER --- */}
-      <footer className="bg-white border-t border-slate-100 pt-20 pb-10">
-        <div className="max-w-[1440px] mx-auto px-8 lg:px-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-            
-            {/* Brand Section */}
-            <div className="space-y-6">
-              <Link to="/" className="flex items-center gap-3">
-                <div className="w-10 h-10">
-                  <img src="images/icons/logo.png" alt="Logo" className="h-full w-full object-contain" />
-                </div>
-                <span className="font-black text-xl tracking-tighter text-slate-800 uppercase">
-                  KAZ<span className="text-blue-600">UTB</span>
-                </span>
-              </Link>
-              <p className="text-slate-500 text-sm font-medium leading-relaxed">
-                Образовательная платформа нового поколения. Развиваем навыки будущего вместе с вами.
-              </p>
-              <div className="flex items-center gap-4">
-              </div>
-            </div>
-
-            {/* Quick Links */}
-            <div>
-              <h4 className="font-black text-xs uppercase tracking-[0.2em] text-slate-900 mb-8">Платформа</h4>
-              <ul className="space-y-4">
-                <FooterLink label="Все курсы" path="/courses" />
-                <FooterLink label="О проекте" path="/about" />
-                <FooterLink label="Менторство" path="/mentors" />
-                <FooterLink label="Цены" path="/pricing" />
-              </ul>
-            </div>
-
-            {/* Support */}
-            <div>
-              <h4 className="font-black text-xs uppercase tracking-[0.2em] text-slate-900 mb-8">Поддержка</h4>
-              <ul className="space-y-4">
-                <FooterLink label="Помощь" path="/help" />
-                <FooterLink label="Конфиденциальность" path="/privacy" />
-                <FooterLink label="Условия использования" path="/terms" />
-                <FooterLink label="Новости" path="/news" />
-              </ul>
-            </div>
-
-            {/* Contact Info */}
-            <div>
-              <h4 className="font-black text-xs uppercase tracking-[0.2em] text-slate-900 mb-8">Контакты</h4>
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3 text-slate-500">
-                  <MapPin size={18} className="text-blue-600 shrink-0" />
-                  <span className="text-sm font-medium">Астана, ул. Кажымукана 7</span>
-                </li>
-                <li className="flex items-center gap-3 text-slate-500">
-                  <Phone size={18} className="text-blue-600 shrink-0" />
-                  <span className="text-sm font-medium">+7 (707) 123 45 67</span>
-                </li>
-                <li className="flex items-center gap-3 text-slate-500">
-                  <Mail size={18} className="text-blue-600 shrink-0" />
-                  <span className="text-sm font-medium">info@kazutb.edu</span>
-                </li>
-              </ul>
-            </div>
+<footer className="bg-slate-900 pt-24 pb-12 overflow-hidden relative">
+  {/* Декоративный элемент — легкое свечение, перекликающееся с CTA */}
+  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
+  
+  <div className="max-w-[1440px] mx-auto px-8 lg:px-12 relative z-10">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
+      
+      {/* Brand Section */}
+      <div className="space-y-8">
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:border-indigo-500 transition-colors">
+            <img src="images/icons/logo.png" alt="Logo" className="h-7 w-7 object-contain" />
           </div>
-
-          <div className="border-t border-slate-50 pt-10 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center md:text-left">
-              © 2026 KAZUTB LMS. Все права защищены. <br className="md:hidden" /> 
-              Сделано с ❤️ для студентов.
-            </p>
-            <div className="flex items-center gap-8">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-blue-600 transition-colors">KZ</span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-blue-600 transition-colors">RU</span>
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest cursor-pointer underline underline-offset-4">EN</span>
+          <span className="font-black text-2xl tracking-tighter text-white uppercase">
+            KAZ<span className="text-indigo-500">UTB</span>
+          </span>
+        </Link>
+        <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-xs">
+          Платформа, где технологии встречаются с талантом. Обучаем лидеров индустрии будущего.
+        </p>
+        <div className="flex items-center gap-4">
+          {/* Соцсети в едином стиле */}
+          {['Fb', 'Tw', 'In', 'Yt'].map((social) => (
+            <div key={social} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-black text-slate-500 hover:text-white hover:border-indigo-500 cursor-pointer transition-all">
+              {social}
             </div>
-          </div>
+          ))}
         </div>
-      </footer>
+      </div>
+
+      {/* Navigation Columns */}
+      <div>
+        <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-indigo-500 mb-8">Навигация</h4>
+        <ul className="space-y-4">
+          {['Все курсы', 'О проекте', 'Менторство', 'Цены'].map((item) => (
+            <li key={item}>
+              <Link to="/" className="text-slate-400 hover:text-white text-sm font-bold transition-colors flex items-center gap-2 group">
+                <span className="w-0 h-px bg-indigo-500 group-hover:w-3 transition-all" /> {item}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-indigo-500 mb-8">Помощь</h4>
+        <ul className="space-y-4">
+          {['Центр поддержки', 'Конфиденциальность', 'Правила', 'Новости'].map((item) => (
+            <li key={item}>
+              <Link to="/" className="text-slate-400 hover:text-white text-sm font-bold transition-colors">
+                {item}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Contact Info */}
+      <div className="bg-white/5 p-8 rounded-[2rem] border border-white/10">
+        <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-white mb-6">Связаться</h4>
+        <ul className="space-y-6">
+          <li className="flex items-start gap-4">
+            <MapPin size={20} className="text-indigo-500 shrink-0" />
+            <span className="text-sm font-bold text-slate-300 leading-tight">Астана, ул. Кажымукана 7</span>
+          </li>
+          <li className="flex items-center gap-4">
+            <Mail size={20} className="text-indigo-500 shrink-0" />
+            <span className="text-sm font-bold text-slate-300">hello@kazutb.edu</span>
+          </li>
+          <li className="flex items-center gap-4">
+            <div className="px-4 py-2 bg-indigo-600 rounded-xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-indigo-500 cursor-pointer transition-all">
+              Написать нам
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    {/* Bottom Bar */}
+    <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
+      <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 text-center md:text-left">
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+          © 2026 KAZUTB LMS. 
+        </p>
+        <div className="h-1 w-1 bg-slate-700 rounded-full hidden md:block" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+          Made for the future of education
+        </p>
+      </div>
+
+      <div className="flex items-center gap-4 bg-white/5 p-1.5 rounded-xl border border-white/10">
+        {['KZ', 'RU', 'EN'].map((lang) => (
+          <button 
+            key={lang} 
+            className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all ${
+              lang === 'RU' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            {lang}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+</footer>
     </div>
   );
 };
