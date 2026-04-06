@@ -150,13 +150,13 @@ const CourseDetailPage = () => {
         </div>
       )}
 
-      <div className="bg-slate-900 pt-32 pb-24 px-8 text-white">
+      <div className="bg-slate-900 pt-24 pb-32 px-8 text-white">
         <div className="max-w-5xl mx-auto">
           <Link to="/courses" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-8 font-bold text-sm uppercase tracking-widest">
             <ArrowLeft size={16} /> Назад к курсам
           </Link>
           <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight">{course?.title}</h1>
-          <p className="text-slate-400 text-lg max-w-2xl font-medium leading-relaxed">{course?.description || "Описание курса находится в разработке."}</p>
+          <p className="text-slate-400 text-lg max-w-2xl font-medium leading-relaxed text-center">{course?.description || "Описание курса находится в разработке."}</p>
         </div>
       </div>
 
