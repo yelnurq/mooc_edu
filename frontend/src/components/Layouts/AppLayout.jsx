@@ -7,13 +7,34 @@ import {
 
 const AppLayout = () => {
   const [user, setUser] = useState(null);
+  const [lastCourseId, setLastCourseId] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
+    // Загрузка данных пользователя
     const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
+
+    // Загрузка ID последнего курса из хранилища
+    const savedLastCourse = localStorage.getItem('last_course_id');
+    if (savedLastCourse) setLastCourseId(savedLastCourse);
   }, []);
+
+  useEffect(() => {
+    const pathParts = location.pathname.split('/');
+    // Проверяем путь: /app/courses/:id
+    // pathParts будет ["", "app", "courses", "{id}"]
+    if (pathParts.length === 4 && pathParts[2] === 'courses') {
+      const courseId = pathParts[3];
+      
+      // Сохраняем, только если это реальный ID (не dashboard и не пустой)
+      if (courseId && courseId !== 'dashboard' && courseId !== 'admin') {
+        localStorage.setItem('last_course_id', courseId);
+        setLastCourseId(courseId);
+      }
+    }
+  }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -21,18 +42,14 @@ const AppLayout = () => {
   };
 
   const isActive = (path) => location.pathname === path;
-  
-  // Условие: показывать "Мое обучение" только если мы в разделе курсов 
-  // (например, на странице списка курсов или внутри конкретного курса)
-  const isCourseContext = location.pathname.includes('/courses') || location.pathname.includes('/learn');
 
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
       
-      {/* --- HEADER --- */}
+      {/* HEADER */}
       <header className="h-20 border-b border-slate-100 flex items-center justify-between px-8 shrink-0 bg-white z-[70]">
         
-        {/* LEFT: Logo & Back */}
+        {/* LEFT SECTION */}
         <div className="flex items-center gap-6">
           <button 
             onClick={() => navigate(-1)} 
@@ -53,53 +70,52 @@ const AppLayout = () => {
           </Link>
         </div>
 
-        {/* CENTER NAVIGATION: Context-Aware */}
-       <nav className="hidden lg:flex items-center gap-1 bg-slate-50 p-1 rounded-2xl border border-slate-100">
-  {/* Личный кабинет */}
-  <Link 
-    to="/app/dashboard" 
-    className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-      isActive('/app/dashboard') 
-        ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
-        : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
-    }`}
-  >
-    <LayoutGrid size={14} className={isActive('/app/dashboard') ? 'text-blue-600' : 'text-slate-400'} /> 
-    Личный кабинет
-  </Link>
+        {/* CENTER NAVIGATION */}
+        <nav className="hidden lg:flex items-center gap-1 bg-slate-50 p-1 rounded-2xl border border-slate-100">
+          <Link 
+            to="/app/dashboard" 
+            className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+              isActive('/app/dashboard') 
+                ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
+                : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+            }`}
+          >
+            <LayoutGrid size={14} className={isActive('/app/dashboard') ? 'text-blue-600' : 'text-slate-400'} /> 
+            Кабинет
+          </Link>
 
-  {/* Все курсы */}
-  <Link 
-    to="/app/courses" 
-    className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-      isActive('/app/courses') 
-        ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
-        : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
-    }`}
-  >
-    <BookOpen size={14} className={isActive('/app/courses') ? 'text-blue-600' : 'text-slate-400'} /> 
-    Все курсы
-  </Link>
+          <Link 
+            to="/courses" 
+            className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+              isActive('/courses') 
+                ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
+                : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+            }`}
+          >
+            <BookOpen size={14} className={isActive('/courses') ? 'text-blue-600' : 'text-slate-400'} /> 
+            Все курсы
+          </Link>
 
-  {/* Условный рендеринг: Моё обучение */}
-  {isCourseContext && (
-    <>
-      <div className="w-px h-4 bg-slate-200 mx-1" />
-      <Link 
-        to="/app/my-learning" 
-        className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all animate-in fade-in slide-in-from-left-2 flex items-center gap-2 ${
-          location.pathname.includes('/my-learning') || location.pathname.includes('/learn')
-            ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' 
-            : 'bg-blue-50 text-blue-600 hover:bg-blue-100/80'
-        }`}
-      >
-        <GraduationCap size={15} /> 
-        Моё обучение
-      </Link>
-    </>
-  )}
-</nav>
-        {/* RIGHT: Actions */}
+          {/* УСЛОВИЕ: Отображать только если lastCourseId существует в localStorage */}
+          {lastCourseId && (
+            <>
+              <div className="w-px h-4 bg-slate-200 mx-1" />
+              <Link 
+                to={`/app/courses/${lastCourseId}`} 
+                className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                  location.pathname === `/app/courses/${lastCourseId}`
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' 
+                    : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                }`}
+              >
+                <GraduationCap size={15} /> 
+                Последний курс
+              </Link>
+            </>
+          )}
+        </nav>
+
+        {/* RIGHT SECTION */}
         <div className="flex items-center gap-3">
           <button className="p-2.5 text-slate-400 hover:text-slate-900 transition-colors relative">
             <Bell size={20} />
@@ -115,22 +131,18 @@ const AppLayout = () => {
               )}
             </button>
             
-            {/* DROP-DOWN */}
             <div className="absolute right-0 top-full pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-2 group-hover:translate-y-0 z-[100]">
               <div className="w-64 bg-white border border-slate-100 rounded-[1.5rem] shadow-xl p-2">
                 <div className="px-4 py-3 mb-1">
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Аккаунт</p>
                   <p className="text-sm font-bold text-slate-900 truncate">{user?.name || 'Студент'}</p>
                 </div>
-
                 <div className="space-y-1">
                   <Link to="/profile/settings" className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-xl transition-colors">
                     <Settings size={16} className="text-slate-400" />
                     <span className="text-[11px] font-bold uppercase text-slate-600">Настройки</span>
                   </Link>
-                  
                   <div className="h-px bg-slate-50 mx-2 my-1" />
-                  
                   <button 
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 text-red-500 rounded-xl transition-colors"
@@ -145,8 +157,7 @@ const AppLayout = () => {
         </div>
       </header>
 
-      {/* CONTENT */}
-      <main className="flex-1 overflow-y-auto bg-white">
+      <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
         <Outlet />
       </main>
     </div>

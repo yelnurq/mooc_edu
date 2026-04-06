@@ -1,63 +1,61 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LogIn, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom'; // Добавили Link
+import { LogIn, Mail, Lock, Eye, EyeOff, Loader2, UserPlus } from 'lucide-react';
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Состояния для полей
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-  let formattedEmail = email.trim();
-  if (formattedEmail && !formattedEmail.includes('@')) {
-    formattedEmail = `${formattedEmail}@kaztbu.edu.kz`;
-  }
-
-  try {
-    const response = await fetch('http://localhost:8000/api/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({ email: formattedEmail, password }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      // ИСПРАВЛЕНИЕ: data.access_token — это уже сама строка токена
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-     
-      const role = data.user.role;
-      const adminRoles = ['super_admin', 'academic_office', 'dean', 'head_of_dept'];
-
-      if (adminRoles.includes(role)) {
-        navigate('/admin');
-      } else {
-        navigate('/dashboard');
-      }
-    } else {
-      setError(data.message || 'Ошибка авторизации.');
+    let formattedEmail = email.trim();
+    if (formattedEmail && !formattedEmail.includes('@')) {
+      formattedEmail = `${formattedEmail}@kaztbu.edu.kz`;
     }
-    
-  } catch (err) {
-    setError('Не удалось связаться с сервером.');
-  } finally {
-    setLoading(false);
-  }
-};
+
+    try {
+      const response = await fetch('http://localhost:8000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ email: formattedEmail, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        const role = data.user.role;
+        const adminRoles = ['super_admin', 'academic_office', 'dean', 'head_of_dept'];
+
+        if (adminRoles.includes(role)) {
+          navigate('/admin');
+        } else {
+          navigate('/dashboard');
+        }
+      } else {
+        setError(data.message || 'Ошибка авторизации.');
+      }
+      
+    } catch (err) {
+      setError('Не удалось связаться с сервером.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 font-sans">
@@ -136,6 +134,17 @@ const LoginPage = () => {
             </button>
           </form>
 
+          {/* REGISTER LINK */}
+          <div className="mt-8 pt-8 border-t border-slate-50 flex flex-col items-center">
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-4">Нет аккаунта?</p>
+            <Link 
+              to="/register" 
+              className="flex items-center gap-2 text-slate-900 hover:text-blue-600 font-black text-xs uppercase tracking-tighter transition-colors group"
+            >
+              <UserPlus size={16} className="text-blue-400 group-hover:scale-110 transition-transform" />
+              Создать аккаунт сотрудника
+            </Link>
+          </div>
         </div>
 
         <p className="text-center mt-10 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] opacity-50">

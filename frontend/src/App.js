@@ -9,6 +9,7 @@ import AppLayout from './components/Layouts/AppLayout';
 import LoginPage from './pages/Auth/Login';
 import Dashboard from './pages/UserPanel/Dashboard/Dashboard';
 import AdminEnrollment from './pages/AdminPanel/Courses/Enroll/Enroll';
+import RegisterPage from './pages/Auth/Register';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
       </Route>
           {/* Отдельные маршруты без общего лейаута (например, логин) */}
           <Route path="/login" element={<LoginPage/>} />
+          <Route path="/register" element={<RegisterPage/>} />
 
           {/* 404 Страница */}
           <Route path="*" element={<div className="p-10 text-center font-bold">404: Страница не найдена</div>} />
