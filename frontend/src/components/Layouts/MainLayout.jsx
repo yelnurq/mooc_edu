@@ -77,7 +77,7 @@ const MainLayout = () => {
           <div className="flex items-center gap-12">
             <Link to="/" className="flex items-center gap-3">
               <div className="w-10 h-10">
-                <img src="images/icons/logo.png" alt="Logo" className="h-full w-full object-contain" />
+                <img src="/images/icons/logo.png" alt="Logo" className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col leading-none">
                 <span className="font-black text-xl tracking-tighter text-slate-800 uppercase">

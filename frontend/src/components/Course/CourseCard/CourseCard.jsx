@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, VolumeX, Heart, ArrowRight, Clock, BookOpen } from 'lucide-react';
-
+import { Link } from 'react-router-dom';
 export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
   const [showPreview, setShowPreview] = useState(false);
   const timeoutRef = useRef(null);
@@ -80,7 +80,7 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
 
       {/* --- Content Area --- */}
       <div className="p-7 pt-2 flex flex-col flex-1">
-        <div className="flex items-center gap-2 mb-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+        <div className="flex items-center gap-2 mb-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">       
             <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{course.category}</span>
             <span className="text-slate-300">•</span>
             <span>{course.level}</span>
@@ -100,9 +100,15 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
             <div className="flex items-center gap-1.5"><Clock size={14} className="text-blue-500" /> {course.duration}ч</div>
             <div className="flex items-center gap-1.5"><BookOpen size={14} className="text-blue-500" /> {course.lessons}</div>
           </div>
-          <button className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-blue-600 transition-all shadow-lg shadow-slate-100 active:scale-90">
-             <ArrowRight size={18} />
-          </button>
+       <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
+          <Link 
+            to={`/courses/${course.id}`}
+            className="flex items-center gap-2 text-blue-600 font-black text-[11px] uppercase tracking-widest group/btn"
+          >
+            Подробнее 
+            <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+          </Link>
+        </div>
         </div>
       </div>
     </div>
