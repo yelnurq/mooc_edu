@@ -84,17 +84,17 @@ const AppLayout = () => {
             Кабинет
           </Link>
 
-          <Link 
-            to="/courses" 
+         <Link 
+            to="/app/settings" 
             className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-              isActive('/courses') 
+                isActive('/app/settings') 
                 ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
                 : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
             }`}
-          >
-            <BookOpen size={14} className={isActive('/courses') ? 'text-blue-600' : 'text-slate-400'} /> 
-            Все курсы
-          </Link>
+            >
+            <Settings size={14} className={isActive('/app/settings') ? 'text-blue-600' : 'text-slate-400'} /> 
+            Настройки
+            </Link>
 
           {/* УСЛОВИЕ: Отображать только если lastCourseId существует в localStorage */}
           {lastCourseId && (

@@ -14,6 +14,12 @@ class Course extends Model {
     {
         return $this->belongsToMany(User::class)->withPivot('progress')->withTimestamps();
     }
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'course_user')
+                    ->withPivot('progress')
+                    ->withTimestamps();
+    }
 public function lessons()
 {
     return $this->hasManyThrough(Lesson::class, Module::class);

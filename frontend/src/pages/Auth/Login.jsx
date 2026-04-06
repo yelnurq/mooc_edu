@@ -44,7 +44,7 @@ const LoginPage = () => {
         if (adminRoles.includes(role)) {
           navigate('/admin');
         } else {
-          navigate('/dashboard');
+          navigate('/app/dashboard');
         }
       } else {
         setError(data.message || 'Ошибка авторизации.');
