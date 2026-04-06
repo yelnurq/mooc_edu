@@ -22,7 +22,7 @@ class AuthController extends Controller
                 'faculty_id' => 'nullable|exists:faculties,id',
                 'department_id' => 'nullable|exists:departments,id',
             ]);
-
+        
             $user = User::create([
                 'name' => $validated['name'],
                 'mobile' => $validated['mobile'],
