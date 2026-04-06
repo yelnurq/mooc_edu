@@ -14,8 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            "token"=> TokenCheck::class,
-        ])
+            "token"=>TokenCheck::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

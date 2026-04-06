@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-
+use Illuminate\Validation\Rules;
 class AuthController extends Controller
 {
     public function register(Request $request)
@@ -16,11 +16,11 @@ class AuthController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'mobile' => 'required|string|max:255',
+                'mobile' => 'nullable|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
-                'faculty_id' => 'required|exists:faculties,id',
-                'department_id' => 'required|exists:departments,id',
+                'faculty_id' => 'nullable|exists:faculties,id',
+                'department_id' => 'nullable|exists:departments,id',
             ]);
 
             $user = User::create([
@@ -41,7 +41,8 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Внутренняя ошибка сервера'
+                'message' => 'Внутренняя ошибка сервера',
+                "debug" => $e->getMessage(),
             ], 422);
         }
     }

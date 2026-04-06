@@ -17,9 +17,9 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->string('mobile')->nullable();
-
-            $table->foreignId("department_id")->nullable()->constrained()->onDelete("cascade");
-            $table->foreignId("faculty_id")->nullable()->constrained()->onDelete("cascade");
+            
+            $table->foreignId("faculty_id")->nullable()->constrained()->onDelete("set null");
+            $table->foreignId("department_id")->nullable()->constrained()->onDelete("set null");
             $table->rememberToken();
             $table->timestamps();
         });
