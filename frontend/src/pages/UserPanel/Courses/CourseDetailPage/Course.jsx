@@ -14,14 +14,15 @@ const CourseDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [openModules, setOpenModules] = useState([0]);
   const [activeContent, setActiveContent] = useState(null); 
+  
+  // Состояние для развертывания описания
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
 
-  // Проверка авторизации (проверяем наличие токена в localStorage)
   const isAuthenticated = !!localStorage.getItem('token');
 
   useEffect(() => {
     const fetchCourseData = async () => {
       try {
-        // Вызываем публичный метод (Backend должен возвращать is_enrolled и is_locked)
         const response = await api.get(`/courses/public/${id}`);
         setCourse(response.data);
       } catch (error) {
@@ -43,12 +44,10 @@ const CourseDetailPage = () => {
     );
   }, [course]);
 
-  // Функция для открытия контента с проверкой доступа
   const handleOpenContent = (content) => {
-    // Если контент из модуля и пользователь не авторизован — отправляем на логин
     if (content.isFromModule && !isAuthenticated) {
       alert("Пожалуйста, войдите в аккаунт или приобретите курс, чтобы просмотреть этот урок.");
-      navigate('/login'); // Перенаправление на страницу входа
+      navigate('/login');
       return;
     }
     setActiveContent(content);
@@ -151,19 +150,48 @@ const CourseDetailPage = () => {
       )}
 
       <div className="bg-slate-900 pt-24 pb-32 px-8 text-white">
-        <div className="max-w-5xl mx-auto">
-          <Link to="/courses" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-8 font-bold text-sm uppercase tracking-widest">
+        <div className="max-w-5xl mx-auto flex flex-col items-center">
+          <Link to="/courses" className="self-start flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-8 font-bold text-sm uppercase tracking-widest">
             <ArrowLeft size={16} /> Назад к курсам
           </Link>
-          <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight">{course?.title}</h1>
-          <p className="text-slate-400 text-lg max-w-2xl font-medium leading-relaxed text-center">{course?.description || "Описание курса находится в разработке."}</p>
+          <h1 className="text-4xl md:text-6xl font-black mb-6 leading-tight text-center">{course?.title}</h1>
+          
+          {/* Улучшенное описание с эффектом развертывания */}
+          <div className="relative w-full max-w-2xl">
+            <div 
+              className={`text-slate-400 text-lg font-medium leading-relaxed text-center transition-all duration-500 ease-in-out overflow-hidden ${
+                isDescExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-24 opacity-80'
+              }`}
+            >
+              {course?.description || "Описание курса находится в разработке."}
+            </div>
+            
+            {/* Градиент для скрытия текста */}
+            {!isDescExpanded && course?.description?.length > 150 && (
+              <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none" />
+            )}
+
+            {/* Кнопка управления */}
+            {course?.description?.length > 150 && (
+              <button 
+                onClick={() => setIsDescExpanded(!isDescExpanded)}
+                className="mt-4 mx-auto flex items-center gap-2 text-blue-400 hover:text-blue-300 font-black text-[10px] uppercase tracking-widest transition-all"
+              >
+                {isDescExpanded ? (
+                  <>Свернуть <ChevronUp size={14} /></>
+                ) : (
+                  <>Читать полностью <ChevronDown size={14} /></>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 -mt-16">
         <div className="grid grid-cols-1 gap-12">
           
-          {/* --- ОБЩИЕ МАТЕРИАЛЫ (ВСЕГДА ДОСТУПНЫ) --- */}
+          {/* --- ОБЩИЕ МАТЕРИАЛЫ --- */}
           {course?.resources?.length > 0 && (
             <div>
               <h2 className="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] ml-4 mb-4 flex items-center gap-2">
@@ -178,7 +206,7 @@ const CourseDetailPage = () => {
                       url: res.type === 'pdf' ? res.file_url : res.video_url, 
                       title: res.title, 
                       type: res.type,
-                      isFromModule: false // Бесплатный контент
+                      isFromModule: false 
                     })}
                   >
                     <div className="flex items-center gap-4">
@@ -201,7 +229,7 @@ const CourseDetailPage = () => {
             </div>
           )}
 
-          {/* --- СПИСОК МОДУЛЕЙ (ЗАЩИЩЕННЫЙ) --- */}
+          {/* --- СПИСОК МОДУЛЕЙ --- */}
           <div className="space-y-4">
             <h2 className="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] ml-4 mb-4 flex items-center gap-2">
               <Layout size={14} /> Учебная программа
