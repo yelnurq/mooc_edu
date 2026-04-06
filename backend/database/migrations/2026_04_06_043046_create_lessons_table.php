@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('lessons', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('module_id')->constrained()->onDelete('cascade');
+            $table->string('title');
+            $table->enum('type', ['pdf', 'video']); // Тип контента
+            $table->string('file_path')->nullable(); // Путь к PDF в хранилище
+            $table->string('video_url')->nullable(); // Ссылка на YouTube/Vimeo
+            $table->integer('order')->default(0);
             $table->timestamps();
         });
     }
