@@ -310,51 +310,116 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
       ))}
     </div>
 
-    {/* --- НОВЫЙ БЛОК: Сетка остальных категорий --- */}
-    <motion.div 
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      className="bg-white border border-slate-200 rounded-[3rem] p-12 shadow-sm"
-    >
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
-        <div>
-          <h4 className="text-2xl font-black text-slate-900 mb-2">И еще десятки направлений</h4>
-          <p className="text-slate-500 font-medium text-sm">Найдите свою нишу среди сотен узкоспециализированных тем</p>
-        </div>
-        <Link to="/courses" className="px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-indigo-600 transition-all">
-          Весь список категорий
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {[
-          'Маркетинг', 'Бизнес', 'Музыка', 'Фотография', 
-          'Языки', 'Психология', 'Финансы', 'Кулинария',
-          'Менеджмент', 'Архитектура', 'Право', 'Биология',
-          'Кинематограф', 'Социология', 'Физика'
-        ].map((cat) => (
-          <Link 
-            key={cat}
-            to={`/courses?category=${cat}`}
-            className="flex items-center justify-between p-4 bg-slate-50 rounded-xl hover:bg-white hover:shadow-md hover:ring-1 hover:ring-indigo-100 transition-all group"
-          >
-            <span className="font-bold text-slate-700 text-sm">{cat}</span>
-            <ArrowRight size={14} className="text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
-          </Link>
-        ))}
-        
-        {/* Специальная плитка "Больше" */}
-        <Link 
-          to="/courses"
-          className="flex items-center justify-center p-4 bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all"
-        >
-          <span className="font-bold text-white text-sm">И еще 12+</span>
-        </Link>
-      </div>
-    </motion.div>
 
   </div>
 </section>
+{/* --- ОБЪЕДИНЕННЫЙ БЛОК: КАТЕГОРИИ + CTA --- */}
+    <section className="relative mt-20">
+      {/* 1. Сетка дополнительных категорий */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="mb-16 p-12"
+      >
+        <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-8 h-1 bg-indigo-600 rounded-full" />
+              <span className="text-indigo-600 font-black uppercase text-[10px] tracking-[0.2em]">Разнообразие</span>
+            </div>
+            <h4 className="text-4xl font-black text-slate-900 tracking-tight">И еще десятки направлений</h4>
+          </div>
+          <p className="text-slate-500 font-medium max-w-md md:text-right">
+            Найдите свою нишу среди сотен узкоспециализированных тем, от квантовой физики до кулинарного искусства.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+          {[
+            'Маркетинг', 'Бизнес', 'Музыка', 'Фотография', 
+            'Языки', 'Психология', 'Финансы', 'Кулинария',
+            'Менеджмент', 'Архитектура', 'Право', 'Биология',
+            'Кинематограф', 'Социология', 'Физика'
+          ].map((cat) => (
+            <Link 
+              key={cat}
+              to={`/courses?category=${cat}`}
+              className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-500/5 transition-all group"
+            >
+              <span className="font-bold text-slate-600 text-xs group-hover:text-indigo-600">{cat}</span>
+              <ArrowRight size={12} className="text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+            </Link>
+          ))}
+          
+          <Link 
+            to="/courses"
+            className="flex items-center justify-center p-4 bg-slate-900 rounded-2xl hover:bg-indigo-600 transition-all group"
+          >
+            <span className="font-bold text-white text-xs mr-2">Все категории</span>
+            <LayoutGrid size={14} className="text-white/50 group-hover:rotate-90 transition-transform" />
+          </Link>
+        </div>
+      </motion.div>
+
+      {/* 2. Акцентный CTA блок */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true }}
+        className="relative bg-indigo-600 rounded-[3rem] p-12 lg:p-20 overflow-hidden shadow-2xl shadow-indigo-200"
+      >
+        {/* Декоративные элементы */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-[100px] -mr-48 -mt-48 animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400/20 rounded-full blur-3xl -ml-32 -mb-32" />
+        
+        <div className="relative z-10 flex flex-col items-center text-center max-w-3xl mx-auto">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full mb-8">
+            <span className="text-white text-[10px] font-black uppercase tracking-widest">Присоединяйтесь к сообществу</span>
+          </div>
+          
+          <h2 className="text-4xl lg:text-6xl font-black text-white mb-8 tracking-tighter leading-[0.9]">
+            Готовы совершить <br /> 
+            <span className="text-yellow-400 italic">интеллектуальный прыжок?</span>
+          </h2>
+          
+          <p className="text-indigo-100 mb-12 text-lg opacity-90 font-medium leading-relaxed">
+            Присоединяйтесь к 50,000+ студентов со всего мира. Начните обучение сегодня и получите доступ к закрытому чату экспертов.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+            <Link 
+              to="/register" 
+              className="w-full sm:w-auto px-12 py-6 bg-yellow-400 text-indigo-900 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-white hover:scale-105 transition-all shadow-xl shadow-black/10"
+            >
+              Создать аккаунт бесплатно
+            </Link>
+            <Link 
+              to="/courses" 
+              className="w-full sm:w-auto px-12 py-6 bg-indigo-700/50 text-white border border-indigo-400/30 backdrop-blur-sm rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-indigo-500 transition-all"
+            >
+              В каталог курсов
+            </Link>
+          </div>
+
+          <div className="mt-10 flex items-center gap-4">
+            <div className="flex -space-x-3">
+              {[1,2,3,4].map(i => (
+                <img 
+                  key={i}
+                  className="w-8 h-8 rounded-full border-2 border-indigo-600" 
+                  src={`https://ui-avatars.com/api/?name=User+${i}&background=random`} 
+                  alt="Student" 
+                />
+              ))}
+            </div>
+            <span className="text-indigo-200 text-xs font-bold tracking-tight">
+              +42 человека присоединились сегодня
+            </span>
+          </div>
+        </div>
+      </motion.div>
+    </section>
     </div>
   );
 };
