@@ -5,58 +5,99 @@ namespace Database\Seeders;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\Lesson;
+use App\Models\CourseResource;
 use Illuminate\Database\Seeder;
 
 class CourseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Создаем первый курс
-        $course1 = Course::create([
-            'title' => 'Mastering Laravel 11: Архитектура систем',
-            'description' => 'Глубокое погружение в разработку современных веб-приложений на PHP.',
+        // 1. СОЗДАНИЕ ГЛАВНОГО КУРСА
+        $course = Course::create([
+            'title' => 'Профессия: Fullstack Developer на Laravel 11 & React',
+            'description' => 'Максимально глубокий курс по современной веб-разработке. От архитектуры БД до деплоя высоконагруженных систем.',
         ]);
 
-        // Модуль 1 для Курса 1
-        $m1 = $course1->modules()->create(['title' => 'Основы и установка', 'order' => 1]);
-        $m1->lessons()->createMany([
+        // 2. ОБЩИЕ РЕСУРСЫ КУРСА (Шапка)
+        // 1 Промо-ролик + 4 PDF документа
+        $course->resources()->createMany([
             [
-                'title' => 'Введение в Laravel 11',
+                'title' => 'Трейлер и обзор курса',
                 'type' => 'video',
                 'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
                 'order' => 1
             ],
             [
-                'title' => 'Конспект: Жизненный цикл запроса',
+                'title' => 'Полный учебный план (Syllabus)',
                 'type' => 'pdf',
-                'file_path' => 'lessons/sample_lecture.pdf', // Файл должен лежать в storage/app/public/lessons/
+                'file_path' => 'courses/resources/syllabus_full.pdf',
                 'order' => 2
+            ],
+            [
+                'title' => 'Список рекомендуемого ПО и литературы',
+                'type' => 'pdf',
+                'file_path' => 'courses/resources/setup_guide.pdf',
+                'order' => 3
+            ],
+            [
+                'title' => 'Гайд по карьере и подготовке резюме',
+                'type' => 'pdf',
+                'file_path' => 'courses/resources/career_roadmap.pdf',
+                'order' => 4
+            ],
+            [
+                'title' => 'Шаблон дипломного проекта',
+                'type' => 'pdf',
+                'file_path' => 'courses/resources/diploma_template.pdf',
+                'order' => 5
             ],
         ]);
 
-        // Модуль 2 для Курса 1
-        $m2 = $course1->modules()->create(['title' => 'Работа с БД и Eloquent', 'order' => 2]);
-        $m2->lessons()->create([
-            'title' => 'Связи один-ко-многим',
-            'type' => 'video',
-            'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-            'order' => 1
-        ]);
+        // 3. ЗАПОЛНЕНИЕ 10 МОДУЛЕЙ (По 4 видео-лекции в каждом)
+        $modulesData = [
+            'Окружение и Docker' => 'Настройка рабочего окружения для командной разработки.',
+            'Основы Laravel 11' => 'Маршрутизация, Контроллеры и Blade.',
+            'Eloquent ORM Глубокое погружение' => 'Сложные связи, оптимизация запросов и коллекции.',
+            'Безопасность и Auth' => 'Sanctum, JWT, политики доступа и роли.',
+            'API Development' => 'Создание RESTful API, ресурсы и версионирование.',
+            'Frontend: React Basics' => 'Компоненты, хуки и состояние приложения.',
+            'State Management' => 'Работа с Redux Toolkit и React Query.',
+            'Real-time & WebSockets' => 'Laravel Echo, Pusher и чаты в реальном времени.',
+            'Тестирование' => 'Unit, Feature и E2E тесты на Pest и Cypress.',
+            'Деплой и CI/CD' => 'GitHub Actions, Docker Compose и работа с сервером.',
+        ];
 
-        // 2. Создаем второй курс
-        $course2 = Course::create([
-            'title' => 'React + Next.js: Полный гид по SSR',
-            'description' => 'Изучаем серверный рендеринг и оптимизацию React приложений.',
-        ]);
+        $mOrder = 1;
+        foreach ($modulesData as $title => $desc) {
+            $module = $course->modules()->create([
+                'title' => $title,
+                'order' => $mOrder++
+            ]);
 
-        $m3 = $course2->modules()->create(['title' => 'Маршрутизация App Router', 'order' => 1]);
-        $m3->lessons()->create([
-            'title' => 'Лекция: Архитектура Next.js',
-            'type' => 'pdf',
-            'file_path' => 'lessons/nextjs_intro.pdf',
-            'order' => 1
-        ]);
+            // Добавляем по 4 урока в каждый модуль
+            for ($i = 1; $i <= 4; $i++) {
+                $module->lessons()->create([
+                    'title' => "Урок $i. " . $this->getLessonTitle($title, $i),
+                    'type' => 'video',
+                    'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                    'order' => $i
+                ]);
+            }
+        }
 
-        $this->command->info('База данных успешно заполнена курсами!');
+        $this->command->info('Курс-гигант успешно создан: 10 модулей, 40 уроков и 5 ресурсов!');
+    }
+
+    /**
+     * Генерация реалистичных названий для уроков
+     */
+    private function getLessonTitle($module, $num) {
+        $titles = [
+            1 => 'Теоретическое введение и концепции',
+            2 => 'Практическая настройка и первый код',
+            3 => 'Продвинутые техники и приемы',
+            4 => 'Разбор ошибок и домашнее задание',
+        ];
+        return $titles[$num];
     }
 }

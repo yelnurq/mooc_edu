@@ -11,20 +11,45 @@ use Illuminate\Support\Facades\Storage;
 class CourseController extends Controller
 {
     // Получить курс со всеми модулями и уроками
-    public function show($id)
-    {
-        $course = Course::with('modules.lessons')->find($id);
-        
-        if (!$course) return response()->json(['message' => 'Курс не найден'], 404);
+    // В методе show и index добавляем загрузку ресурсов
+public function show($id)
+{
+    // Загружаем курс вместе с модулями и ОБЩИМИ ресурсами
+    $course = Course::with(['modules.lessons', 'resources'])->find($id);
+    
+    if (!$course) return response()->json(['message' => 'Не найден'], 404);
 
-        // Преобразуем путь силлабуса в полный URL для фронтенда
-        if ($course->syllabus_path) {
-            $course->syllabus_url = asset('storage/' . $course->syllabus_path);
+    // Превращаем пути в URL для всех ресурсов
+    $course->resources->transform(function ($resource) {
+        if ($resource->type === 'pdf') {
+            $resource->file_url = asset('storage/' . $resource->file_path);
         }
+        return $resource;
+    });
 
-        return response()->json($course);
+    return response()->json($course);
+}
+
+// Новый метод для добавления общего ресурса
+public function addResource(Request $request, $courseId)
+{
+    $request->validate([
+        'title' => 'required|string',
+        'type'  => 'required|in:pdf,video',
+        'file'  => 'required_if:type,pdf|file|mimes:pdf|max:20480',
+        'video_url' => 'required_if:type,video|url',
+    ]);
+
+    $course = Course::findOrFail($courseId);
+    $data = $request->only(['title', 'type', 'video_url', 'order']);
+
+    if ($request->hasFile('file') && $request->type === 'pdf') {
+        $data['file_path'] = $request->file('file')->store('courses/resources', 'public');
     }
 
+    $resource = $course->resources()->create($data);
+    return response()->json($resource, 201);
+}
     /**
      * Получить список всех курсов
      */
