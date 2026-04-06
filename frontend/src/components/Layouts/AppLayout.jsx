@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, Bell, LogOut, Sparkles, 
-  Settings, GraduationCap, User, LayoutGrid, BookOpen
+  Settings, GraduationCap, User, LayoutGrid
 } from 'lucide-react';
 
 const AppLayout = () => {
@@ -12,23 +12,17 @@ const AppLayout = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Загрузка данных пользователя
     const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
 
-    // Загрузка ID последнего курса из хранилища
     const savedLastCourse = localStorage.getItem('last_course_id');
     if (savedLastCourse) setLastCourseId(savedLastCourse);
   }, []);
 
   useEffect(() => {
     const pathParts = location.pathname.split('/');
-    // Проверяем путь: /app/courses/:id
-    // pathParts будет ["", "app", "courses", "{id}"]
     if (pathParts.length === 4 && pathParts[2] === 'courses') {
       const courseId = pathParts[3];
-      
-      // Сохраняем, только если это реальный ID (не dashboard и не пустой)
       if (courseId && courseId !== 'dashboard' && courseId !== 'admin') {
         localStorage.setItem('last_course_id', courseId);
         setLastCourseId(courseId);
@@ -42,6 +36,7 @@ const AppLayout = () => {
   };
 
   const isActive = (path) => location.pathname === path;
+  const isSettingsActive = location.state?.activeTab === 'settings';
 
   return (
     <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
@@ -49,7 +44,6 @@ const AppLayout = () => {
       {/* HEADER */}
       <header className="h-20 border-b border-slate-100 flex items-center justify-between px-8 shrink-0 bg-white z-[70]">
         
-        {/* LEFT SECTION */}
         <div className="flex items-center gap-6">
           <button 
             onClick={() => navigate(-1)} 
@@ -57,9 +51,7 @@ const AppLayout = () => {
           >
             <ArrowLeft size={18} />
           </button>
-          
           <div className="h-8 w-px bg-slate-100 hidden md:block" />
-          
           <Link to="/" className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center group-hover:bg-blue-600 transition-colors shadow-sm">
               <Sparkles size={18} className="text-white fill-white" />
@@ -74,29 +66,30 @@ const AppLayout = () => {
         <nav className="hidden lg:flex items-center gap-1 bg-slate-50 p-1 rounded-2xl border border-slate-100">
           <Link 
             to="/app/dashboard" 
+            state={{ activeTab: 'overview' }}
             className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-              isActive('/app/dashboard') 
+              isActive('/app/dashboard') && !isSettingsActive
                 ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
                 : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
             }`}
           >
-            <LayoutGrid size={14} className={isActive('/app/dashboard') ? 'text-blue-600' : 'text-slate-400'} /> 
+            <LayoutGrid size={14} className={isActive('/app/dashboard') && !isSettingsActive ? 'text-blue-600' : 'text-slate-400'} /> 
             Кабинет
           </Link>
 
-         <Link 
-            to="/app/settings" 
+          <Link 
+            to="/app/dashboard" 
+            state={{ activeTab: 'settings' }} 
             className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-                isActive('/app/settings') 
+              isSettingsActive 
                 ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
                 : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
             }`}
-            >
-            <Settings size={14} className={isActive('/app/settings') ? 'text-blue-600' : 'text-slate-400'} /> 
+          >
+            <Settings size={14} className={isSettingsActive ? 'text-blue-600' : 'text-slate-400'} /> 
             Настройки
-            </Link>
+          </Link>
 
-          {/* УСЛОВИЕ: Отображать только если lastCourseId существует в localStorage */}
           {lastCourseId && (
             <>
               <div className="w-px h-4 bg-slate-200 mx-1" />
@@ -108,8 +101,7 @@ const AppLayout = () => {
                     : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
                 }`}
               >
-                <GraduationCap size={15} /> 
-                Последний курс
+                <GraduationCap size={15} /> Последний курс
               </Link>
             </>
           )}
@@ -138,17 +130,17 @@ const AppLayout = () => {
                   <p className="text-sm font-bold text-slate-900 truncate">{user?.name || 'Студент'}</p>
                 </div>
                 <div className="space-y-1">
-                  <Link to="/profile/settings" className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-xl transition-colors">
+                  <Link 
+                    to="/app/dashboard" 
+                    state={{ activeTab: 'settings' }} 
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-xl transition-colors"
+                  >
                     <Settings size={16} className="text-slate-400" />
                     <span className="text-[11px] font-bold uppercase text-slate-600">Настройки</span>
                   </Link>
                   <div className="h-px bg-slate-50 mx-2 my-1" />
-                  <button 
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 text-red-500 rounded-xl transition-colors"
-                  >
-                    <LogOut size={16} />
-                    <span className="text-[11px] font-bold uppercase">Выйти</span>
+                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 text-red-500 rounded-xl transition-colors">
+                    <LogOut size={16} /> <span className="text-[11px] font-bold uppercase">Выйти</span>
                   </button>
                 </div>
               </div>

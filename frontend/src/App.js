@@ -11,6 +11,7 @@ import Dashboard from './pages/UserPanel/Dashboard/Dashboard';
 import AdminEnrollment from './pages/AdminPanel/Courses/Enroll/Enroll';
 import RegisterPage from './pages/Auth/Register';
 import './App.css';
+import SettingsPage from './pages/UserPanel/Settings/Settings';
 
 // Локальный компонент для защиты роутов
 const ProtectedRoute = () => {
@@ -37,6 +38,7 @@ function App() {
             <Route element={<AppLayout />}>
               <Route path="/app/courses/:id" element={<CourseAppPage />} />
               <Route path="/app/dashboard" element={<Dashboard />} />
+              <Route path="/app/settings" element={<SettingsPage />} />
               <Route path="/app/admin/enroll" element={<AdminEnrollment />} />
             </Route>
           </Route>
