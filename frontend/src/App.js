@@ -15,6 +15,8 @@ import SettingsPage from './pages/UserPanel/Settings/Settings';
 import AdminLayout from './components/Layouts/AdminLayout';
 import UsersManagement from './pages/AdminPanel/Users/UsersManagement';
 import LdapManagement from './pages/AdminPanel/LdapManagement/LdapManagement';
+import CategoryManagement from './pages/AdminPanel/Settings/Settings';
+import CourseManagement from './components/Course/Courses/CourseManagement';
 
 // Локальный компонент для защиты роутов
 const ProtectedRoute = () => {
@@ -48,7 +50,9 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<div>asd</div>} />
-              <Route path="/admin/users" element={<UsersManagement />} />
+              <Route path="/admin/settings" element={<CategoryManagement />} />
+              <Route path="/admin/courses" element={<CourseManagement />} />
+              <Route path="/admin/users/" element={<UsersManagement />} />
               <Route path="/admin/users/ldap" element={<LdapManagement />} />
               <Route path="/admin/enroll" element={<AdminEnrollment />} />
             </Route>

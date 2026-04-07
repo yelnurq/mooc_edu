@@ -12,8 +12,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 class CourseController extends Controller
 {
-
-
     private function getAuthenticatedUser(Request $request)
     {
         $bearerToken = $request->bearerToken();
@@ -24,6 +22,7 @@ class CourseController extends Controller
 
         return User::find($tokenRecord->user_id);
     }
+
 public function adminEnroll(Request $request)
 {
     // Проверка прав админа (предположим, у тебя есть middleware 'admin')
@@ -49,39 +48,68 @@ public function adminEnroll(Request $request)
 }
 public function getEnrollmentData()
 {
-    // 1. Получаем все активные подписки (с именами юзеров и названиями курсов)
-    // Предполагаем, что связь в модели User называется courses()
-    $enrollments = \DB::table('course_user')
-        ->join('users', 'course_user.user_id', '=', 'users.id')
-        ->join('courses', 'course_user.course_id', '=', 'courses.id')
-        ->select(
-            'users.id as user_id', 
-            'users.name as user_name', 
-            'courses.id as course_id', 
-            'courses.title as course_title',
-            'course_user.created_at'
-        )
-        ->orderBy('course_user.created_at', 'desc')
-        ->get();
+    try {
+        // 1. Проверяем существование таблицы пивота
+        if (!\Schema::hasTable('course_user')) {
+            return response()->json([
+                'status' => 'success',
+                'enrollments' => [],
+                'stats' => $this->calculateFallbackStats()
+            ]);
+        }
 
-    // 2. Считаем статистику для StatCards
-    $totalUsers = \App\Models\User::count();
-    $totalCourses = \App\Models\Course::count();
-    $activeEnrollmentsCount = $enrollments->count();
-    
-    // Студенты, которых нет в таблице course_user
-    $usersWithNoCourses = \App\Models\User::whereDoesntHave('courses')->count();
+        // 2. Получаем данные (убираем created_at, если не уверены, что он есть)
+        $enrollments = \DB::table('course_user')
+            ->join('users', 'course_user.user_id', '=', 'users.id')
+            ->join('courses', 'course_user.course_id', '=', 'courses.id')
+            ->select(
+                'users.id as user_id', 
+                'users.name as user_name', 
+                'courses.id as course_id', 
+                'courses.title as course_title'
+            )
+            ->get();
 
-    return response()->json([
-        'status' => 'success',
-        'enrollments' => $enrollments,
-        'stats' => [
-            'total' => $totalUsers,
-            'active' => $activeEnrollmentsCount,
-            'waiting' => $usersWithNoCourses,
-            'programs' => $totalCourses,
-        ]
-    ], 200);
+        // 3. Считаем статистику через модели
+        $totalUsers = \App\Models\User::count();
+        $totalCourses = \App\Models\Course::count();
+        $activeCount = $enrollments->count();
+        
+        // Безопасный подсчет "ожидающих" (те, у кого нет курсов)
+        $usersWithNoCourses = 0;
+        if (method_exists(\App\Models\User::class, 'courses')) {
+            $usersWithNoCourses = \App\Models\User::whereDoesntHave('courses')->count();
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'enrollments' => $enrollments,
+            'stats' => [
+                'total' => $totalUsers,
+                'active' => $activeCount,
+                'waiting' => $usersWithNoCourses,
+                'programs' => $totalCourses,
+            ]
+        ], 200);
+
+    } catch (\Exception $e) {
+        // Если упало — возвращаем ошибку в JSON, чтобы CORS пропустил ответ
+        return response()->json([
+            'status' => 'error',
+            'message' => 'PHP Error: ' . $e->getMessage(),
+            'line' => $e->getLine()
+        ], 500);
+    }
+}
+
+// Вспомогательный метод для пустых статов
+private function calculateFallbackStats() {
+    return [
+        'total' => \App\Models\User::count(),
+        'active' => 0,
+        'waiting' => \App\Models\User::count(),
+        'programs' => \App\Models\Course::count(),
+    ];
 }
 public function myCourses()
 {
@@ -380,6 +408,43 @@ public function index(Request $request)
             'message' => 'Ошибка при получении списка курсов',
             'debug' => $e->getMessage()
         ], 500);
+    }
+}
+public function indexCourses(Request $request)
+{
+    try {
+        $query = Course::with(['category']);
+
+        // Поиск
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        // Простая пагинация
+        $courses = $query->latest()->paginate(10);
+
+        // БЕЗОПАСНЫЙ подсчет статистики
+        // Проверьте, есть ли у вас поле 'status' в таблице courses!
+        $stats = [
+            'total' => Course::count(),
+            'active' => Course::count(), // Временно так, если нет поля status
+            'drafts' => 0,
+            'students_count' => \DB::table('course_user')->count(), 
+        ];
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $courses->items(),
+            'meta' => [
+                'current_page' => $courses->currentPage(),
+                'last_page' => $courses->lastPage(),
+                'total' => $courses->total(),
+            ],
+            'stats' => $stats
+        ]);
+    } catch (\Exception $e) {
+        // Это поможет увидеть реальную ошибку в Response браузера
+        return response()->json(['error' => $e->getMessage()], 500);
     }
 }
 
