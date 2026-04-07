@@ -14,6 +14,7 @@ import './App.css';
 import SettingsPage from './pages/UserPanel/Settings/Settings';
 import AdminLayout from './components/Layouts/AdminLayout';
 import UsersManagement from './pages/AdminPanel/Users/UsersManagement';
+import LdapManagement from './pages/AdminPanel/LdapManagement/LdapManagement';
 
 // Локальный компонент для защиты роутов
 const ProtectedRoute = () => {
@@ -49,7 +50,7 @@ function App() {
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<div>asd</div>} />
               <Route path="/admin/users" element={<UsersManagement />} />
-              <Route path="/admin/settings" element={<SettingsPage />} />
+              <Route path="/admin/users/ldap" element={<LdapManagement />} />
               <Route path="/admin/admin/enroll" element={<AdminEnrollment />} />
             </Route>
           </Route>

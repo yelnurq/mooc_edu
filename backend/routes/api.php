@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\LdapController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -17,7 +18,12 @@ Route::post('/login', [AuthController::class, "login"]);
 
 
 Route::middleware(["token"])->group(function(){
-    
+      Route::prefix('admin/ldap')->group(function () {
+            Route::get('/users', [LdapController::class, 'getAllLdapUsers']);
+            Route::post('/import-single', [LdapController::class, 'importSingleUser']);
+            Route::post('/sync-all', [LdapController::class, 'syncAllLdapUsers']);
+        });
+
     
     Route::get('/admin/users', [UserController::class, 'index']);
     
