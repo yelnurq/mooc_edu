@@ -30,14 +30,10 @@ const AdminLayout = () => {
   // 1. Массив всех пунктов меню
   const allMenuItems = [
     { id: 'dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} />, label: 'Дэшборд' },
-    { id: 'dean', path: '/admin/dean', icon: <CopyCheckIcon size={20} />, label: 'Утверждение планов' },
-    { id: 'monitor', path: '/admin/monitor', icon: <MonitorDotIcon size={20} />, label: 'Мониторинг дедлайнов' },
-    { id: 'audit', path: '/admin/audit', icon: <ShieldCheck size={20} />, label: 'Верификация KPI' },
+    { id: 'enroll', path: '/admin/enroll', icon: <CopyCheckIcon size={20} />, label: 'Управление доступами' },
     { id: 'users', path: '/admin/users', icon: <Users size={20} />, label: 'Пользователи' },
     { id: 'ldap', path: '/admin/users/ldap', icon: <Users2 size={20} />, label: 'LDAP Пользователи' },
-    { id: 'assets', path: '/admin/assets', icon: <FileSearch size={20} />, label: 'Репозиторий' },
     { id: 'logs', path: '/admin/logs', icon: <Logs size={20} />, label: 'Логи' },
-    { id: 'faculties', path: '/admin/faculties', icon: <School2Icon size={20} />, label: 'Рейтинг' },
     { id: 'settings', path: '/admin/settings', icon: <Settings size={20} />, label: 'Настройки' },
   ];
 
