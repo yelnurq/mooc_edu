@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 class CourseController extends Controller
 {
     private function getAuthenticatedUser(Request $request)
@@ -495,28 +496,52 @@ public function indexCourses(Request $request)
     }
 }
 
-    // Создать курс (с поддержкой промо и силлабуса)
-    public function store(Request $request)
-    {
-        $v = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'promo_video_url' => 'nullable|url',
-            'syllabus_file' => 'nullable|file|mimes:pdf|max:10240', // PDF до 10Мб
-        ]);
-
-        $data = $request->only(['title', 'description', 'promo_video_url']);
-
-        // Загрузка силлабуса (общего PDF курса)
-        if ($request->hasFile('syllabus_file')) {
-            $data['syllabus_path'] = $request->file('syllabus_file')->store('courses/syllabus', 'public');
+public function store(Request $request)
+{
+    // 1. Предварительная очистка: превращаем пустые строки в реальный null
+    // Это важно для работы правил 'exists' и 'required_if'
+    $data = $request->all();
+    foreach ($data as $key => $value) {
+        if ($value === 'null' || $value === '') {
+            $data[$key] = null;
         }
-
-        $course = Course::create($data);
-
-        return response()->json($course, 201);
     }
 
+    $validated = Validator::make($data, [
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'category_id' => 'nullable|exists:categories,id',
+        'author_type' => 'required|in:user,custom',
+        'author_id' => 'required_if:author_type,user|nullable|exists:users,id',
+        'custom_author_name' => 'required_if:author_type,custom|nullable|string|max:255',
+        'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+    ])->validate();
+
+    // 2. Обработка изображения
+    if ($request->hasFile('image')) {
+        $path = $request->file('image')->store('courses', 'public');
+        $validated['image'] = $path;
+    } else {
+        $validated['image'] = null;
+    }
+
+    // 3. Создание записи
+    $course = Course::create([
+        'title'              => $validated['title'],
+        'description'        => $validated['description'],
+        'category_id'        => $validated['category_id'],
+        'author_id'          => $validated['author_type'] === 'user' ? $validated['author_id'] : null,
+        'custom_author_name' => $validated['author_type'] === 'custom' ? $validated['custom_author_name'] : null,
+        'author_type'        => $validated['author_type'],
+        'image'              => $validated['image'],
+    ]);
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Курс успешно создан',
+        'data' => $course
+    ], 201);
+}
     // Обновить существующий курс (например, добавить промо позже)
     public function update(Request $request, $id)
     {

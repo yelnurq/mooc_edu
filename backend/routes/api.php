@@ -23,7 +23,6 @@ Route::post('/login', [AuthController::class, "login"]);
 
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/courses', [CourseController::class, 'index']);           
-Route::post('/courses', [CourseController::class, 'store']);           // Создать курс
 Route::get('/courses/{id}', [CourseController::class, 'show']);        // Получить всё дерево курса
 Route::get('/courses/public/{id}', [CourseController::class, 'showPublic']);        // Получить всё дерево курса
 Route::post('/courses/{id}/modules', [CourseController::class, 'addModule']); // Добавить модуль
@@ -56,8 +55,8 @@ Route::middleware(["token"])->group(function(){
     Route::post('/lessons/{lesson}/complete', [CourseController::class, 'completeLesson']);
 
 
+Route::post('/admin/courses', [CourseController::class, 'store']);
 
-    // Маршруты (api.php)
 Route::get('/admin/courses/{course}/structure', [CourseController::class, 'getStructure']);
 Route::post('/admin/courses/{course}/modules', [ModuleController::class, 'store']);
 Route::post('/admin/modules/{module}/lessons', [LessonController::class, 'store']);

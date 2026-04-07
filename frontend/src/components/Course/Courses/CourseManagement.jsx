@@ -2,12 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, Plus, BookOpen, Layers, GraduationCap, 
   ChevronRight, Loader2, Trash2, Edit2, X, 
-  Clock, PlayCircle, ArrowRight, Filter, 
-  User, Image as ImageIcon, CheckCircle2, AlertCircle
+  CheckCircle2, Clock, PlayCircle, BarChart3,
+  ArrowRight, Filter, MoreVertical, Globe,
+  User
 } from 'lucide-react';
 import api from '../../../api/axios';
 import { Link } from 'react-router-dom';
-
 // --- ВСПОМОГАТЕЛЬНЫЕ КОМПОНЕНТЫ ---
 
 const StatCard = ({ icon: Icon, label, value, colorClass, description, isPrimary, unit = "ед." }) => (
@@ -54,14 +54,8 @@ const CourseManagement = () => {
   const [options, setOptions] = useState({ categories: [], teachers: [] });
   
   const [formData, setFormData] = useState({
-    title: '', 
-    description: '', 
-    category_id: '', 
-    user_id: '',
-    level: 'beginner', 
-    status: 'draft', 
-    price: 0, 
-    image: null
+    title: '', description: '', category_id: '', user_id: '',
+    level: 'beginner', status: 'draft', price: 0, image: null
   });
 
   const fetchCourses = useCallback(async () => {
@@ -86,39 +80,19 @@ const CourseManagement = () => {
 
   const fetchOptions = async () => {
     try {
-      const res = await api.get('/admin/helpers/options');
+      const res = await api.get('/admin/helpers/options'); // Используем ваш HelperController
       setOptions({
-        categories: res.data.categories || [],
-        teachers: res.data.teachers || [] 
+        categories: res.data.categories,
+        teachers: res.data.teachers || [] // Если добавите список ППС в хелпер
       });
     } catch (e) { console.error(e); }
   };
 
   const handleOpenCreateModal = () => {
     setEditingId(null);
-    setFormData({ 
-      title: '', description: '', category_id: '', 
-      user_id: '', level: 'beginner', status: 'draft', 
-      price: 0, image: null 
-    });
+    setFormData({ title: '', description: '', category_id: '', user_id: '', level: 'beginner', status: 'draft', price: 0 });
     setIsModalOpen(true);
     fetchOptions();
-  };
-
-  const handleOpenEditModal = async (course) => {
-    setEditingId(course.id);
-    setFormData({
-      title: course.title || '',
-      description: course.description || '',
-      category_id: course.category_id || '',
-      user_id: course.user_id || '',
-      level: course.level || 'beginner',
-      status: course.status || 'draft',
-      price: course.price || 0,
-      image: null // Картинку не предзаполняем файлом, только если юзер выберет новую
-    });
-    setIsModalOpen(true);
-    await fetchOptions();
   };
 
   const handleDelete = async (id) => {
@@ -132,23 +106,10 @@ const CourseManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
-    const data = new FormData();
-    // Добавляем все поля в FormData
-    Object.keys(formData).forEach(key => {
-      if (formData[key] !== null) {
-        data.append(key, formData[key]);
-      }
-    });
-
     try {
-      if (editingId) {
-        // Laravel требует _method=PUT для multipart/form-data через POST
-        data.append('_method', 'PUT');
-        await api.post(`/admin/courses/${editingId}`, data);
-      } else {
-        await api.post(`/admin/courses`, data);
-      }
+      const url = editingId ? `/admin/courses/${editingId}` : `/admin/courses`;
+      const method = editingId ? 'put' : 'post';
+      await api[method](url, formData);
       setIsModalOpen(false);
       fetchCourses();
     } catch (e) {
@@ -179,9 +140,8 @@ const CourseManagement = () => {
       {/* STATS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
         <StatCard label="Всего курсов" value={stats.total} icon={BookOpen} colorClass="bg-slate-100 text-slate-600" description="Общий объем" unit="кур." />
-        <StatCard label="Активные" value={stats.active} icon={CheckCircle2} colorClass="bg-emerald-50 text-emerald-600" description="Опубликовано" isPrimary={true} unit="кур." />
+        <StatCard label="Активные" value={stats.active} icon={PlayCircle} colorClass="bg-emerald-50 text-emerald-600" description="Опубликовано" isPrimary={true} unit="кур." />
         <StatCard label="Черновики" value={stats.drafts} icon={Clock} colorClass="bg-amber-50 text-amber-600" description="В разработке" unit="кур." />
-        <StatCard label="Студенты" value={stats.students_count} icon={GraduationCap} colorClass="bg-purple-50 text-purple-600" description="Всего учеников" unit="чел." />
       </div>
 
       {/* FILTERS */}
@@ -212,6 +172,7 @@ const CourseManagement = () => {
         </div>
       </div>
 
+
       {/* CONTENT */}
       <div className="relative">
         {loading && courses.length === 0 ? (
@@ -222,18 +183,10 @@ const CourseManagement = () => {
               <div key={course.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all group border-l-4 border-l-transparent hover:border-l-blue-600">
                 <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
                   <div className="flex items-center gap-4 text-left">
-                    <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
-                      {course.image_url ? (
-                        <img src={course.image_url} alt="" className="w-full h-full object-cover rounded-xl" />
-                      ) : (
-                        <ImageIcon size={20} />
-                      )}
-                    </div>
+                   
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${course.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                          {course.status === 'active' ? 'Активен' : 'Черновик'}
-                        </span>
+                       
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
                           ID: {course.id}
                         </span>
@@ -241,19 +194,27 @@ const CourseManagement = () => {
                       <h4 className="font-bold text-slate-900 text-sm md:text-base uppercase tracking-tighter truncate leading-tight">{course.title}</h4>
                       
                       <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                        <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md text-slate-600 font-bold tracking-tighter uppercase"><Layers size={12} className="text-blue-500"/> {course.category?.name || course.category}</span>
-                        <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md text-slate-600 font-bold tracking-tighter uppercase"><User size={12} className="text-purple-500"/> {course.author?.name || course.author}</span>
+                        <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md"><Layers size={12} className="text-blue-500"/> {course.category}</span>
+                        <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md"><User size={12} className="text-purple-500"/> {course.author}</span>
                         <span className="flex items-center gap-1.5"><Clock size={12}/> {course.created_at}</span>
                       </div>
                     </div>
                   </div>
 
+                  {/* STATS ВНУТРИ КАРТОЧКИ */}
                   <div className="flex items-center justify-between lg:justify-end gap-4 md:gap-8 border-t lg:border-t-0 pt-4 lg:pt-0">
                     <div className="text-left lg:text-center">
-                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Сложность</p>
-                      <p className="text-[10px] font-black text-slate-900 uppercase">{course.level}</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Модулей</p>
+                      <p className="text-xs font-black text-slate-900 flex items-center gap-1 justify-start lg:justify-center">
+                        <Layers size={10} className="text-slate-400"/> {course.modules_count || 0}
+                      </p>
                     </div>
-                    
+                    <div className="text-left lg:text-center">
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Уроков</p>
+                      <p className="text-xs font-black text-slate-900 flex items-center gap-1 justify-start lg:justify-center">
+                        <PlayCircle size={10} className="text-slate-400"/> {course.lessons_count || 0}
+                      </p>
+                    </div>
                     <div className="text-left lg:text-center">
                       <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Студентов</p>
                       <p className="text-xs font-black text-slate-900 flex items-center gap-1 justify-start lg:justify-center">
@@ -262,19 +223,9 @@ const CourseManagement = () => {
                     </div>
 
                     <div className="flex items-center gap-1 border-l border-slate-100 pl-4 md:pl-6 ml-2">
-                      <button 
-                        onClick={() => handleOpenEditModal(course)}
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                      >
+                      <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
                         <Edit2 size={16}/>
                       </button>
-                      <Link 
-                        to={`/admin/courses/${course.id}/edit`} 
-                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                        title="Конструктор модулей"
-                      >
-                        <Layers size={16}/>
-                      </Link>
                       <button 
                         onClick={() => handleDelete(course.id)} 
                         className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
@@ -282,6 +233,12 @@ const CourseManagement = () => {
                         <Trash2 size={16}/>
                       </button>
                     </div>
+                    <Link 
+                    to={`/admin/courses/${course.id}/edit`} 
+                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                    >
+                    <Edit2 size={16}/>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -295,150 +252,104 @@ const CourseManagement = () => {
         )}
       </div>
 
-      {/* ПАГИНАЦИЯ */}
+      {/* ПАГИНАЦИЯ (Добавьте если нужно) */}
       {meta.last_page > 1 && (
         <div className="flex justify-center gap-2 mt-8">
-          {Array.from({length: meta.last_page}, (_, i) => i + 1).map(p => (
-            <button
-              key={p}
-              onClick={() => setCurrentPage(p)}
-              className={`w-10 h-10 rounded-xl text-[10px] font-black transition-all ${currentPage === p ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:bg-slate-50 border border-slate-100'}`}
-            >
-              {p}
-            </button>
-          ))}
+            {/* Логика кнопок пагинации по currentPage */}
         </div>
       )}
 
 
-      {/* MODAL */}
+       {/* MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-2 md:p-4 bg-slate-900/60 backdrop-blur-md">
-          <div className="bg-white w-full max-w-2xl max-h-[95vh] rounded-[24px] md:rounded-[32px] shadow-2xl overflow-hidden flex flex-col relative text-left">
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 z-10 p-2 hover:bg-slate-100 rounded-full text-slate-400">
-              <X size={20} />
-            </button>
+          <div className="bg-white w-full max-w-2xl max-h-[95vh] rounded-[32px] shadow-2xl overflow-hidden flex flex-col relative text-left">
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 z-10 p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-all"><X size={20} /></button>
 
-            <div className="p-6 md:p-8 pb-4 border-b border-slate-50">
-              <h3 className="text-xl font-bold text-slate-900 tracking-tighter uppercase">
-                {editingId ? 'Редактирование курса' : 'Новый учебный курс'}
-              </h3>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Заполнение основной информации и медиа</p>
+            <div className="p-8 pb-4 border-b border-slate-50">
+              <h3 className="text-xl font-bold text-slate-900 tracking-tighter uppercase">{editingId ? 'Изменить курс' : 'Новый учебный курс'}</h3>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Основная информация и авторство</p>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
               <form onSubmit={handleSubmit} className="space-y-6">
                 
-                {/* ЗАГРУЗКА ИЗОБРАЖЕНИЯ */}
+                {/* ВЫБОР ИЗОБРАЖЕНИЯ */}
                 <div className="space-y-1.5">
                   <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Обложка курса</label>
-                  <div className="flex items-center gap-4 p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl hover:bg-white transition-all">
-                    <div className="w-20 h-14 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center text-slate-400">
-                      {formData.image ? (
-                        <img src={URL.createObjectURL(formData.image)} className="w-full h-full object-cover" alt="Preview" />
-                      ) : (
-                        <ImageIcon size={20} />
-                      )}
+                  <div className="flex items-center gap-4 p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
+                    <div className="w-16 h-12 bg-slate-200 rounded-lg flex items-center justify-center">
+                       <ImageIcon size={18} className="text-slate-400"/>
                     </div>
-                    <div className="flex-1">
-                      <input 
-                        type="file" 
-                        accept="image/*"
-                        className="text-[10px] font-bold text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[9px] file:font-black file:uppercase file:bg-blue-600 file:text-white cursor-pointer"
-                        onChange={e => setFormData({...formData, image: e.target.files[0]})}
-                      />
-                      <p className="text-[8px] text-slate-400 uppercase mt-2">Рекомендуется: 16:9, до 2МБ</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Название курса</label>
-                  <input 
-                    type="text" required 
-                    className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:bg-white focus:border-blue-500 transition-all" 
-                    placeholder="Напр: Основы веб-разработки"
-                    value={formData.title} 
-                    onChange={e => setFormData({...formData, title: e.target.value})} 
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Категория</label>
-                    <select 
-                      required className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none"
-                      value={formData.category_id}
-                      onChange={e => setFormData({...formData, category_id: e.target.value})}
-                    >
-                      <option value="">Выберите категорию...</option>
-                      {options.categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Преподаватель (ППС)</label>
-                    <select 
-                      required className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none"
-                      value={formData.user_id}
-                      onChange={e => setFormData({...formData, user_id: e.target.value})}
-                    >
-                      <option value="">Выберите автора...</option>
-                      {options.teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Уровень</label>
-                    <select 
-                      className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none"
-                      value={formData.level}
-                      onChange={e => setFormData({...formData, level: e.target.value})}
-                    >
-                      <option value="beginner">Начальный</option>
-                      <option value="intermediate">Средний</option>
-                      <option value="advanced">Продвинутый</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Статус</label>
-                    <select 
-                      className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none"
-                      value={formData.status}
-                      onChange={e => setFormData({...formData, status: e.target.value})}
-                    >
-                      <option value="draft">Черновик</option>
-                      <option value="active">Активен</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Цена (₸)</label>
                     <input 
-                      type="number"
-                      className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none"
-                      value={formData.price}
-                      onChange={e => setFormData({...formData, price: e.target.value})}
+                      type="file" 
+                      accept="image/*" 
+                      className="text-[10px] font-bold text-slate-500 file:bg-blue-600 file:text-white file:border-0 file:px-3 file:py-1.5 file:rounded-full file:mr-4 file:uppercase file:text-[8px] cursor-pointer"
+                      onChange={e => setFormData({...formData, image: e.target.files[0]})}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Описание курса</label>
-                  <textarea 
-                    rows="4"
-                    required
-                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none resize-none focus:bg-white focus:border-blue-500 transition-all"
-                    placeholder="Краткая информация о курсе..."
-                    value={formData.description}
-                    onChange={e => setFormData({...formData, description: e.target.value})}
-                  />
+                  <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Название курса</label>
+                  <input type="text" required className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:bg-white focus:border-blue-500 transition-all" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
                 </div>
 
-                <div className="flex gap-4 pt-4 border-t border-slate-50">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Категория</label>
+                    <select required className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none" value={formData.category_id} onChange={e => setFormData({...formData, category_id: e.target.value})}>
+                      <option value="">Выбрать...</option>
+                      {options.categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                    </select>
+                  </div>
+
+                  {/* СЕКЦИЯ АВТОРА С ПЕРЕКЛЮЧАТЕЛЕМ */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center ml-1">
+                      <label className="text-[9px] font-bold uppercase text-slate-400">Автор</label>
+                      <button 
+                        type="button"
+                        onClick={() => setFormData({...formData, author_type: formData.author_type === 'user' ? 'custom' : 'user'})}
+                        className="text-[8px] font-black uppercase text-blue-600 flex items-center gap-1 hover:underline"
+                      >
+                        {formData.author_type === 'user' ? <><UserPlus size={10}/> Свое имя</> : <><User size={10}/> Из списка</>}
+                      </button>
+                    </div>
+
+                    {formData.author_type === 'user' ? (
+                      <select 
+                        required 
+                        className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none" 
+                        value={formData.author_id} 
+                        onChange={e => setFormData({...formData, author_id: e.target.value})}
+                      >
+                        <option value="">Выберите из списка ППС...</option>
+                        {options.teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        {options.teachers.length === 0 && <option disabled>Список пуст</option>}
+                      </select>
+                    ) : (
+                      <input 
+                        type="text" 
+                        required 
+                        placeholder="Введите ФИО автора..."
+                        className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none focus:bg-white focus:border-blue-500" 
+                        value={formData.custom_author_name} 
+                        onChange={e => setFormData({...formData, custom_author_name: e.target.value})} 
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold uppercase text-slate-400 ml-1">Описание</label>
+                  <textarea rows="4" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none resize-none focus:bg-white focus:border-blue-500" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                </div>
+
+                <div className="flex gap-4 pt-4">
                   <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Отмена</button>
-                  <button type="submit" disabled={isSubmitting} className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 shadow-lg shadow-blue-100 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
-                    {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <>{editingId ? 'Сохранить изменения' : 'Создать новый курс'} <ArrowRight size={16} /></>}
+                  <button type="submit" disabled={isSubmitting} className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-blue-700 shadow-lg disabled:opacity-50 flex items-center justify-center gap-2">
+                    {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <>{editingId ? 'Сохранить' : 'Создать'} <ArrowRight size={16} /></>}
                   </button>
                 </div>
               </form>
