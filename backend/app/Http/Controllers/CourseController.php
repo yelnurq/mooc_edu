@@ -288,7 +288,7 @@ public function addResource(Request $request, $courseId)
 public function index()
 {
     try {
-        $courses = Course::with(['modules.lessons']) // Загружаем категорию и вложенности
+        $courses = Course::with(['category','modules.lessons']) // Загружаем категорию и вложенности
             ->withCount([
                 'modules', 
                 'lessons' 

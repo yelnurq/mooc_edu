@@ -20,8 +20,9 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
     setShowPreview(false);
   };
 
-  const videoId = "dQw4w9WgXcQ"; 
-  const youtubeSrc = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&rel=0&modestbranding=1`;
+  // YouTube ID берем из данных или оставляем дефолтный
+  const videoId = course.preview_video_id || "dQw4w9WgXcQ"; 
+  const youtubeSrc = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&rel=0&modestbranding=1&iv_load_policy=3&showinfo=0`;
 
   return (
     <Link 
@@ -65,30 +66,36 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
           )}
         </AnimatePresence>
 
-        {/* Кнопка "Избранное" — используем e.preventDefault() чтобы не срабатывал переход по ссылке */}
-        <button 
+        {/* Кнопка "Избранное" — используем div с ролью кнопки, чтобы не вкладывать button в link */}
+        <div 
+          role="button"
+          tabIndex={0}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             toggleFavorite(course.id);
           }}
-          className="absolute top-4 right-4 z-30 p-2.5 rounded-xl bg-white/90 backdrop-blur-md shadow-sm transition-all hover:scale-110 active:scale-95 group/heart"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleFavorite(course.id);
+            }
+          }}
+          className="absolute top-4 right-4 z-30 p-2.5 rounded-xl bg-white/90 backdrop-blur-md shadow-sm transition-all hover:scale-110 active:scale-95 group/heart cursor-pointer"
         >
           <Heart 
             size={16} 
             className={`${isFavorite ? "fill-red-500 text-red-500" : "text-slate-400 group-hover/heart:text-red-400"}`} 
           />
-        </button>
+        </div>
       </div>
 
       {/* --- Content Area --- */}
       <div className="p-7 pt-2 flex flex-col flex-1">
         <div className="flex items-center gap-2 mb-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">      
-            <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+            <span className="text-left text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
               {course.category?.name || 'Общее'}
             </span>
-            <span className="text-slate-300">•</span>
-            <span>{course.level || 'Все уровни'}</span>
         </div>
 
         <h3 className="text-left text-lg font-black text-slate-900 leading-tight mb-4 group-hover:text-blue-600 transition-colors line-clamp-2">
@@ -101,7 +108,7 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
               <img 
                 src={course.author.avatar} 
                 className="w-7 h-7 rounded-full object-cover shadow-sm ring-2 ring-slate-50" 
-                alt="" 
+                alt={course.author_display_name} 
               />
             ) : (
               <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center ring-2 ring-slate-50">
@@ -138,7 +145,6 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
                 </div>
             </div>
 
-            {/* Иконка-индикатор вместо кнопки */}
             <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
                 <ArrowRight size={18} />
             </div>

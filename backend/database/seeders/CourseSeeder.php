@@ -10,12 +10,21 @@ class CourseSeeder extends Seeder
 {
     public function run(): void
     {
+        // 0. Получаем все категории, которые создал CategorySeeder
+        $categories = Category::all();
+
+        if ($categories->isEmpty()) {
+            $this->command->error('Сначала запустите CategorySeeder!');
+            return;
+        }
+
         $coursesData = [
             [
                 'title' => 'Профессия: Fullstack Developer на Laravel 11 & React',
                 'desc' => 'Максимально глубокий курс по современной веб-разработке.',
                 'image' => '1.jpg',
-                'author' => 'Zeynolla Elnur', // Кастомный автор
+                'author' => 'Zeynolla Elnur',
+                'category_name' => 'Информационные технологии', // Привязка по имени
                 'modules' => [
                     'Окружение и Docker', 'Основы Laravel 11', 'Eloquent ORM', 'Безопасность', 'API Dev',
                     'React Basics', 'State Management', 'WebSockets', 'Тестирование', 'Деплой'
@@ -26,17 +35,19 @@ class CourseSeeder extends Seeder
                 'desc' => 'Автоматизация развертывания и масштабирования приложений.',
                 'image' => '1.jpg',
                 'author' => 'DevOps Community',
+                'category_name' => 'Компьютерная инженерия и автоматизация',
                 'modules' => [
                     'Linux Shell', 'Docker Internals', 'K8s Cluster', 'Helm Charts', 'Jenkins/GitHub Actions'
                 ]
             ],
             [
-                'title' => 'UI/UX Design для разработчиков',
-                'desc' => 'Как создавать интерфейсы, которые нравятся пользователям.',
+                'title' => 'Английский для IT-специалистов',
+                'desc' => 'Технический английский для работы в международных компаниях.',
                 'image' => '1.jpg',
-                'author' => 'Design Studio',
+                'author' => 'Language School',
+                'category_name' => 'Государственный и иностранный языки',
                 'modules' => [
-                    'Основы Figma', 'Типографика', 'Сетки и Layout', 'Прототипирование', 'Анимация'
+                    'IT Terminology', 'Technical Writing', 'Interview Prep', 'Daily Standups'
                 ]
             ],
             [
@@ -44,6 +55,7 @@ class CourseSeeder extends Seeder
                 'desc' => 'Анализ данных, визуализация и основы машинного обучения.',
                 'image' => '1.jpg',
                 'author' => 'Data Insight Team',
+                'category_name' => 'Информационные технологии',
                 'modules' => [
                     'Numpy & Pandas', 'Matplotlib', 'Scikit-learn', 'Нейросети', 'Big Data Intro'
                 ]
@@ -51,14 +63,18 @@ class CourseSeeder extends Seeder
         ];
 
         foreach ($coursesData as $cData) {
-            // 1. Создаем курс с логикой кастомного автора
+            // Ищем категорию по имени из массива данных или берем рандомную, если не нашли
+            $category = $categories->where('name', $cData['category_name'])->first() ?? $categories->random();
+
+            // 1. Создаем курс
             $course = Course::create([
                 'title' => $cData['title'],
                 'description' => $cData['desc'],
                 'image' => $cData['image'],
-                'author_type' => 'custom', // Указываем тип "custom"
-                'custom_author_name' => $cData['author'], // Записываем имя
-                'author_id' => null, // Связь с юзером пустая
+                'category_id' => $category->id, // ПРИВЯЗКА КАТЕГОРИИ
+                'author_type' => 'custom',
+                'custom_author_name' => $cData['author'],
+                'author_id' => null,
             ]);
 
             // 2. Общие ресурсы
@@ -90,7 +106,7 @@ class CourseSeeder extends Seeder
             }
         }
 
-        $this->command->info('Успешно создано 4 курса с кастомными авторами!');
+        $this->command->info('Успешно создано курсы с привязанными категориями!');
     }
 
     private function getLessonTitle($num) {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { 
   Search, Check, LayoutGrid, FilterX, 
-  ChevronRight, Sparkles, Tag
+  ChevronRight, Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../../api/axios';
@@ -9,6 +9,7 @@ import { CourseCard } from '../../../../components/Course/CourseCard/CourseCard'
 
 const CoursesPage = () => {
   const [courses, setCourses] = useState([]);
+  const [dbCategories, setDbCategories] = useState([]); // Состояние для категорий из БД
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categorySearch, setCategorySearch] = useState('');
@@ -17,47 +18,47 @@ const CoursesPage = () => {
   const [favorites, setFavorites] = useState([]);
   const [visibleCount, setVisibleCount] = useState(12);
 
-  const categories = [
-    'Все', 'Backend', 'Frontend', 'System Admin', 'Design', 'Mobile', 
-    'DevOps', 'Data Science', 'Marketing', 'Cybersecurity', 'QA Testing', 
-    'GameDev', 'Project Management', 'Soft Skills', 'Blockchain'
-  ];
-
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await api.get('/courses'); 
-        const dataFromDb = response.data.map(course => ({
-          ...course,
-          category: course.category || 'Backend',
-          rating: course.rating || '5.0',
-          lessons_count: course.modules?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || 0,
-          author: course.author || { name: 'Администратор', avatar: 'https://i.pravatar.cc/150?u=admin' },
-          image: course.image || `https://picsum.photos/seed/${course.id}/800/600`
-        }));
-        setCourses(dataFromDb);
+        // Загружаем одновременно и курсы, и категории
+        const [coursesRes, catsRes] = await Promise.all([
+          api.get('/courses'), // Используем публичный роут
+          api.get('/categories')      // Создай этот роут в Laravel, если еще нет
+        ]);
+
+        setCourses(coursesRes.data);
+        setDbCategories(catsRes.data);
       } catch (error) {
-        console.error("Ошибка:", error);
-        setCourses([]);
+        console.error("Ошибка загрузки данных:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchCourses();
+    fetchData();
   }, []);
 
+  // Формируем список категорий для фильтра (Все + категории из БД)
+  const categoriesList = useMemo(() => {
+    return ['Все', ...dbCategories.map(c => c.name)];
+  }, [dbCategories]);
+
   const filteredCategories = useMemo(() => {
-    return categories.filter(cat => 
+    return categoriesList.filter(cat => 
       cat.toLowerCase().includes(categorySearch.toLowerCase())
     );
-  }, [categorySearch]);
+  }, [categorySearch, categoriesList]);
 
   const filteredCourses = useMemo(() => {
     let result = courses.filter(course => {
       const title = course.title || '';
       const matchesSearch = title.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCat = selectedCategory === 'Все' || course.category === selectedCategory;
+      
+      // Фильтруем по названию категории (так как в БД это объект)
+      const matchesCat = selectedCategory === 'Все' || 
+                         course.category?.name === selectedCategory;
+      
       return matchesSearch && matchesCat;
     });
 
@@ -78,33 +79,32 @@ const CoursesPage = () => {
   };
 
   return (
-    /* Цвет фона: slate-50 (очень светлый серо-голубой) */
     <div className="min-h-screen bg-[#f8fafc]">
       <div className="max-w-[1440px] mx-auto px-6 lg:px-12 py-12">
-            
+        
         {/* BREADCRUMBS */}
         <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-8">
           <span className="hover:text-blue-600 cursor-pointer transition-colors">Главная</span>
           <ChevronRight size={12} />
           <span className="text-slate-900">Каталог курсов</span>
         </nav>
+
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
           <div>
-
-      <h1 className="text-5xl md:text-4xl font-black text-slate-900 tracking-tighter mb-4 text-left">
-        Направления
-      </h1>
-      <p className="text-1xl text-slate-500 font-medium max-w-md leading-relaxed text-left">
-        Выберите подходящую специализацию и начните обучение с экспертами индустрии уже сегодня.
-      </p>
-    </div>
+            <h1 className="text-5xl md:text-4xl font-black text-slate-900 tracking-tighter mb-4 text-left">
+              Направления
+            </h1>
+            <p className="text-1xl text-slate-500 font-medium max-w-md leading-relaxed text-left">
+              Выберите подходящую специализацию и начните обучение уже сегодня.
+            </p>
+          </div>
           
           <div className="relative w-full md:w-[450px] group">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
             <input 
               type="text" 
-              placeholder="Какой навык хотите освоить?" 
+              placeholder="Поиск по названию курса..." 
               className="w-full pl-14 pr-6 py-5 bg-white border border-slate-200/50 rounded-[2rem] focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/20 transition-all font-bold text-sm shadow-sm placeholder:text-slate-400"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -114,13 +114,13 @@ const CoursesPage = () => {
 
         <div className="flex flex-col xl:flex-row gap-12">
           
-          {/* --- SMART SIDEBAR --- */}
+          {/* SIDEBAR */}
           <aside className="w-full xl:w-80 shrink-0">
             <div className="bg-white p-8 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-200/60 sticky top-10">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-2">
                   <LayoutGrid size={16} className="text-blue-600" />
-                  <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">Категории</h3>
+                  <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">Отделения</h3>
                 </div>
                 {selectedCategory !== 'Все' && (
                   <button onClick={resetFilters} className="text-[10px] font-black uppercase text-blue-600 hover:text-blue-700 transition-all">
@@ -133,14 +133,13 @@ const CoursesPage = () => {
                 <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
                   type="text"
-                  placeholder="Быстрый поиск..."
+                  placeholder="Найти отделение..."
                   className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none"
                   value={categorySearch}
                   onChange={(e) => setCategorySearch(e.target.value)}
                 />
               </div>
 
-              {/* Скролл-зона категорий */}
               <div className="max-h-[460px] overflow-y-auto pr-2 space-y-1 scrollbar-thin scrollbar-thumb-slate-200">
                 {filteredCategories.map(cat => (
                   <button
@@ -152,7 +151,7 @@ const CoursesPage = () => {
                       : 'text-slate-500 hover:bg-slate-50 hover:text-blue-600'
                     }`}
                   >
-                    <span className="flex items-center gap-3">
+                    <span className="flex items-center gap-3 text-left">
                       <Tag size={14} className={selectedCategory === cat ? 'text-blue-200' : 'text-slate-300 group-hover:text-blue-400'} />
                       {cat}
                     </span>
@@ -163,9 +162,8 @@ const CoursesPage = () => {
             </div>
           </aside>
 
-          {/* --- MAIN CONTENT --- */}
+          {/* MAIN CONTENT */}
           <div className="flex-1">
-            {/* Toolbar */}
             <div className="flex flex-col sm:flex-row items-center justify-between mb-10 gap-6">
               <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-full border border-slate-200/50 shadow-sm">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
@@ -188,7 +186,6 @@ const CoursesPage = () => {
               </div>
             </div>
 
-            {/* Grid */}
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8">
                 {[...Array(6)].map((_, i) => (
@@ -218,7 +215,6 @@ const CoursesPage = () => {
               </div>
             )}
 
-            {/* Load More */}
             {filteredCourses.length > visibleCount && (
               <div className="mt-20 text-center">
                 <button 
@@ -231,14 +227,11 @@ const CoursesPage = () => {
               </div>
             )}
 
-            {/* Empty State */}
             {!loading && filteredCourses.length === 0 && (
               <div className="py-32 text-center bg-white rounded-[4rem] border border-slate-200/60 shadow-sm px-10">
-                <div className="w-24 h-24 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-8 text-slate-200">
-                  <FilterX size={48} />
-                </div>
+                <FilterX size={48} className="mx-auto mb-8 text-slate-200" />
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight">Ничего не нашлось</h3>
-                <p className="text-slate-400 mt-4 font-medium max-w-xs mx-auto">Попробуйте изменить категорию или поисковый запрос</p>
+                <p className="text-slate-400 mt-4 font-medium max-w-xs mx-auto">Попробуйте изменить отделение или поисковый запрос</p>
                 <button onClick={resetFilters} className="mt-10 bg-blue-600 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">Сбросить фильтры</button>
               </div>
             )}

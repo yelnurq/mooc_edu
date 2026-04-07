@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CategoryController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -27,7 +28,7 @@ Route::middleware(["token"])->group(function(){
 
 });
 
-
+Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/courses', [CourseController::class, 'index']);           
 Route::post('/courses', [CourseController::class, 'store']);           // Создать курс
 Route::get('/courses/{id}', [CourseController::class, 'show']);        // Получить всё дерево курса
