@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\UserController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -16,14 +17,16 @@ Route::post('/login', [AuthController::class, "login"]);
 
 
 Route::middleware(["token"])->group(function(){
+    
+    
+    Route::get('/admin/users', [UserController::class, 'index']);
+    
+    
     Route::post('/logout', [AuthController::class, "logout"]);
     Route::post('/admin/enroll', [CourseController::class, 'adminEnroll']);
     Route::get('/my-courses', [CourseController::class, 'myCourses']);
     
-    Route::get('/admin/users', function () {
-            return User::select('id', 'name', 'email')->get();
-    });
-
+    
     Route::post('/lessons/{lesson}/complete', [CourseController::class, 'completeLesson']);
 
 });
