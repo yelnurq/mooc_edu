@@ -1,12 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, VolumeX, Heart, ArrowRight, BookOpen, Layers, User } from 'lucide-react';
+import { 
+  Play, VolumeX, Heart, ArrowRight, 
+  BookOpen, Layers, User, Share2, Check 
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const ASSET_URL = "http://localhost:8000/storage/";
 
 export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
   const [showPreview, setShowPreview] = useState(false);
+  const [copied, setCopied] = useState(false); // Состояние для анимации копирования
   const timeoutRef = useRef(null);
 
   const handleMouseEnter = () => {
@@ -20,7 +24,25 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
     setShowPreview(false);
   };
 
-  // YouTube ID берем из данных или оставляем дефолтный
+  // Функция "Поделиться"
+  const handleShare = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const courseUrl = `${window.location.origin}/courses/${course.id}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: course.title,
+        url: courseUrl,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(courseUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   const videoId = course.preview_video_id || "dQw4w9WgXcQ"; 
   const youtubeSrc = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&rel=0&modestbranding=1&iv_load_policy=3&showinfo=0`;
 
@@ -66,39 +88,62 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
           )}
         </AnimatePresence>
 
-        {/* Кнопка "Избранное" — используем div с ролью кнопки, чтобы не вкладывать button в link */}
-        <div 
-          role="button"
-          tabIndex={0}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleFavorite(course.id);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                toggleFavorite(course.id);
-            }
-          }}
-          className="absolute top-4 right-4 z-30 p-2.5 rounded-xl bg-white/90 backdrop-blur-md shadow-sm transition-all hover:scale-110 active:scale-95 group/heart cursor-pointer"
-        >
-          <Heart 
-            size={16} 
-            className={`${isFavorite ? "fill-red-500 text-red-500" : "text-slate-400 group-hover/heart:text-red-400"}`} 
-          />
+        {/* --- Action Buttons (Top Right) --- */}
+        <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
+          {/* Поделиться */}
+          <div 
+            role="button"
+            onClick={handleShare}
+            className="p-2.5 rounded-xl bg-white/90 backdrop-blur-md shadow-sm transition-all hover:scale-110 active:scale-95 group/share cursor-pointer flex items-center justify-center"
+          >
+            {copied ? (
+              <Check size={16} className="text-emerald-500" />
+            ) : (
+              <Share2 size={16} className="text-slate-400 group-hover/share:text-blue-500" />
+            )}
+            
+            {/* Тултип при копировании */}
+            <AnimatePresence>
+              {copied && (
+                <motion.div 
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute right-full mr-3 px-3 py-1.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg whitespace-nowrap"
+                >
+                  Ссылка скопирована
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Избранное */}
+          <div 
+            role="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleFavorite(course.id);
+            }}
+            className="p-2.5 rounded-xl bg-white/90 backdrop-blur-md shadow-sm transition-all hover:scale-110 active:scale-95 group/heart cursor-pointer flex items-center justify-center"
+          >
+            <Heart 
+              size={16} 
+              className={`${isFavorite ? "fill-red-500 text-red-500" : "text-slate-400 group-hover/heart:text-red-400"}`} 
+            />
+          </div>
         </div>
       </div>
 
       {/* --- Content Area --- */}
-      <div className="p-7 pt-2 flex flex-col flex-1">
+      <div className="p-7 pt-2 flex flex-col flex-1 text-left">
         <div className="flex items-center gap-2 mb-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">      
-            <span className="text-left text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+            <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
               {course.category?.name || 'Общее'}
             </span>
         </div>
 
-        <h3 className="text-left text-lg font-black text-slate-900 leading-tight mb-4 group-hover:text-blue-600 transition-colors line-clamp-2">
+        <h3 className="text-lg font-black text-slate-900 leading-tight mb-4 group-hover:text-blue-600 transition-colors line-clamp-2">
           {course.title}
         </h3>
 

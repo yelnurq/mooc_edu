@@ -285,26 +285,52 @@ public function addResource(Request $request, $courseId)
     /**
      * Получить список всех курсов
      */
-public function index()
+
+public function index(Request $request)
 {
     try {
-        $courses = Course::with(['category','modules.lessons']) // Загружаем категорию и вложенности
-            ->withCount([
-                'modules', 
-                'lessons' 
-            ])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $query = Course::with(['category', 'modules.lessons'])
+            ->withCount(['modules', 'lessons']);
 
-        // Добавляем URL и проверяем подсчет уроков
+        // --- ФИЛЬТРАЦИЯ ---
+
+        // Поиск по названию
+        $query->when($request->search, function ($q, $search) {
+            $q->where('title', 'like', "%{$search}%");
+        });
+
+        // Фильтр по категории (по имени категории)
+        $query->when($request->category, function ($q, $categoryName) {
+            $q->whereHas('category', function ($q) use ($categoryName) {
+                $q->where('name', $categoryName);
+            });
+        });
+
+        // --- СОРТИРОВКА ---
+        
+        switch ($request->sort) {
+            case 'new':
+                $query->latest();
+                break;
+            case 'duration':
+                // Если есть колонка с длительностью
+                $query->orderBy('duration', 'desc'); 
+                break;
+            case 'popular':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $courses = $query->get();
+
+        // Дополнительная обработка данных (URL и ручной подсчет уроков)
         $courses->each(function ($course) {
-            // Если withCount('lessons') выдает 0 из-за отсутствия прямой связи, 
-            // считаем вручную из уже загруженных данных:
-            if ($course->lessons_count === 0 || $course->lessons_count === null) {
+            // Ручной подсчет, если связь lessons не прямая
+            if (!$course->lessons_count) {
                 $course->lessons_count = $course->modules->pluck('lessons')->flatten()->count();
             }
 
-            // Генерируем URL для силлабуса
             if ($course->syllabus_path) {
                 $course->syllabus_url = asset('storage/' . $course->syllabus_path);
             }

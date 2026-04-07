@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    public function index() {
-        return response()->json(\App\Models\Category::all());
-    }
+    public function index()
+{
+    $categories = Category::withCount('courses')->get();
+
+    return response()->json($categories);
+}
 }
