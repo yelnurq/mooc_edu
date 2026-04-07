@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, VolumeX, Heart, ArrowRight, BookOpen, Layers } from 'lucide-react';
+import { Play, VolumeX, Heart, ArrowRight, BookOpen, Layers, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 /**
@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
  * 1. category (объект с полем name)
  * 2. modules_count (через ->withCount('modules'))
  * 3. lessons_count (через ->withCount('lessons'))
+ * 4. author_display_name (через accessor в модели Course)
  */
 
 const ASSET_URL = "http://localhost:8000/storage/";
@@ -40,12 +41,11 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
       {/* --- Media Area --- */}
       <div className="relative h-56 m-2.5 rounded-[2rem] overflow-hidden bg-slate-900">
         <img 
-          src={`${ASSET_URL}${course.image}`}
+          src={course.image ? `${ASSET_URL}${course.image}` : '/api/placeholder/400/320'}
           alt={course.title} 
           className={`w-full h-full object-cover transition-all duration-700 ${showPreview ? 'scale-110 blur-md opacity-30' : 'scale-100'}`} 
         />
         
-        {/* YouTube Preview Wrapper */}
         <AnimatePresence>
           {showPreview && (
             <motion.div
@@ -61,9 +61,7 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               />
-              
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
-              
               <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center z-20">
                 <div className="flex items-center gap-2 bg-blue-600 px-2 py-1 rounded-lg shadow-lg">
                    <Play size={10} className="text-white fill-white" />
@@ -101,12 +99,23 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
           {course.title}
         </h3>
 
-        {course.author && (
-          <div className="flex items-center gap-3 mb-6">
-              <img src={course.author.avatar} className="w-7 h-7 rounded-full object-cover shadow-sm ring-2 ring-slate-50" alt="" />
-              <span className="text-xs font-bold text-slate-600">{course.author.name}</span>
-          </div>
-        )}
+        {/* --- Author Block (Обновлено) --- */}
+        <div className="flex items-center gap-3 mb-6">
+            {course.author?.avatar ? (
+              <img 
+                src={course.author.avatar} 
+                className="w-7 h-7 rounded-full object-cover shadow-sm ring-2 ring-slate-50" 
+                alt="" 
+              />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center ring-2 ring-slate-50">
+                <User size={12} className="text-slate-400" />
+              </div>
+            )}
+            <span className="text-xs font-bold text-slate-600">
+              {course.author_display_name || 'Инструктор'}
+            </span>
+        </div>
 
         {/* --- Stats Footer --- */}
         <div className="mt-auto space-y-5">

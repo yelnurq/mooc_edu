@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Course;
-use App\Models\Category; // Не забудьте импортировать, если используете категории
+use App\Models\Category;
 use Illuminate\Database\Seeder;
 
 class CourseSeeder extends Seeder
@@ -14,7 +14,8 @@ class CourseSeeder extends Seeder
             [
                 'title' => 'Профессия: Fullstack Developer на Laravel 11 & React',
                 'desc' => 'Максимально глубокий курс по современной веб-разработке.',
-                'image' => '1.jpg', // Добавлено изображение
+                'image' => '1.jpg',
+                'author' => 'Zeynolla Elnur', // Кастомный автор
                 'modules' => [
                     'Окружение и Docker', 'Основы Laravel 11', 'Eloquent ORM', 'Безопасность', 'API Dev',
                     'React Basics', 'State Management', 'WebSockets', 'Тестирование', 'Деплой'
@@ -23,7 +24,8 @@ class CourseSeeder extends Seeder
             [
                 'title' => 'Mastering DevOps: Kubernetes & CI/CD',
                 'desc' => 'Автоматизация развертывания и масштабирования приложений.',
-                'image' => '1.jpg', // Добавлено изображение
+                'image' => '1.jpg',
+                'author' => 'DevOps Community',
                 'modules' => [
                     'Linux Shell', 'Docker Internals', 'K8s Cluster', 'Helm Charts', 'Jenkins/GitHub Actions'
                 ]
@@ -31,7 +33,8 @@ class CourseSeeder extends Seeder
             [
                 'title' => 'UI/UX Design для разработчиков',
                 'desc' => 'Как создавать интерфейсы, которые нравятся пользователям.',
-                'image' => '1.jpg', // Добавлено изображение
+                'image' => '1.jpg',
+                'author' => 'Design Studio',
                 'modules' => [
                     'Основы Figma', 'Типографика', 'Сетки и Layout', 'Прототипирование', 'Анимация'
                 ]
@@ -39,7 +42,8 @@ class CourseSeeder extends Seeder
             [
                 'title' => 'Python для Data Science',
                 'desc' => 'Анализ данных, визуализация и основы машинного обучения.',
-                'image' => '1.jpg', // Добавлено изображение
+                'image' => '1.jpg',
+                'author' => 'Data Insight Team',
                 'modules' => [
                     'Numpy & Pandas', 'Matplotlib', 'Scikit-learn', 'Нейросети', 'Big Data Intro'
                 ]
@@ -47,11 +51,14 @@ class CourseSeeder extends Seeder
         ];
 
         foreach ($coursesData as $cData) {
-            // 1. Создаем курс (теперь с полем image)
+            // 1. Создаем курс с логикой кастомного автора
             $course = Course::create([
                 'title' => $cData['title'],
                 'description' => $cData['desc'],
-                'image' => $cData['image'], // Передаем путь к картинке
+                'image' => $cData['image'],
+                'author_type' => 'custom', // Указываем тип "custom"
+                'custom_author_name' => $cData['author'], // Записываем имя
+                'author_id' => null, // Связь с юзером пустая
             ]);
 
             // 2. Общие ресурсы
@@ -83,7 +90,7 @@ class CourseSeeder extends Seeder
             }
         }
 
-        $this->command->info('Успешно создано 4 курса с изображениями!');
+        $this->command->info('Успешно создано 4 курса с кастомными авторами!');
     }
 
     private function getLessonTitle($num) {
