@@ -47,6 +47,42 @@ public function adminEnroll(Request $request)
         'message' => "Студент {$user->name} успешно зачислен на курс {$course->title}"
     ], 200);
 }
+public function getEnrollmentData()
+{
+    // 1. Получаем все активные подписки (с именами юзеров и названиями курсов)
+    // Предполагаем, что связь в модели User называется courses()
+    $enrollments = \DB::table('course_user')
+        ->join('users', 'course_user.user_id', '=', 'users.id')
+        ->join('courses', 'course_user.course_id', '=', 'courses.id')
+        ->select(
+            'users.id as user_id', 
+            'users.name as user_name', 
+            'courses.id as course_id', 
+            'courses.title as course_title',
+            'course_user.created_at'
+        )
+        ->orderBy('course_user.created_at', 'desc')
+        ->get();
+
+    // 2. Считаем статистику для StatCards
+    $totalUsers = \App\Models\User::count();
+    $totalCourses = \App\Models\Course::count();
+    $activeEnrollmentsCount = $enrollments->count();
+    
+    // Студенты, которых нет в таблице course_user
+    $usersWithNoCourses = \App\Models\User::whereDoesntHave('courses')->count();
+
+    return response()->json([
+        'status' => 'success',
+        'enrollments' => $enrollments,
+        'stats' => [
+            'total' => $totalUsers,
+            'active' => $activeEnrollmentsCount,
+            'waiting' => $usersWithNoCourses,
+            'programs' => $totalCourses,
+        ]
+    ], 200);
+}
 public function myCourses()
 {
     $user = auth()->user();

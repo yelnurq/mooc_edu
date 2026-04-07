@@ -26,7 +26,7 @@ Route::middleware(["token"])->group(function(){
 
     
     Route::get('/admin/users', [UserController::class, 'index']);
-    
+    Route::get('/admin/enrollments', [CourseController::class, 'getEnrollmentData']);
     
     Route::post('/logout', [AuthController::class, "logout"]);
     Route::post('/admin/enroll', [CourseController::class, 'adminEnroll']);
