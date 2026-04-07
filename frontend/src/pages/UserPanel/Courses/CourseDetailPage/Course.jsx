@@ -141,7 +141,7 @@ const CourseDetailPage = () => {
 
       {/* --- ГЛАВНЫЙ БАННЕР С ФОНОМ КУРСА --- */}
       <div 
-        className="relative pt-24 pb-48 px-8 overflow-hidden bg-slate-900"
+        className="relative pt-20 pb-32 px-8 overflow-hidden bg-slate-900"
         style={{
             backgroundImage: getImageUrl(course?.image),
             backgroundSize: 'cover',
@@ -209,7 +209,7 @@ const CourseDetailPage = () => {
           {/* --- ОБЩИЕ МАТЕРИАЛЫ --- */}
           {course?.resources?.length > 0 && (
             <div>
-              <h2 className="text-slate-500 font-black text-[11px] uppercase tracking-[0.25em] ml-6 mb-6 flex items-center gap-2">
+              <h2 className="text-slate-100 font-black text-[11px] uppercase tracking-[0.25em] ml-6 mb-6 flex items-center gap-2">
                 <Files size={16} className="text-blue-600" /> Дополнительные ресурсы
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -243,47 +243,45 @@ const CourseDetailPage = () => {
           )}
 
           {/* --- СПИСОК МОДУЛЕЙ --- */}
-          <div className="space-y-5">
-            <h2 className="text-slate-500 font-black text-[11px] uppercase tracking-[0.25em] ml-6 mb-6 flex items-center gap-2">
-              <Layout size={16} className="text-blue-600" /> Программа обучения
+          <div className="space-y-4">
+            <h2 className="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] ml-4 mb-4 flex items-center gap-2">
+              <Layout size={14} /> Учебная программа
             </h2>
             {course?.modules?.map((module, mIdx) => (
-              <div key={module.id} className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm overflow-hidden transition-all hover:border-slate-300 hover:shadow-md">
+              <div key={module.id} className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden">
                 <button 
                   onClick={() => toggleModule(mIdx)}
                   className="w-full flex items-center justify-between p-8 hover:bg-slate-50 transition-colors text-left"
                 >
-                  <div className="flex items-center gap-8">
-                    <div className="w-16 h-16 rounded-[1.5rem] bg-slate-900 text-white flex items-center justify-center font-black text-2xl shadow-xl shadow-slate-900/20">
+                  <div className="flex items-center gap-6">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-900 font-black text-xl">
                       {String(mIdx + 1).padStart(2, '0')}
                     </div>
                     <div>
-                      <h3 className="font-black text-2xl text-slate-900 tracking-tight">{module.title}</h3>
-                      <span className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 mt-1">
-                         <span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> {module.lessons?.length || 0} уроков
+                      <h3 className="font-black text-xl text-slate-900">{module.title}</h3>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1 mt-1">
+                         {module.lessons?.length || 0} занятий в модуле
                       </span>
                     </div>
                   </div>
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 ${openModules.includes(mIdx) ? 'bg-blue-600 text-white rotate-180' : 'bg-slate-100 text-slate-400'}`}>
-                    <ChevronDown size={24} />
-                  </div>
+                  {openModules.includes(mIdx) ? <ChevronUp className="text-slate-300" /> : <ChevronDown className="text-slate-300" />}
                 </button>
 
                 {openModules.includes(mIdx) && (
-                  <div className="px-8 pb-10 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <div className="px-8 pb-8 space-y-3">
                     {module.lessons?.map((lesson) => (
                       <div 
                         key={lesson.id} 
-                        className={`group flex items-center justify-between p-6 rounded-[2rem] border border-slate-100 transition-all ${!isAuthenticated ? 'opacity-70 grayscale-[0.5]' : 'hover:border-blue-200 hover:bg-blue-50/40'}`}
+                        className={`group flex items-center justify-between p-5 rounded-2xl border border-slate-100 transition-all ${!isAuthenticated ? 'opacity-75' : 'hover:border-blue-200 hover:bg-blue-50/30'}`}
                       >
-                        <div className="flex items-center gap-6">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm transition-all ${!isAuthenticated ? 'bg-slate-100 text-slate-400' : (lesson.type === 'pdf' ? 'bg-orange-50 text-orange-500 group-hover:scale-110' : 'bg-blue-50 text-blue-500 group-hover:scale-110')}`}>
-                            {!isAuthenticated ? <Lock size={20} /> : (lesson.type === 'pdf' ? <FileText size={24} /> : <PlayCircle size={24} />)}
+                        <div className="flex items-center gap-5">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${!isAuthenticated ? 'bg-slate-100 text-slate-400' : (lesson.type === 'pdf' ? 'bg-orange-50 text-orange-500' : 'bg-blue-50 text-blue-500')}`}>
+                            {!isAuthenticated ? <Lock size={18} /> : (lesson.type === 'pdf' ? <FileText size={20} /> : <PlayCircle size={20} />)}
                           </div>
                           <div>
-                            <h4 className={`text-lg font-black transition-colors ${!isAuthenticated ? 'text-slate-500' : 'text-slate-800 group-hover:text-blue-600'}`}>{lesson.title}</h4>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mt-1">
-                              {lesson.type === 'pdf' ? 'Теоретический блок' : 'Практическое видео'}
+                            <h4 className={`font-bold transition-colors ${!isAuthenticated ? 'text-slate-500' : 'text-slate-800 group-hover:text-blue-600'}`}>{lesson.title}</h4>
+                            <p className="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 mt-0.5">
+                              {lesson.type === 'pdf' ? 'Лекция PDF' : 'Видео-урок'}
                             </p>
                           </div>
                         </div>
@@ -294,10 +292,10 @@ const CourseDetailPage = () => {
                             type: lesson.type,
                             isFromModule: true
                           })}
-                          className={`px-8 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${!isAuthenticated ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed' : 'bg-white border-2 border-slate-100 text-slate-900 hover:bg-slate-900 hover:text-white hover:border-slate-900 shadow-sm'}`}
+                          className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm flex items-center gap-2 ${!isAuthenticated ? 'bg-slate-100 text-slate-400 border border-slate-200' : 'bg-white border border-slate-200 hover:bg-slate-900 hover:text-white'}`}
                         >
-                          {!isAuthenticated && <Lock size={14} />}
-                          {lesson.type === 'pdf' ? 'Открыть' : 'Смотреть'}
+                          {!isAuthenticated && <Lock size={12} />}
+                          {lesson.type === 'pdf' ? 'Читать' : 'Смотреть'}
                         </button>
                       </div>
                     ))}
@@ -313,3 +311,5 @@ const CourseDetailPage = () => {
 };
 
 export default CourseDetailPage;
+
+         

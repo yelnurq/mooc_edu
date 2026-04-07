@@ -28,6 +28,7 @@ api.interceptors.response.use(
       
       // Удаляем "битый" токен
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       
       // Перенаправляем на логин (через window.location, так как это не React-компонент)
       if (window.location.pathname !== '/login') {

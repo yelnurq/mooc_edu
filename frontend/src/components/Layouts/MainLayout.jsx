@@ -109,11 +109,8 @@ const MainLayout = () => {
             <div className="flex items-center gap-3 pl-6 border-l border-slate-100">
               {user ? (
                 <div className="flex items-center gap-4">
-                  <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all relative">
-                    <Bell size={20} />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
-                  </button>
-                  <Link to="/dashboard" className="flex items-center gap-2 p-1 pr-4 bg-slate-900 hover:bg-blue-700 text-white rounded-full transition-all">
+              
+                  <Link to="/app/dashboard" className="flex items-center gap-2 p-1 pr-4 bg-slate-900 hover:bg-blue-700 text-white rounded-full transition-all">
                     <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-xs font-black">
                       {user.name?.charAt(0) || 'U'}
                     </div>
