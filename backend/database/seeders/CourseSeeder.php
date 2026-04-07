@@ -5,99 +5,91 @@ namespace Database\Seeders;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\Lesson;
-use App\Models\CourseResource;
 use Illuminate\Database\Seeder;
 
 class CourseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. СОЗДАНИЕ ГЛАВНОГО КУРСА
-        $course = Course::create([
-            'title' => 'Профессия: Fullstack Developer на Laravel 11 & React',
-            'description' => 'Максимально глубокий курс по современной веб-разработке. От архитектуры БД до деплоя высоконагруженных систем.',
-        ]);
-
-        // 2. ОБЩИЕ РЕСУРСЫ КУРСА (Шапка)
-        // 1 Промо-ролик + 4 PDF документа
-        $course->resources()->createMany([
+        $coursesData = [
             [
-                'title' => 'Трейлер и обзор курса',
-                'type' => 'video',
-                'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                'order' => 1
+                'title' => 'Профессия: Fullstack Developer на Laravel 11 & React',
+                'desc' => 'Максимально глубокий курс по современной веб-разработке.',
+                'modules' => [
+                    'Окружение и Docker', 'Основы Laravel 11', 'Eloquent ORM', 'Безопасность', 'API Dev',
+                    'React Basics', 'State Management', 'WebSockets', 'Тестирование', 'Деплой'
+                ]
             ],
             [
-                'title' => 'Полный учебный план (Syllabus)',
-                'type' => 'pdf',
-                'file_path' => 'courses/resources/syllabus_full.pdf',
-                'order' => 2
+                'title' => 'Mastering DevOps: Kubernetes & CI/CD',
+                'desc' => 'Автоматизация развертывания и масштабирования приложений.',
+                'modules' => [
+                    'Linux Shell', 'Docker Internals', 'K8s Cluster', 'Helm Charts', 'Jenkins/GitHub Actions'
+                ]
             ],
             [
-                'title' => 'Список рекомендуемого ПО и литературы',
-                'type' => 'pdf',
-                'file_path' => 'courses/resources/setup_guide.pdf',
-                'order' => 3
+                'title' => 'UI/UX Design для разработчиков',
+                'desc' => 'Как создавать интерфейсы, которые нравятся пользователям.',
+                'modules' => [
+                    'Основы Figma', 'Типографика', 'Сетки и Layout', 'Прототипирование', 'Анимация'
+                ]
             ],
             [
-                'title' => 'Гайд по карьере и подготовке резюме',
-                'type' => 'pdf',
-                'file_path' => 'courses/resources/career_roadmap.pdf',
-                'order' => 4
+                'title' => 'Python для Data Science',
+                'desc' => 'Анализ данных, визуализация и основы машинного обучения.',
+                'modules' => [
+                    'Numpy & Pandas', 'Matplotlib', 'Scikit-learn', 'Нейросети', 'Big Data Intro'
+                ]
             ],
-            [
-                'title' => 'Шаблон дипломного проекта',
-                'type' => 'pdf',
-                'file_path' => 'courses/resources/diploma_template.pdf',
-                'order' => 5
-            ],
-        ]);
-
-        // 3. ЗАПОЛНЕНИЕ 10 МОДУЛЕЙ (По 4 видео-лекции в каждом)
-        $modulesData = [
-            'Окружение и Docker' => 'Настройка рабочего окружения для командной разработки.',
-            'Основы Laravel 11' => 'Маршрутизация, Контроллеры и Blade.',
-            'Eloquent ORM Глубокое погружение' => 'Сложные связи, оптимизация запросов и коллекции.',
-            'Безопасность и Auth' => 'Sanctum, JWT, политики доступа и роли.',
-            'API Development' => 'Создание RESTful API, ресурсы и версионирование.',
-            'Frontend: React Basics' => 'Компоненты, хуки и состояние приложения.',
-            'State Management' => 'Работа с Redux Toolkit и React Query.',
-            'Real-time & WebSockets' => 'Laravel Echo, Pusher и чаты в реальном времени.',
-            'Тестирование' => 'Unit, Feature и E2E тесты на Pest и Cypress.',
-            'Деплой и CI/CD' => 'GitHub Actions, Docker Compose и работа с сервером.',
         ];
 
-        $mOrder = 1;
-        foreach ($modulesData as $title => $desc) {
-            $module = $course->modules()->create([
-                'title' => $title,
-                'order' => $mOrder++
+        foreach ($coursesData as $cData) {
+            // 1. Создаем курс
+            $course = Course::create([
+                'title' => $cData['title'],
+                'description' => $cData['desc'],
             ]);
 
-            // Добавляем по 4 урока в каждый модуль
-            for ($i = 1; $i <= 4; $i++) {
-                $module->lessons()->create([
-                    'title' => "Урок $i. " . $this->getLessonTitle($title, $i),
-                    'type' => 'video',
-                    'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                    'order' => $i
+            // 2. Общие ресурсы (шапка курса) - одинаковые для всех
+            $course->resources()->createMany([
+                ['title' => 'Учебный план', 'type' => 'pdf', 'file_path' => '1.pdf', 'order' => 1],
+                ['title' => 'Гайд по установке', 'type' => 'pdf', 'file_path' => '1.pdf', 'order' => 2],
+            ]);
+
+            // 3. Создаем модули
+            $mOrder = 1;
+            foreach ($cData['modules'] as $moduleTitle) {
+                $module = $course->modules()->create([
+                    'title' => $moduleTitle,
+                    'order' => $mOrder++
                 ]);
+
+                // 4. Добавляем по 4 урока (2 видео + 2 PDF)
+                for ($i = 1; $i <= 4; $i++) {
+                    // Чередуем: нечетные - видео, четные - PDF
+                    $isTypeVideo = $i % 2 !== 0;
+
+                    $module->lessons()->create([
+                        'title' => ($isTypeVideo ? "Видео-лекция: " : "Текстовый гайд: ") . $this->getLessonTitle($i),
+                        'type' => $isTypeVideo ? 'video' : 'pdf',
+                        'video_url' => $isTypeVideo ? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' : null,
+                        'file_path' => $isTypeVideo ? null : '1.pdf',
+                        'order' => $i
+                    ]);
+                }
             }
         }
 
-        $this->command->info('Курс-гигант успешно создан: 10 модулей, 40 уроков и 5 ресурсов!');
+        $this->command->info('Успешно создано 4 курса с комбинированными уроками (Video/PDF)!');
     }
 
-    /**
-     * Генерация реалистичных названий для уроков
-     */
-    private function getLessonTitle($module, $num) {
+    private function getLessonTitle($num) {
         $titles = [
-            1 => 'Теоретическое введение и концепции',
-            2 => 'Практическая настройка и первый код',
-            3 => 'Продвинутые техники и приемы',
-            4 => 'Разбор ошибок и домашнее задание',
+            1 => 'Введение в тему и ключевые понятия',
+            2 => 'Подробный разбор документации',
+            3 => 'Практическая реализация и примеры',
+            4 => 'Дополнительные материалы и чеклист',
         ];
-        return $titles[$num];
+        return $titles[$num] ?? 'Дополнительный материал';
     }
 }
