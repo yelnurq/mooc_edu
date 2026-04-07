@@ -42,7 +42,6 @@ function App() {
               <Route path="/app/courses/:id" element={<CourseAppPage />} />
               <Route path="/app/dashboard" element={<Dashboard />} />
               <Route path="/app/settings" element={<SettingsPage />} />
-              <Route path="/app/admin/enroll" element={<AdminEnrollment />} />
             </Route>
           </Route>
 
@@ -51,7 +50,7 @@ function App() {
               <Route path="/admin" element={<div>asd</div>} />
               <Route path="/admin/users" element={<UsersManagement />} />
               <Route path="/admin/users/ldap" element={<LdapManagement />} />
-              <Route path="/admin/admin/enroll" element={<AdminEnrollment />} />
+              <Route path="/admin/enroll" element={<AdminEnrollment />} />
             </Route>
           </Route>
 
