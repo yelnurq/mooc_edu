@@ -15,7 +15,7 @@ class LessonController extends Controller
             'title' => 'required|string|max:255',
             'type' => 'required|in:video,pdf',
             'video_url' => 'nullable|string|url',
-            'file' => 'nullable|file|mimes:pdf|max:10240', // до 10МБ для PDF
+            'file' => 'nullable|file|mimes:pdf|max:20240', // до 10МБ для PDF
         ]);
 
         $maxOrder = $module->lessons()->max('order') ?? 0;

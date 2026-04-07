@@ -93,13 +93,22 @@ const CourseDetailPage = () => {
     );
   };
 
-  const getEmbedUrl = (url) => {
-    if (!url) return '';
-    if (url.includes('youtube.com/watch?v=')) return url.replace('watch?v=', 'embed/');
-    if (url.includes('youtu.be/')) return url.replace('youtu.be/', 'youtube.com/embed/');
-    return url;
-  };
+const getEmbedUrl = (url) => {
+  if (!url) return null;
+  
+  // Регулярное выражение для поиска ID видео (11 символов)
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  
+  const videoId = (match && match[2].length === 11) ? match[2] : null;
 
+  if (videoId) {
+    // Добавляем параметры для лучшей совместимости
+    return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
+  }
+  
+  return url; // Возвращаем как есть, если это уже embed ссылка
+};
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
       <div className="animate-pulse text-slate-400 font-black tracking-widest uppercase">Загрузка программы...</div>
