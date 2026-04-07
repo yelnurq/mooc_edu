@@ -37,13 +37,15 @@ Route::middleware(["token"])->group(function(){
 
       Route::prefix('admin/helpers/options')->group(function () {
             Route::get('/', [HelperController::class, 'getOptions']);
+            Route::get('/teachers', [HelperController::class, 'getOptionsWithTeacher']);
             Route::post('/', [HelperController::class, 'postOptions']);
             Route::put('/{id}', [HelperController::class, 'updateOption']);
             Route::delete('/{id}', [HelperController::class, 'deleteOption']);
         });
 
-
-    Route::get('/admin/users', [UserController::class, 'index']);
+Route::prefix('admin')->group(function () {
+    Route::apiResource('users', UserController::class);
+});
     Route::get('/admin/enrollments', [CourseController::class, 'getEnrollmentData']);
     
     Route::post('/logout', [AuthController::class, "logout"]);

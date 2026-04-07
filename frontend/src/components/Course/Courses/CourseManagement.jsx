@@ -75,7 +75,7 @@ const CourseManagement = () => {
 
   const fetchOptions = async () => {
     try {
-      const res = await api.get('/admin/helpers/options');
+      const res = await api.get('/admin/helpers/options/teachers');
       setOptions({
         categories: res.data.categories || [],
         teachers: res.data.teachers || []

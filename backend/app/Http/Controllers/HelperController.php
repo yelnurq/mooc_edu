@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -19,6 +20,24 @@ class HelperController extends Controller
                     ->orderBy('title')
                     ->get(),
         
+                'categories' => \App\Models\Category::select('id', 'name') // Используем title as name для унификации на фронте
+                    ->orderBy('title')
+                    ->get(),
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => 'Внутренняя ошибка сервера'], 500);
+        }
+    }
+    public function getOptionsWithTeacher()
+    {
+        try {
+            return response()->json([
+                'teachers' => User::where('role', '!=', 'student')
+                    ->select('id', 'name', 'role')
+                    ->orderBy('name')
+                    ->get(),
+
                 'categories' => \App\Models\Category::select('id', 'name') // Используем title as name для унификации на фронте
                     ->orderBy('title')
                     ->get(),

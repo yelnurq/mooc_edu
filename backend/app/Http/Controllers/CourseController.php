@@ -468,7 +468,7 @@ public function indexCourses(Request $request)
                 'id' => $course->id,
                 'title' => $course->title,
                 'category' => $course->category->name ?? 'Без категории',
-                'author' => $course->user->name ?? 'Администратор', // Автор курса
+                'author' => $course->getAuthorDisplayNameAttribute() ?? 'Администратор', // Автор курса
                 'modules_count' => $course->modules_count,
                 'lessons_count' => $course->lessons_count,
                 'students_count' => $course->students_count,

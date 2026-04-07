@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 class Course extends Model {
-    protected $fillable = ['title', 'image', 'description', 'category_id'];
+    protected $fillable = ['title', 'image', 'description', 'category_id', 'author_id', 'custom_author_name', 'author_type'];
     protected $appends = ['author_display_name'];
 
     public function author()
