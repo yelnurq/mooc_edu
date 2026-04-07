@@ -3,8 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Course;
-use App\Models\Module;
-use App\Models\Lesson;
+use App\Models\Category; // Не забудьте импортировать, если используете категории
 use Illuminate\Database\Seeder;
 
 class CourseSeeder extends Seeder
@@ -15,6 +14,7 @@ class CourseSeeder extends Seeder
             [
                 'title' => 'Профессия: Fullstack Developer на Laravel 11 & React',
                 'desc' => 'Максимально глубокий курс по современной веб-разработке.',
+                'image' => '1.jpg', // Добавлено изображение
                 'modules' => [
                     'Окружение и Docker', 'Основы Laravel 11', 'Eloquent ORM', 'Безопасность', 'API Dev',
                     'React Basics', 'State Management', 'WebSockets', 'Тестирование', 'Деплой'
@@ -23,6 +23,7 @@ class CourseSeeder extends Seeder
             [
                 'title' => 'Mastering DevOps: Kubernetes & CI/CD',
                 'desc' => 'Автоматизация развертывания и масштабирования приложений.',
+                'image' => '1.jpg', // Добавлено изображение
                 'modules' => [
                     'Linux Shell', 'Docker Internals', 'K8s Cluster', 'Helm Charts', 'Jenkins/GitHub Actions'
                 ]
@@ -30,6 +31,7 @@ class CourseSeeder extends Seeder
             [
                 'title' => 'UI/UX Design для разработчиков',
                 'desc' => 'Как создавать интерфейсы, которые нравятся пользователям.',
+                'image' => '1.jpg', // Добавлено изображение
                 'modules' => [
                     'Основы Figma', 'Типографика', 'Сетки и Layout', 'Прототипирование', 'Анимация'
                 ]
@@ -37,6 +39,7 @@ class CourseSeeder extends Seeder
             [
                 'title' => 'Python для Data Science',
                 'desc' => 'Анализ данных, визуализация и основы машинного обучения.',
+                'image' => '1.jpg', // Добавлено изображение
                 'modules' => [
                     'Numpy & Pandas', 'Matplotlib', 'Scikit-learn', 'Нейросети', 'Big Data Intro'
                 ]
@@ -44,13 +47,14 @@ class CourseSeeder extends Seeder
         ];
 
         foreach ($coursesData as $cData) {
-            // 1. Создаем курс
+            // 1. Создаем курс (теперь с полем image)
             $course = Course::create([
                 'title' => $cData['title'],
                 'description' => $cData['desc'],
+                'image' => $cData['image'], // Передаем путь к картинке
             ]);
 
-            // 2. Общие ресурсы (шапка курса) - одинаковые для всех
+            // 2. Общие ресурсы
             $course->resources()->createMany([
                 ['title' => 'Учебный план', 'type' => 'pdf', 'file_path' => '1.pdf', 'order' => 1],
                 ['title' => 'Гайд по установке', 'type' => 'pdf', 'file_path' => '1.pdf', 'order' => 2],
@@ -64,9 +68,8 @@ class CourseSeeder extends Seeder
                     'order' => $mOrder++
                 ]);
 
-                // 4. Добавляем по 4 урока (2 видео + 2 PDF)
+                // 4. Добавляем по 4 урока
                 for ($i = 1; $i <= 4; $i++) {
-                    // Чередуем: нечетные - видео, четные - PDF
                     $isTypeVideo = $i % 2 !== 0;
 
                     $module->lessons()->create([
@@ -80,7 +83,7 @@ class CourseSeeder extends Seeder
             }
         }
 
-        $this->command->info('Успешно создано 4 курса с комбинированными уроками (Video/PDF)!');
+        $this->command->info('Успешно создано 4 курса с изображениями!');
     }
 
     private function getLessonTitle($num) {

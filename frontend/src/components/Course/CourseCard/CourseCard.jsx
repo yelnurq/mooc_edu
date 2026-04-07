@@ -1,7 +1,17 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, VolumeX, Heart, ArrowRight, Clock, BookOpen } from 'lucide-react';
+import { Play, VolumeX, Heart, ArrowRight, BookOpen, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+/**
+ * Для корректной работы этого компонента, Laravel должен возвращать:
+ * 1. category (объект с полем name)
+ * 2. modules_count (через ->withCount('modules'))
+ * 3. lessons_count (через ->withCount('lessons'))
+ */
+
+const ASSET_URL = "http://localhost:8000/storage/";
+
 export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
   const [showPreview, setShowPreview] = useState(false);
   const timeoutRef = useRef(null);
@@ -17,22 +27,21 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
     setShowPreview(false);
   };
 
-  // Фейковая ссылка на YouTube (используем embed версию с параметрами)
-  // controls=0 (скрыть кнопки), autoplay=1 (автозапуск), mute=1 (без звука), loop=1 (по кругу)
-  const videoId = "dQw4w9WgXcQ"; // Классика, либо поставь любой другой ID
+  // YouTube Preview
+  const videoId = "dQw4w9WgXcQ"; 
   const youtubeSrc = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&rel=0&modestbranding=1`;
 
   return (
     <div 
-      className="group bg-white rounded-[2.5rem] border border-slate-200/60 flex flex-col hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-500 overflow-hidden relative"
+      className="group bg-white rounded-[2.5rem] border border-slate-200/60 flex flex-col hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-500 overflow-hidden relative h-full"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* --- Media Area --- */}
       <div className="relative h-56 m-2.5 rounded-[2rem] overflow-hidden bg-slate-900">
         <img 
-          src={course.image} 
-          alt="" 
+          src={`${ASSET_URL}${course.image}`}
+          alt={course.title} 
           className={`w-full h-full object-cover transition-all duration-700 ${showPreview ? 'scale-110 blur-md opacity-30' : 'scale-100'}`} 
         />
         
@@ -43,17 +52,16 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-10 pointer-events-none" // pointer-events-none чтобы клики не уходили в iframe
+              className="absolute inset-0 z-10 pointer-events-none"
             >
               <iframe
-                className="w-full h-[150%] -translate-y-[15%] pointer-events-none" // Увеличиваем высоту и смещаем, чтобы скрыть черные полосы YouTube
+                className="w-full h-[150%] -translate-y-[15%] pointer-events-none"
                 src={youtubeSrc}
                 title="Course Preview"
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               />
               
-              {/* Overlay для стиля */}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
               
               <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center z-20">
@@ -69,6 +77,7 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
 
         <button 
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
             toggleFavorite(course.id);
           }}
@@ -80,37 +89,62 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
 
       {/* --- Content Area --- */}
       <div className="p-7 pt-2 flex flex-col flex-1">
-        <div className="flex items-center gap-2 mb-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">       
-            <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{course.category}</span>
+        <div className="flex items-center gap-2 mb-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">      
+            <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+              {course.category?.name || 'Общее'}
+            </span>
             <span className="text-slate-300">•</span>
-            <span>{course.level}</span>
+            <span>{course.level || 'Все уровни'}</span>
         </div>
 
         <h3 className="text-left text-lg font-black text-slate-900 leading-tight mb-4 group-hover:text-blue-600 transition-colors line-clamp-2">
           {course.title}
         </h3>
 
-        <div className="flex items-center gap-3 mb-8">
-            <img src={course.author.avatar} className="w-7 h-7 rounded-full object-cover shadow-sm ring-2 ring-slate-50" alt="" />
-            <span className="text-xs font-bold text-slate-600">{course.author.name}</span>
-        </div>
-
-        <div className="mt-auto pt-5 border-t border-slate-50 flex items-center justify-between">
-          <div className="flex items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-tighter">
-            <div className="flex items-center gap-1.5"><Clock size={14} className="text-blue-500" /> {course.duration}ч</div>
-            <div className="flex items-center gap-1.5"><BookOpen size={14} className="text-blue-500" /> {course.lessons}</div>
+        {course.author && (
+          <div className="flex items-center gap-3 mb-6">
+              <img src={course.author.avatar} className="w-7 h-7 rounded-full object-cover shadow-sm ring-2 ring-slate-50" alt="" />
+              <span className="text-xs font-bold text-slate-600">{course.author.name}</span>
           </div>
-       <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
-          <Link 
-            to={`/courses/${course.id}`}
-            className="flex items-center gap-2 text-blue-600 font-black text-[11px] uppercase tracking-widest group/btn"
-          >
-            Подробнее 
-            <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
-          </Link>
-        </div>
+        )}
+
+        {/* --- Stats Footer --- */}
+        <div className="mt-auto space-y-5">
+          <div className="flex items-center gap-6 pt-5 border-t border-slate-50">
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Модули</span>
+              <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                <div className="p-1.5 bg-blue-50 rounded-lg">
+                  <Layers size={14} className="text-blue-600" />
+                </div>
+                {course.modules_count || 0}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Уроки</span>
+              <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                <div className="p-1.5 bg-indigo-50 rounded-lg">
+                  <BookOpen size={14} className="text-indigo-600" />
+                </div>
+                {course.lessons_count || 0}
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-5 border-t border-slate-50">
+            <Link 
+              to={`/courses/${course.id}`}
+              className="flex items-center justify-center w-full gap-2 bg-slate-50 hover:bg-blue-600 hover:text-white text-slate-900 py-3 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all group/btn shadow-sm"
+            >
+              Подробнее 
+              <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+export default CourseCard;

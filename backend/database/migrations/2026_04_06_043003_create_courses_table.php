@@ -14,7 +14,14 @@ return new class extends Migration
         Schema::create('courses', function (Blueprint $table) {
             $table->id();
             $table->string('title');
+            $table->string('image')->nullable();
             $table->text('description')->nullable();
+
+            $table->foreignId('author_id')->nullable()->constrained('users')->onDelete('set null');
+    
+            $table->string('custom_author_name')->nullable();
+    
+            $table->string('author_type')->default('user'); 
             $table->timestamps();
         });
     }

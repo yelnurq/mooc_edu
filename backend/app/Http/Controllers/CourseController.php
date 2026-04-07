@@ -49,14 +49,41 @@ public function adminEnroll(Request $request)
 }
 public function myCourses()
 {
-    $user = Auth::user();
-    $courses = $user->courses()->withCount(['modules as lessons_count' => function($query) {
-        $query->join('lessons', 'modules.id', '=', 'lessons.module_id');
-    }])->get();
+    $user = auth()->user();
+
+    $courses = $user->courses()
+        ->with(['modules' => function($query) {
+            $query->select('id', 'course_id')->withCount('lessons');
+        }])
+        ->get()
+        ->map(function ($course) {
+            // Считаем общее количество уроков во всех модулях
+            $totalLessons = $course->modules->sum('lessons_count');
+            
+            // Имитация прогресса (если у вас нет таблицы lesson_user для трекинга)
+            // В реальном проекте здесь должен быть расчет выполненных уроков юзером
+            $progress = $course->pivot->progress ?? 0;
+
+            return [
+                'id' => $course->id,
+                'title' => $course->title,
+                'description' => $course->description,
+                'image' => $course->image_url ?? 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800',
+                'lessons_count' => $totalLessons,
+                'modules_count' => $course->modules->count(),
+                // Данные для прогресс-бара в React
+                'pivot' => [
+                    'progress' => $progress,
+                    'last_accessed' => $course->pivot->updated_at ?? now(),
+                ],
+                // Дополнительные мета-данные для бейджиков
+                'is_premium' => true, 
+                'category' => 'Web Development',
+            ];
+        });
 
     return response()->json($courses);
 }
-
 /**
  * Обновленный метод show с проверкой доступа
  */
@@ -258,37 +285,41 @@ public function addResource(Request $request, $courseId)
     /**
      * Получить список всех курсов
      */
-    public function index()
-    {
-        try {
-            $courses = Course::with(['modules.lessons'])
-                ->orderBy('created_at', 'desc')
-                ->get();
+public function index()
+{
+    try {
+        $courses = Course::with(['modules.lessons']) // Загружаем категорию и вложенности
+            ->withCount([
+                'modules', 
+                'lessons' 
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-            $courses->transform(function ($course) {
-                // Считаем уроки
-                $course->lessons_count = $course->modules->sum(function ($module) {
-                    return $module->lessons->count();
-                });
+        // Добавляем URL и проверяем подсчет уроков
+        $courses->each(function ($course) {
+            // Если withCount('lessons') выдает 0 из-за отсутствия прямой связи, 
+            // считаем вручную из уже загруженных данных:
+            if ($course->lessons_count === 0 || $course->lessons_count === null) {
+                $course->lessons_count = $course->modules->pluck('lessons')->flatten()->count();
+            }
 
-                // Генерируем URL для силлабуса, если он есть
-                if ($course->syllabus_path) {
-                    $course->syllabus_url = asset('storage/' . $course->syllabus_path);
-                }
+            // Генерируем URL для силлабуса
+            if ($course->syllabus_path) {
+                $course->syllabus_url = asset('storage/' . $course->syllabus_path);
+            }
+        });
 
-                return $course;
-            });
+        return response()->json($courses, 200);
 
-            return response()->json($courses, 200);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Ошибка при получении списка курсов',
-                'debug' => $e->getMessage()
-            ], 500);
-        }
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Ошибка при получении списка курсов',
+            'debug' => $e->getMessage()
+        ], 500);
     }
+}
 
     // Создать курс (с поддержкой промо и силлабуса)
     public function store(Request $request)
