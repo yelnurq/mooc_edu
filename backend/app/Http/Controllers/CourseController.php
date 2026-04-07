@@ -413,38 +413,61 @@ public function index(Request $request)
 public function indexCourses(Request $request)
 {
     try {
-        $query = Course::with(['category']);
+        // 1. Формируем основной запрос с подсчетом связанных записей
+        $query = Course::with(['category', 'user']) // 'user' - если это автор курса
+            ->withCount([
+                'modules', // Добавит поле modules_count
+                'lessons', // Добавит поле lessons_count (если связь Lesson прописана напрямую в Course)
+                'users as students_count' // Добавит поле students_count из таблицы course_user
+            ]);
 
-        // Поиск
+        // 2. Фильтрация (Поиск)
         if ($request->filled('search')) {
             $query->where('title', 'like', '%' . $request->search . '%');
         }
 
-        // Простая пагинация
+        // 3. Пагинация
         $courses = $query->latest()->paginate(10);
 
-        // БЕЗОПАСНЫЙ подсчет статистики
-        // Проверьте, есть ли у вас поле 'status' в таблице courses!
-        $stats = [
+        // 4. Общая статистика для всего раздела (Top Cards)
+        $globalStats = [
             'total' => Course::count(),
-            'active' => Course::count(), // Временно так, если нет поля status
-            'drafts' => 0,
-            'students_count' => \DB::table('course_user')->count(), 
+            'active' => Course::count(), 
+            'total_students' => \DB::table('course_user')->distinct('user_id')->count(),
+            'total_lessons' => \App\Models\Lesson::count(), // Если есть такая модель
         ];
+
+        // 5. Формируем ответ, добавляя данные об авторе и структуре в каждый курс
+        $formattedData = collect($courses->items())->map(function ($course) {
+            return [
+                'id' => $course->id,
+                'title' => $course->title,
+                'category' => $course->category->name ?? 'Без категории',
+                'author' => $course->user->name ?? 'Администратор', // Автор курса
+                'modules_count' => $course->modules_count,
+                'lessons_count' => $course->lessons_count,
+                'students_count' => $course->students_count,
+                'created_at' => $course->created_at->format('d.m.Y'),
+                // Можно добавить статус или цену, если они есть в БД
+            ];
+        });
 
         return response()->json([
             'status' => 'success',
-            'data' => $courses->items(),
+            'data' => $formattedData,
             'meta' => [
                 'current_page' => $courses->currentPage(),
                 'last_page' => $courses->lastPage(),
                 'total' => $courses->total(),
             ],
-            'stats' => $stats
+            'stats' => $globalStats
         ]);
+
     } catch (\Exception $e) {
-        // Это поможет увидеть реальную ошибку в Response браузера
-        return response()->json(['error' => $e->getMessage()], 500);
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ], 500);
     }
 }
 

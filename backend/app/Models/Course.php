@@ -30,6 +30,9 @@ public function category() {
     {
         return $this->belongsToMany(User::class)->withPivot('progress')->withTimestamps();
     }
+    public function user() {
+    return $this->belongsTo(User::class, 'user_id'); // Автор курса
+}
     public function users()
     {
         return $this->belongsToMany(User::class, 'course_user')

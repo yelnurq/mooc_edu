@@ -172,6 +172,7 @@ const CourseManagement = () => {
         </div>
       </div>
 
+
       {/* CONTENT */}
       <div className="relative">
         {loading && courses.length === 0 ? (
@@ -182,39 +183,55 @@ const CourseManagement = () => {
               <div key={course.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all group border-l-4 border-l-transparent hover:border-l-blue-600">
                 <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6">
                   <div className="flex items-center gap-4 text-left">
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-slate-100 rounded-xl overflow-hidden shrink-0 relative flex items-center justify-center">
-                       {course.image ? (
-                         <img src={course.image} alt="" className="w-full h-full object-cover" />
-                       ) : (
-                         <BookOpen size={24} className="text-slate-300" />
-                       )}
-                    </div>
+                   
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${course.status === 'published' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                          {course.status === 'published' ? 'Опубликован' : 'Черновик'}
-                        </span>
+                       
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
                           ID: {course.id}
                         </span>
                       </div>
                       <h4 className="font-bold text-slate-900 text-sm md:text-base uppercase tracking-tighter truncate leading-tight">{course.title}</h4>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-                        <span className="flex items-center gap-1.5"><Layers size={12}/> {course.category_name}</span>
-                        <span className="flex items-center gap-1.5"><User size={12}/> {course.author_name}</span>
-                        <span className="flex items-center gap-1.5"><BarChart3 size={12}/> {course.level}</span>
+                      
+                      <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
+                        <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md"><Layers size={12} className="text-blue-500"/> {course.category}</span>
+                        <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md"><User size={12} className="text-purple-500"/> {course.author}</span>
+                        <span className="flex items-center gap-1.5"><Clock size={12}/> {course.created_at}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between lg:justify-end gap-8 border-t lg:border-t-0 pt-4 lg:pt-0">
-                    <div className="text-left lg:text-right">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Студентов</p>
-                      <p className="text-sm font-black text-slate-900">{course.students_count || 0}</p>
+                  {/* STATS ВНУТРИ КАРТОЧКИ */}
+                  <div className="flex items-center justify-between lg:justify-end gap-4 md:gap-8 border-t lg:border-t-0 pt-4 lg:pt-0">
+                    <div className="text-left lg:text-center">
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Модулей</p>
+                      <p className="text-xs font-black text-slate-900 flex items-center gap-1 justify-start lg:justify-center">
+                        <Layers size={10} className="text-slate-400"/> {course.modules_count || 0}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2 border-l border-slate-100 pl-6">
-                      <button className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"><Edit2 size={18}/></button>
-                      <button onClick={() => handleDelete(course.id)} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18}/></button>
+                    <div className="text-left lg:text-center">
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Уроков</p>
+                      <p className="text-xs font-black text-slate-900 flex items-center gap-1 justify-start lg:justify-center">
+                        <PlayCircle size={10} className="text-slate-400"/> {course.lessons_count || 0}
+                      </p>
+                    </div>
+                    <div className="text-left lg:text-center">
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Студентов</p>
+                      <p className="text-xs font-black text-slate-900 flex items-center gap-1 justify-start lg:justify-center">
+                        <GraduationCap size={10} className="text-slate-400"/> {course.students_count || 0}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1 border-l border-slate-100 pl-4 md:pl-6 ml-2">
+                      <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                        <Edit2 size={16}/>
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(course.id)} 
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                      >
+                        <Trash2 size={16}/>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -228,6 +245,14 @@ const CourseManagement = () => {
           </div>
         )}
       </div>
+
+      {/* ПАГИНАЦИЯ (Добавьте если нужно) */}
+      {meta.last_page > 1 && (
+        <div className="flex justify-center gap-2 mt-8">
+            {/* Логика кнопок пагинации по currentPage */}
+        </div>
+      )}
+
 
       {/* MODAL */}
       {isModalOpen && (

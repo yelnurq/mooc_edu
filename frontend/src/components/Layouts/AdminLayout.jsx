@@ -31,6 +31,7 @@ const AdminLayout = () => {
   const allMenuItems = [
     { id: 'dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={20} />, label: 'Дэшборд' },
     { id: 'enroll', path: '/admin/enroll', icon: <CopyCheckIcon size={20} />, label: 'Управление доступами' },
+    { id: 'courses', path: '/admin/courses', icon: <CopyCheckIcon size={20} />, label: 'Управление курсами' },
     { id: 'users', path: '/admin/users', icon: <Users size={20} />, label: 'Пользователи' },
     { id: 'ldap', path: '/admin/users/ldap', icon: <Users2 size={20} />, label: 'LDAP Пользователи' },
     { id: 'logs', path: '/admin/logs', icon: <Logs size={20} />, label: 'Логи' },
