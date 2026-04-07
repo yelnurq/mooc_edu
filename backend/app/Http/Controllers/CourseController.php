@@ -62,6 +62,9 @@ public function getStructure(Course $course)
         'course' => [
             'id' => $course->id,
             'title' => $course->title,
+            'image' => $course->image,
+            'description' => $course->description,
+            'author' => $course->getAuthorDisplayNameAttribute(),
         ],
         'resources' => $structure->resources, // Передаем ресурсы
         'modules' => $structure->modules
