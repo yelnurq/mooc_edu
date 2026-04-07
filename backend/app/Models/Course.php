@@ -5,14 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 class Course extends Model {
-    protected $fillable = ['title', 'image', 'description'];
+    protected $fillable = ['title', 'image', 'description', 'category_id'];
     protected $appends = ['author_display_name'];
 
     public function author()
     {
         return $this->belongsTo(User::class, 'author_id');
     }
-
+public function category() {
+        return $this->belongsTo(Category::class);
+    }
     public function getAuthorDisplayNameAttribute()
     {
         if ($this->author_type === 'user' && $this->author) {

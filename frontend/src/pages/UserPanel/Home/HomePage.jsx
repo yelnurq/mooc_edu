@@ -180,9 +180,9 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
   return (
     <div className="bg-[#F8FAFC] min-h-screen">
       {/* --- 1. HERO SECTION --- */}
-      <section className="relative pt-24 pb-60 overflow-hidden bg-indigo-700">
+      <section className="relative pt-24 pb-60 overflow-hidden bg-blue-700">
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-indigo-700 to-blue-800" />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-700 to-blue-800" />
           <div className="absolute inset-0 opacity-10" 
                style={{ backgroundImage: `linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)`, 
                         backgroundSize: '40px 40px' }} />
@@ -210,7 +210,7 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
               </motion.p>
 
               <motion.div variants={itemVars} className="flex flex-wrap justify-center lg:justify-start gap-4">
-                <Link to="/courses" className="px-10 py-5 bg-white text-indigo-700 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-yellow-400 hover:text-indigo-900 transition-all shadow-2xl flex items-center gap-3 group">
+                <Link to="/courses" className="px-10 py-5 bg-white text-blue-700 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-yellow-400 hover:text-blue-900 transition-all shadow-2xl flex items-center gap-3 group">
                   Начать учиться <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <button className="px-10 py-5 bg-white/5 border border-white/20 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-white/10 backdrop-blur-sm transition-all flex items-center gap-3">
@@ -255,9 +255,9 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
         Чему вы научитесь сегодня?
       </h2>
       <div className="flex justify-center flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-xl">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-xl">
           <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-          <p className="text-indigo-900 font-black uppercase text-[10px] tracking-widest">
+          <p className="text-blue-900 font-black uppercase text-[10px] tracking-widest">
             В каталоге доступно более 1000 курсов
           </p>
         </div>
@@ -274,7 +274,7 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
           <div key={group.name} className="relative">
             <div className="flex items-center justify-between mb-10 border-b border-slate-200 pb-6">
               <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-indigo-600 border border-slate-100">
+                 <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-blue-600 border border-slate-100">
                     {group.icon}
                  </div>
                  <h3 className="text-3xl font-black text-slate-900 tracking-tight">
@@ -283,7 +283,7 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
               </div>
               <Link 
                 to={`/courses?category=${group.name}`} 
-                className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-colors"
+                className="group flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors"
               >
                 Каталог раздела <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -332,8 +332,8 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
           <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-6">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <span className="w-8 h-1 bg-indigo-600 rounded-full" />
-                <span className="text-indigo-600 font-black uppercase text-[10px] tracking-[0.2em]">Разнообразие</span>
+                <span className="w-8 h-1 bg-blue-600 rounded-full" />
+                <span className="text-blue-600 font-black uppercase text-[10px] tracking-[0.2em]">Разнообразие</span>
               </div>
               <h4 className="text-4xl font-black text-slate-900 tracking-tight">И еще десятки направлений</h4>
             </div>
@@ -352,16 +352,16 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
               <Link 
                 key={cat}
                 to={`/courses?category=${cat}`}
-                className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-500/5 transition-all group"
+                className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all group"
               >
-                <span className="font-bold text-slate-600 text-xs group-hover:text-indigo-600">{cat}</span>
-                <ArrowRight size={12} className="text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                <span className="font-bold text-slate-600 text-xs group-hover:text-blue-600">{cat}</span>
+                <ArrowRight size={12} className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
               </Link>
             ))}
             
             <Link 
               to="/courses"
-              className="flex items-center justify-center p-4 bg-slate-900 rounded-2xl hover:bg-indigo-600 transition-all group"
+              className="flex items-center justify-center p-4 bg-slate-900 rounded-2xl hover:bg-blue-600 transition-all group"
             >
               <span className="font-bold text-white text-xs mr-2">Все категории</span>
               <LayoutGrid size={14} className="text-white/50 group-hover:rotate-90 transition-transform" />
@@ -378,7 +378,7 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
   /* rounded-t-[6rem] — оставили большой радиус сверху
      rounded-b-none — убрали радиус снизу
   */
-  className="relative bg-indigo-600 rounded-t-[6rem] rounded-b-none p-12 lg:p-20 overflow-hidden shadow-2xl shadow-indigo-200"
+  className="relative bg-blue-600 rounded-t-[6rem] rounded-b-none p-12 lg:p-20 overflow-hidden shadow-2xl shadow-blue-200"
 >
   {/* --- ДОБАВЛЕННЫЙ СЛОЙ С УЗОРОМ (как в Hero) --- */}
   <div 
@@ -393,7 +393,7 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
   {/* Декоративные пятна (светящиеся круги) */}
   {/* z-10, чтобы быть поверх сетки */}
   <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-[100px] -mr-48 -mt-48 animate-pulse z-10" />
-  <div className="absolute bottom-0 left-0 w-64 h-64 bg-indigo-400/20 rounded-full blur-3xl -ml-32 -mb-32 z-10" />
+  <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-400/20 rounded-full blur-3xl -ml-32 -mb-32 z-10" />
   
   {/* Контентный блок */}
   {/* Убедитесь, что здесь стоит z-20 или выше, чтобы контент был поверх всего */}
@@ -407,20 +407,20 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
       <span className="text-yellow-400 italic">интеллектуальный прыжок?</span>
     </h2>
     
-    <p className="text-indigo-100 mb-12 text-lg opacity-90 font-medium leading-relaxed">
+    <p className="text-blue-100 mb-12 text-lg opacity-90 font-medium leading-relaxed">
       Присоединяйтесь к 50,000+ студентов со всего мира. Начните обучение сегодня и получите доступ к закрытому чату экспертов.
     </p>
     
     <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
       <Link 
         to="/register" 
-        className="w-full sm:w-auto px-12 py-6 bg-yellow-400 text-indigo-900 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-white hover:scale-105 transition-all shadow-xl shadow-black/10"
+        className="w-full sm:w-auto px-12 py-6 bg-yellow-400 text-blue-900 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-white hover:scale-105 transition-all shadow-xl shadow-black/10"
       >
         Создать аккаунт бесплатно
       </Link>
       <Link 
         to="/courses" 
-        className="w-full sm:w-auto px-12 py-6 bg-indigo-700/50 text-white border border-indigo-400/30 backdrop-blur-sm rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-indigo-500 transition-all"
+        className="w-full sm:w-auto px-12 py-6 bg-blue-700/50 text-white border border-blue-400/30 backdrop-blur-sm rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-blue-500 transition-all"
       >
         В каталог курсов
       </Link>
@@ -432,13 +432,13 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
         {[1,2,3,4].map(i => (
           <img 
             key={i}
-            className="w-8 h-8 rounded-full border-2 border-indigo-600" 
+            className="w-8 h-8 rounded-full border-2 border-blue-600" 
             src={`https://ui-avatars.com/api/?name=User+${i}&background=random`} 
             alt="Student" 
           />
         ))}
       </div>
-      <span className="text-indigo-200 text-xs font-bold tracking-tight">
+      <span className="text-blue-200 text-xs font-bold tracking-tight">
         +42 человека присоединились сегодня
       </span>
     </div>

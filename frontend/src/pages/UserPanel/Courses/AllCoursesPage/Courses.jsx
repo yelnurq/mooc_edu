@@ -84,7 +84,7 @@ const CoursesPage = () => {
             
         {/* BREADCRUMBS */}
         <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-8">
-          <span className="hover:text-indigo-600 cursor-pointer transition-colors">Главная</span>
+          <span className="hover:text-blue-600 cursor-pointer transition-colors">Главная</span>
           <ChevronRight size={12} />
           <span className="text-slate-900">Каталог курсов</span>
         </nav>
@@ -101,11 +101,11 @@ const CoursesPage = () => {
     </div>
           
           <div className="relative w-full md:w-[450px] group">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
             <input 
               type="text" 
               placeholder="Какой навык хотите освоить?" 
-              className="w-full pl-14 pr-6 py-5 bg-white border border-slate-200/50 rounded-[2rem] focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500/20 transition-all font-bold text-sm shadow-sm placeholder:text-slate-400"
+              className="w-full pl-14 pr-6 py-5 bg-white border border-slate-200/50 rounded-[2rem] focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/20 transition-all font-bold text-sm shadow-sm placeholder:text-slate-400"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -119,11 +119,11 @@ const CoursesPage = () => {
             <div className="bg-white p-8 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-200/60 sticky top-10">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-2">
-                  <LayoutGrid size={16} className="text-indigo-600" />
+                  <LayoutGrid size={16} className="text-blue-600" />
                   <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">Категории</h3>
                 </div>
                 {selectedCategory !== 'Все' && (
-                  <button onClick={resetFilters} className="text-[10px] font-black uppercase text-indigo-600 hover:text-indigo-700 transition-all">
+                  <button onClick={resetFilters} className="text-[10px] font-black uppercase text-blue-600 hover:text-blue-700 transition-all">
                     Сброс
                   </button>
                 )}
@@ -134,7 +134,7 @@ const CoursesPage = () => {
                 <input 
                   type="text"
                   placeholder="Быстрый поиск..."
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all outline-none"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all outline-none"
                   value={categorySearch}
                   onChange={(e) => setCategorySearch(e.target.value)}
                 />
@@ -148,12 +148,12 @@ const CoursesPage = () => {
                     onClick={() => setSelectedCategory(cat)}
                     className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-xs font-black transition-all group ${
                       selectedCategory === cat 
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
-                      : 'text-slate-500 hover:bg-slate-50 hover:text-indigo-600'
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                      : 'text-slate-500 hover:bg-slate-50 hover:text-blue-600'
                     }`}
                   >
                     <span className="flex items-center gap-3">
-                      <Tag size={14} className={selectedCategory === cat ? 'text-indigo-200' : 'text-slate-300 group-hover:text-indigo-400'} />
+                      <Tag size={14} className={selectedCategory === cat ? 'text-blue-200' : 'text-slate-300 group-hover:text-blue-400'} />
                       {cat}
                     </span>
                     {selectedCategory === cat && <Check size={14} />}
@@ -177,7 +177,7 @@ const CoursesPage = () => {
               <div className="flex items-center gap-4">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Сортировка</span>
                 <select 
-                  className="bg-white border border-slate-200 rounded-2xl px-6 py-3 text-[11px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-indigo-500/5 cursor-pointer shadow-sm hover:border-indigo-200 transition-all appearance-none"
+                  className="bg-white border border-slate-200 rounded-2xl px-6 py-3 text-[11px] font-black uppercase tracking-widest outline-none focus:ring-4 focus:ring-blue-500/5 cursor-pointer shadow-sm hover:border-blue-200 transition-all appearance-none"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                 >
@@ -223,7 +223,7 @@ const CoursesPage = () => {
               <div className="mt-20 text-center">
                 <button 
                   onClick={() => setVisibleCount(v => v + 12)}
-                  className="group relative inline-flex items-center gap-4 px-12 py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-[11px] tracking-[0.2em] hover:bg-indigo-600 hover:-translate-y-1 transition-all shadow-xl shadow-slate-200"
+                  className="group relative inline-flex items-center gap-4 px-12 py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-[11px] tracking-[0.2em] hover:bg-blue-600 hover:-translate-y-1 transition-all shadow-xl shadow-slate-200"
                 >
                   Показать еще
                   <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
@@ -239,7 +239,7 @@ const CoursesPage = () => {
                 </div>
                 <h3 className="text-3xl font-black text-slate-900 tracking-tight">Ничего не нашлось</h3>
                 <p className="text-slate-400 mt-4 font-medium max-w-xs mx-auto">Попробуйте изменить категорию или поисковый запрос</p>
-                <button onClick={resetFilters} className="mt-10 bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">Сбросить фильтры</button>
+                <button onClick={resetFilters} className="mt-10 bg-blue-600 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">Сбросить фильтры</button>
               </div>
             )}
           </div>

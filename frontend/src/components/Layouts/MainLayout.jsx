@@ -139,7 +139,7 @@ const MainLayout = () => {
       {/* --- FOOTER --- */}
 <footer className="bg-slate-900 pt-24 pb-12 overflow-hidden relative">
   {/* Декоративный элемент — легкое свечение, перекликающееся с CTA */}
-  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
+  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
   
   <div className="max-w-[1440px] mx-auto px-8 lg:px-12 relative z-10">
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-20">
@@ -147,11 +147,11 @@ const MainLayout = () => {
       {/* Brand Section */}
       <div className="space-y-8">
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:border-indigo-500 transition-colors">
+          <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10 group-hover:border-blue-500 transition-colors">
             <img src="images/icons/logo.png" alt="Logo" className="h-7 w-7 object-contain" />
           </div>
           <span className="font-black text-2xl tracking-tighter text-white uppercase">
-            KAZ<span className="text-indigo-500">UTB</span>
+            KAZ<span className="text-blue-500">UTB</span>
           </span>
         </Link>
         <p className="text-slate-400 text-sm font-medium leading-relaxed max-w-xs">
@@ -160,7 +160,7 @@ const MainLayout = () => {
         <div className="flex items-center gap-4">
           {/* Соцсети в едином стиле */}
           {['Fb', 'Tw', 'In', 'Yt'].map((social) => (
-            <div key={social} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-black text-slate-500 hover:text-white hover:border-indigo-500 cursor-pointer transition-all">
+            <div key={social} className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-black text-slate-500 hover:text-white hover:border-blue-500 cursor-pointer transition-all">
               {social}
             </div>
           ))}
@@ -169,12 +169,12 @@ const MainLayout = () => {
 
       {/* Navigation Columns */}
       <div>
-        <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-indigo-500 mb-8">Навигация</h4>
+        <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-blue-500 mb-8">Навигация</h4>
         <ul className="space-y-4">
           {['Все курсы', 'О проекте', 'Менторство', 'Цены'].map((item) => (
             <li key={item}>
               <Link to="/" className="text-slate-400 hover:text-white text-sm font-bold transition-colors flex items-center gap-2 group">
-                <span className="w-0 h-px bg-indigo-500 group-hover:w-3 transition-all" /> {item}
+                <span className="w-0 h-px bg-blue-500 group-hover:w-3 transition-all" /> {item}
               </Link>
             </li>
           ))}
@@ -182,7 +182,7 @@ const MainLayout = () => {
       </div>
 
       <div>
-        <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-indigo-500 mb-8">Помощь</h4>
+        <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-blue-500 mb-8">Помощь</h4>
         <ul className="space-y-4">
           {['Центр поддержки', 'Конфиденциальность', 'Правила', 'Новости'].map((item) => (
             <li key={item}>
@@ -199,15 +199,15 @@ const MainLayout = () => {
         <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-white mb-6">Связаться</h4>
         <ul className="space-y-6">
           <li className="flex items-start gap-4">
-            <MapPin size={20} className="text-indigo-500 shrink-0" />
+            <MapPin size={20} className="text-blue-500 shrink-0" />
             <span className="text-sm font-bold text-slate-300 leading-tight">Астана, ул. Кажымукана 7</span>
           </li>
           <li className="flex items-center gap-4">
-            <Mail size={20} className="text-indigo-500 shrink-0" />
+            <Mail size={20} className="text-blue-500 shrink-0" />
             <span className="text-sm font-bold text-slate-300">hello@kazutb.edu</span>
           </li>
           <li className="flex items-center gap-4">
-            <div className="px-4 py-2 bg-indigo-600 rounded-xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-indigo-500 cursor-pointer transition-all">
+            <div className="px-4 py-2 bg-blue-600 rounded-xl text-[10px] font-black text-white uppercase tracking-widest hover:bg-blue-500 cursor-pointer transition-all">
               Написать нам
             </div>
           </li>
@@ -232,7 +232,7 @@ const MainLayout = () => {
           <button 
             key={lang} 
             className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all ${
-              lang === 'RU' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
+              lang === 'RU' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'
             }`}
           >
             {lang}
