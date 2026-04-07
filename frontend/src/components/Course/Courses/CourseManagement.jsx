@@ -7,7 +7,7 @@ import {
   User
 } from 'lucide-react';
 import api from '../../../api/axios';
-
+import { Link } from 'react-router-dom';
 // --- ВСПОМОГАТЕЛЬНЫЕ КОМПОНЕНТЫ ---
 
 const StatCard = ({ icon: Icon, label, value, colorClass, description, isPrimary, unit = "ед." }) => (
@@ -233,6 +233,12 @@ const CourseManagement = () => {
                         <Trash2 size={16}/>
                       </button>
                     </div>
+                    <Link 
+                    to={`/admin/courses/${course.id}/edit`} 
+                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                    >
+                    <Edit2 size={16}/>
+                    </Link>
                   </div>
                 </div>
               </div>

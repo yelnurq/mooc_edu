@@ -46,6 +46,27 @@ public function adminEnroll(Request $request)
         'message' => "Студент {$user->name} успешно зачислен на курс {$course->title}"
     ], 200);
 }
+public function getStructure(Course $course)
+{
+    $structure = $course->load([
+        'resources', // Загружаем ресурсы курса
+        'modules' => function($query) {
+            $query->with(['lessons' => function($q) {
+                $q->orderBy('order', 'asc');
+            }])->orderBy('order', 'asc');
+        }
+    ]);
+
+    return response()->json([
+        'status' => 'success',
+        'course' => [
+            'id' => $course->id,
+            'title' => $course->title,
+        ],
+        'resources' => $structure->resources, // Передаем ресурсы
+        'modules' => $structure->modules
+    ]);
+}
 public function getEnrollmentData()
 {
     try {

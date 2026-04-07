@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\LessonController;
+use App\Http\Controllers\Admin\ModuleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\HelperController;
@@ -52,5 +54,11 @@ Route::middleware(["token"])->group(function(){
     
     Route::post('/lessons/{lesson}/complete', [CourseController::class, 'completeLesson']);
 
+
+
+    // Маршруты (api.php)
+Route::get('/admin/courses/{course}/structure', [CourseController::class, 'getStructure']);
+Route::post('/admin/courses/{course}/modules', [ModuleController::class, 'store']);
+Route::post('/admin/modules/{module}/lessons', [LessonController::class, 'store']);
 });
 

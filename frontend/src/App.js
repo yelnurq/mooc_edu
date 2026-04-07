@@ -17,6 +17,7 @@ import UsersManagement from './pages/AdminPanel/Users/UsersManagement';
 import LdapManagement from './pages/AdminPanel/LdapManagement/LdapManagement';
 import CategoryManagement from './pages/AdminPanel/Settings/Settings';
 import CourseManagement from './components/Course/Courses/CourseManagement';
+import CourseEditor from './pages/AdminPanel/Courses/CourseEdit/Edit';
 
 // Локальный компонент для защиты роутов
 const ProtectedRoute = () => {
@@ -52,6 +53,7 @@ function App() {
               <Route path="/admin" element={<div>asd</div>} />
               <Route path="/admin/settings" element={<CategoryManagement />} />
               <Route path="/admin/courses" element={<CourseManagement />} />
+              <Route path="/admin/courses/:id/edit" element={<CourseEditor />} />
               <Route path="/admin/users/" element={<UsersManagement />} />
               <Route path="/admin/users/ldap" element={<LdapManagement />} />
               <Route path="/admin/enroll" element={<AdminEnrollment />} />
