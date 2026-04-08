@@ -71,6 +71,25 @@ public function getStructure(Course $course)
         'modules' => $structure->modules
     ]);
 }
+public function approveEnrollment(Request $request)
+{
+    \DB::table('course_user')
+        ->where('user_id', $request->user_id)
+        ->where('course_id', $request->course_id)
+        ->update(['status' => 'approved']);
+
+    return response()->json(['status' => 'success']);
+}
+
+public function unrollStudent($userId, $courseId)
+{
+    \DB::table('course_user')
+        ->where('user_id', $userId)
+        ->where('course_id', $courseId)
+        ->delete();
+
+    return response()->json(['status' => 'success']);
+}
 public function getEnrollmentData()
 {
     try {

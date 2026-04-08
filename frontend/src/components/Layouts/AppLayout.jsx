@@ -11,7 +11,7 @@ import {
   LogOut,
   GraduationCap,
   Menu,
-  X,
+  X, Search, MessageCircle, Award, HelpCircle,
   User,
   Bell,
   Sparkles,
@@ -62,26 +62,60 @@ const AppLayout = () => {
   // Определяем активную вкладку для логики Dashboard
   const isSettingsActive = location.state?.activeTab === 'settings';
 
-  // Пункты меню
-  const menuItems = [
-    { 
-      id: 'dashboard', 
-      path: '/app/dashboard', 
-      state: { activeTab: 'overview' },
-      icon: <LayoutDashboard size={20} />, 
-      label: 'Мой кабинет',
-      activeCondition: location.pathname === '/app/dashboard' && !isSettingsActive
-    },
-    { 
-      id: 'settings', 
-      path: '/app/dashboard', 
-      state: { activeTab: 'settings' },
-      icon: <Settings size={20} />, 
-      label: 'Настройки',
-      activeCondition: isSettingsActive
-    },
-  ];
 
+const menuItems = [
+  { 
+    id: 'dashboard', 
+    path: '/app/dashboard', 
+    state: { activeTab: 'overview' },
+    icon: <LayoutDashboard size={20} />, 
+    label: 'Главная',
+    activeCondition: location.pathname === '/app/dashboard' && !isSettingsActive
+  },
+  { 
+    id: 'courses', 
+    path: '/app/my-courses', 
+    icon: <BookOpen size={20} />, 
+    label: 'Мои курсы',
+    activeCondition: location.pathname.includes('/app/my-courses')
+  },
+  { 
+    id: 'catalog', 
+    path: '/app/catalog', 
+    icon: <Search size={20} />, 
+    label: 'Каталог',
+    activeCondition: location.pathname === '/app/catalog'
+  },
+  { 
+    id: 'messages', 
+    path: '/app/messages', 
+    icon: <MessageCircle size={20} />, 
+    label: 'Чат с куратором',
+    activeCondition: location.pathname === '/app/messages'
+  },
+  { 
+    id: 'certificates', 
+    path: '/app/certificates', 
+    icon: <Award size={20} />, 
+    label: 'Сертификаты',
+    activeCondition: location.pathname === '/app/certificates'
+  },
+  { 
+    id: 'support', 
+    path: '/app/support', 
+    icon: <HelpCircle size={20} />, 
+    label: 'Помощь',
+    activeCondition: location.pathname === '/app/support'
+  },
+  { 
+    id: 'settings', 
+    path: '/app/dashboard', 
+    state: { activeTab: 'settings' },
+    icon: <Settings size={20} />, 
+    label: 'Настройки',
+    activeCondition: isSettingsActive
+  },
+];
   if (!user) return null;
 
   return (

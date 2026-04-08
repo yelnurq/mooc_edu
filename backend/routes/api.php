@@ -52,8 +52,11 @@ Route::middleware("logs")->group(function(){
         Route::get('/logs', [ApiLogController::class, 'index']);
         Route::get('/logs/{id}', [ApiLogController::class, 'show']);
 
-    });
-        Route::get('/admin/enrollments', [CourseController::class, 'getEnrollmentData']);
+        Route::get('/enrollments', [CourseController::class, 'getEnrollmentData']);
+        Route::post('/enroll/approve', [CourseController::class, 'approveEnrollment']);
+        
+        Route::delete('/enroll/{userId}/{courseId}', [CourseController::class, 'unrollStudent']);
+        });
         
         Route::post('/logout', [AuthController::class, "logout"]);
         Route::post('/admin/enroll', [CourseController::class, 'adminEnroll']);
