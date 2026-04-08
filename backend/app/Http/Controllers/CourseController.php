@@ -311,7 +311,8 @@ public function showPublic(Request $request, $id)
     if (!$course) {
         return response()->json(['message' => 'Курс не найден'], 404);
     }
-
+    $promoResource = $course->resources->firstWhere('is_promo', true);
+    $course->promo_video_url = $promoResource ? $promoResource->video_url : null;
     // --- ОБНОВЛЕННАЯ ЛОГИКА ПРОВЕРКИ СТАТУСА ---
     $enrollment = null;
     if ($user) {
@@ -569,7 +570,7 @@ public function store(Request $request)
         'author_type' => 'required|in:user,custom',
         'author_id' => 'required_if:author_type,user|nullable|exists:users,id',
         'custom_author_name' => 'required_if:author_type,custom|nullable|string|max:255',
-        'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        'image' => 'nullable|image|mimes:jpg,jpeg,png|max:20480',
     ])->validate();
 
     // 2. Обработка изображения

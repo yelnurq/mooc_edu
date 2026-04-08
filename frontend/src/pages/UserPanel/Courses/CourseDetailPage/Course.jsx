@@ -64,13 +64,26 @@ const CourseDetailPage = () => {
       prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
     );
   };
-
+const getYoutubeEmbed = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : url;
+};
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
       <Loader2 className="animate-spin text-blue-600" size={32} />
     </div>
   );
-
+const getYoutubeThumbnail = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    // hqdefault или maxresdefault для лучшего качества
+    return (match && match[2].length === 11) 
+        ? `https://img.youtube.com/vi/${match[2]}/maxresdefault.jpg` 
+        : null;
+};
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-20">
       {/* MODAL */}
@@ -150,49 +163,64 @@ const CourseDetailPage = () => {
   </div>
 </header>
 
-  {/* RIGHT: PROMO VIDEO CARD */}
 {/* RIGHT: PROMO VIDEO CARD */}
 <div className="w-full lg:w-[450px] xl:w-[550px] shrink-0">
   <div 
     onClick={() => {
-      // Используем видео из БД или фейковое видео для демонстрации
-      const videoUrl = course?.promo_video_url || "https://www.youtube.com/embed/dQw4w9WgXcQ"; // Замени на нужный embed
-      setActiveContent({ 
-        url: videoUrl, 
-        title: `Промо: ${course?.title}`, 
-        type: 'video' 
-      });
+      if (course?.promo_video_url) {
+        setActiveContent({ 
+          url: getYoutubeEmbed(course.promo_video_url), 
+          title: `Промо: ${course?.title}`, 
+          type: 'video' 
+        });
+      }
     }}
-    className="relative aspect-video w-full overflow-hidden rounded-[2rem] border-[6px] border-white shadow-2xl shadow-blue-900/10 group cursor-pointer bg-slate-100"
+    className={`relative aspect-video w-full overflow-hidden rounded-[2rem] border-[6px] border-white shadow-2xl shadow-blue-900/10 group cursor-pointer bg-slate-200 ${!course?.promo_video_url && 'cursor-default'}`}
   >
-    {/* Основное превью (фоновое видео или картинка) */}
+    {/* ИЗОБРАЖЕНИЕ-ОБЛОЖКА ИЗ YOUTUBE */}
     <div className="absolute inset-0 z-0">
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-[2s]"
-      >
-        <source src="https://assets.mixkit.co/videos/preview/mixkit-software-developer-working-on-code-screen-close-up-34449-large.mp4" type="video/mp4" />
-      </video>
+      {course?.promo_video_url ? (
+        <img 
+          src={getYoutubeThumbnail(course.promo_video_url)} 
+          alt="Video Preview"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          onError={(e) => { e.target.src = '/placeholder-course.jpg'; }} // Резерв, если у видео нет maxres
+        />
+      ) : (
+        <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+           <Sparkles className="text-slate-200" size={48} />
+        </div>
+      )}
+      {/* Затемняющий градиент поверх обложки */}
+      <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/40 transition-colors" />
     </div>
     
-    {/* Слой поверх видео для читаемости */}
-    <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-slate-900/40 group-hover:bg-slate-900/50 transition-all z-10 flex items-center justify-center">
-      <div className="relative">
-        <div className="absolute inset-0 bg-white/30 rounded-full animate-ping" />
-        <div className="relative w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl text-blue-600 transition-transform group-hover:scale-110">
-          <Play size={32} fill="currentColor" className="ml-1" />
+    {/* UI элементы поверх обложки */}
+    {course?.promo_video_url ? (
+      <>
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
+          <div className="relative">
+            {/* Анимированный пульсирующий круг */}
+            <div className="absolute inset-0 bg-white/30 rounded-full animate-ping" />
+            <div className="relative w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl text-blue-600 transition-transform group-hover:scale-110">
+              <Play size={32} fill="currentColor" className="ml-1" />
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <div className="absolute bottom-6 left-0 right-0 text-center z-20">
-      <span className="text-white text-[10px] font-black uppercase tracking-[0.2em] bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
-        Посмотреть промо-ролик
-      </span>
-    </div>
+        <div className="absolute bottom-6 left-0 right-0 text-center z-20">
+          <span className="text-white text-[10px] font-black uppercase tracking-[0.2em] bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+            Посмотреть промо-ролик
+          </span>
+        </div>
+      </>
+    ) : (
+      <div className="absolute inset-0 flex items-center justify-center z-10">
+         <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full">
+           Промо скоро появится
+         </span>
+      </div>
+    )}
   </div>
 </div>
 </div>
@@ -323,8 +351,7 @@ const CourseDetailPage = () => {
                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
             
                   <div>
-                    <p className="font-bold text-slate-900">{course?.author_display_name || 'Инструктор'}</p>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fullstack Developer</p>
+                    <p className="font-bold text-left text-slate-900">{course?.author_display_name || 'Инструктор'}</p>
                   </div>
                 </div>
               </div>

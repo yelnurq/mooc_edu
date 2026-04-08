@@ -93,31 +93,48 @@ const CourseEditor = () => {
     } catch (e) { alert("Ошибка при добавлении ресурса"); }
   };
 
-  const addResource = async (type) => {
-    const title = prompt("Название ресурса:");
-    if (!title) return;
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('type', type);
+const addResource = async (type) => {
+  const title = prompt("Название ресурса:");
+  if (!title) return;
 
-    if (type === 'video') {
-      const url = prompt("Ссылка на видео:");
-      if (!url) return;
-      formData.append('video_url', url);
-      await saveResource(formData);
-    } else {
-      const fileInput = document.createElement('input');
-      fileInput.type = 'file';
-      fileInput.onchange = async (e) => {
-        if (e.target.files[0]) {
-          formData.append('file', e.target.files[0]);
-          await saveResource(formData);
-        }
-      };
-      fileInput.click();
-    }
-  };
+  // Спрашиваем, является ли этот ресурс промо-роликом
+  const isPromo = type === 'video' 
+    ? window.confirm("Сделать это видео основным промо-роликом курса?") 
+    : false;
 
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('type', type);
+  formData.append('is_promo', isPromo ? '1' : '0'); // Передаем как строку для FormData
+
+  if (type === 'video') {
+    const url = prompt("Ссылка на видео:");
+    if (!url) return;
+    formData.append('video_url', url);
+    await saveResource(formData);
+    // Опционально: перезагружаем структуру, чтобы обновить флаги у других ресурсов
+    if (isPromo) fetchCourseStructure(); 
+  } else {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.onchange = async (e) => {
+      if (e.target.files[0]) {
+        formData.append('file', e.target.files[0]);
+        await saveResource(formData);
+      }
+    };
+    fileInput.click();
+  }
+};
+const togglePromo = async (e, resourceId) => {
+  e.stopPropagation(); // Чтобы не открылся предпросмотр
+  try {
+    await api.patch(`/admin/resources/${resourceId}/promo`);
+    fetchCourseStructure(); // Обновляем данные
+  } catch (e) {
+    alert("Ошибка при обновлении статуса промо");
+  }
+};
   if (loading) return <div className="flex h-screen items-center justify-center bg-[#f8fafc]"><Loader2 className="animate-spin text-blue-600" size={40} /></div>;
 const totalLessons = modules.reduce((acc, module) => acc + (module.lessons?.length || 0), 0);
   return (
@@ -276,16 +293,34 @@ const totalLessons = modules.reduce((acc, module) => acc + (module.lessons?.leng
                 <div className="space-y-2">
                   {resources.length > 0 ? resources.map(res => (
                     <div 
-                        key={res.id} 
-                        className="bg-slate-50 border border-slate-100 p-3 rounded-xl flex items-center justify-between group hover:border-blue-200 hover:bg-white transition-all cursor-pointer" 
-                        onClick={() => setPreviewItem(res)}
+                      key={res.id} 
+                      className={`bg-slate-50 border p-3 rounded-xl flex items-center justify-between group hover:bg-white transition-all cursor-pointer ${res.is_promo ? 'border-blue-500 bg-blue-50/30' : 'border-slate-100'}`} 
+                      onClick={() => setPreviewItem(res)}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={`p-2 rounded-lg bg-white shadow-sm flex-shrink-0 ${res.type === 'video' ? 'text-blue-600' : 'text-emerald-600'}`}>
                           {res.type === 'video' ? <Video size={14} /> : <FileText size={14} />}
                         </div>
-                        <span className="text-[10px] font-bold text-slate-700 truncate uppercase tracking-tight">{res.title}</span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[10px] font-bold text-slate-700 truncate uppercase tracking-tight">
+                            {res.title}
+                          </span>
+                          {res.is_promo && (
+                            <span className="text-[8px] font-black text-blue-600 uppercase tracking-tighter flex items-center gap-1">
+                              <MonitorPlay size={8} /> Промо-ролик
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      {res.type === 'video' && !res.is_promo && (
+  <button 
+    onClick={(e) => togglePromo(e, res.id)}
+    className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-blue-100 text-blue-600 rounded-md transition-all mr-1"
+    title="Сделать промо"
+  >
+    <MonitorPlay size={14} />
+  </button>
+)}
                       <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-600 transition-colors flex-shrink-0" />
                     </div>
                   )) : (

@@ -11,16 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('course_resources', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('course_id')->constrained()->onDelete('cascade');
-            $table->string('title'); // Название файла или видео
-            $table->enum('type', ['pdf', 'video']);
-            $table->string('file_path')->nullable(); // Для PDF
-            $table->string('video_url')->nullable(); // Для видео
-            $table->integer('order')->default(0);
-            $table->timestamps();
-        });
+       Schema::create('course_resources', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('course_id')->constrained()->onDelete('cascade');
+        $table->string('title'); 
+        $table->enum('type', ['pdf', 'video']);
+        $table->string('file_path')->nullable(); 
+        $table->string('video_url')->nullable(); 
+        
+        // Галочка для проморолика
+        $table->boolean('is_promo')->default(false);
+        
+        $table->integer('order')->default(0);
+        $table->timestamps();
+
+        // $table->unique(['course_id', 'is_promo'], 'unique_promo_per_course')->where('is_promo', true);
+    });
     }
 
     /**
