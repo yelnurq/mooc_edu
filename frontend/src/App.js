@@ -19,6 +19,7 @@ import CategoryManagement from './pages/AdminPanel/Settings/Settings';
 import CourseManagement from './components/Course/Courses/CourseManagement';
 import CourseEditor from './pages/AdminPanel/Courses/CourseEdit/Edit';
 import ApiLogsMonitor from './pages/AdminPanel/Logs/LogMonitor';
+import MyCourses from './pages/UserPanel/Courses/MyCourses/MyCourses';
 
 // Локальный компонент для защиты роутов
 const ProtectedRoute = () => {
@@ -45,6 +46,7 @@ function App() {
             <Route element={<AppLayout />}>
               <Route path="/app/courses/:id" element={<CourseAppPage />} />
               <Route path="/app/dashboard" element={<Dashboard />} />
+              <Route path="/app/my-courses" element={<MyCourses />} />
               <Route path="/app/settings" element={<SettingsPage />} />
             </Route>
           </Route>
