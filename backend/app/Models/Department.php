@@ -8,7 +8,7 @@ class Department extends Model
 {
     protected $fillable = [
         "title",
-        "short_title",
+        "short_name",
         "leader"
     ];
 

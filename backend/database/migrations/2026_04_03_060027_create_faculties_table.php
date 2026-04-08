@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string("title");
             $table->string("short_title");
-            $table->string("name");
+            $table->string("dean");
             $table->string("short_name");
 
             $table->timestamps();
