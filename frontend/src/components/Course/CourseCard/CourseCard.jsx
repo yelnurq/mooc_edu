@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 
 const ASSET_URL = "http://localhost:8000/storage/";
 
-export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
+export const CourseCard = ({ course, toggleFavorite, isFavorite, isMyCourse }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [copied, setCopied] = useState(false);
   const timeoutRef = useRef(null);
@@ -47,7 +47,8 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
 
   return (
     <Link 
-      to={`/courses/${course.id}`}
+      // ДИНАМИЧЕСКИЙ РОУТ: если мой курс - идем в /app/
+      to={isMyCourse ? `/app/courses/${course.id}` : `/courses/${course.id}`}
       className="group bg-white rounded-3xl border border-slate-200 flex flex-col hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-500 overflow-hidden relative h-full cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -55,11 +56,16 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
       {/* --- Media Area --- */}
       <div className="relative h-56 m-3 rounded-2xl overflow-hidden bg-slate-900">
         <img 
-          src={course.image && `${ASSET_URL}${course.image}`}
+          src={
+            course.image 
+              ? course.image.startsWith('http') 
+                ? course.image 
+                : `${ASSET_URL}${course.image}`
+              : '/placeholder-image.jpg' // Путь к заглушке, если фото нет
+          }
           alt={course.title} 
           className={`w-full h-full object-cover transition-all duration-700 ${showPreview ? 'scale-110 blur-md opacity-30' : 'scale-100 group-hover:scale-105'}`} 
         />
-        
         <AnimatePresence>
           {showPreview && (
             <motion.div
@@ -87,47 +93,50 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
           )}
         </AnimatePresence>
 
-        <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
-          <div 
-            role="button"
-            onClick={handleShare}
-            className="p-2.5 rounded-xl bg-white/95 backdrop-blur-md shadow-sm transition-all hover:bg-white active:scale-95 group/share cursor-pointer flex items-center justify-center border border-slate-100"
-          >
-            {copied ? (
-              <Check size={16} className="text-emerald-500" />
-            ) : (
-              <Share2 size={16} className="text-slate-400 group-hover/share:text-blue-600" />
-            )}
-            
-            <AnimatePresence>
-              {copied && (
-                <motion.div 
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute right-full mr-3 px-3 py-1.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg whitespace-nowrap shadow-xl"
-                >
-                  Скопировано
-                </motion.div>
+        {/* Скрываем кнопки Share и Heart, если это купленный курс (isMyCourse) */}
+        {!isMyCourse && (
+          <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
+            <div 
+              role="button"
+              onClick={handleShare}
+              className="p-2.5 rounded-xl bg-white/95 backdrop-blur-md shadow-sm transition-all hover:bg-white active:scale-95 group/share cursor-pointer flex items-center justify-center border border-slate-100"
+            >
+              {copied ? (
+                <Check size={16} className="text-emerald-500" />
+              ) : (
+                <Share2 size={16} className="text-slate-400 group-hover/share:text-blue-600" />
               )}
-            </AnimatePresence>
-          </div>
+              
+              <AnimatePresence>
+                {copied && (
+                  <motion.div 
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute right-full mr-3 px-3 py-1.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg whitespace-nowrap shadow-xl"
+                  >
+                    Скопировано
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-          <div 
-            role="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toggleFavorite(course.id);
-            }}
-            className="p-2.5 rounded-xl bg-white/95 backdrop-blur-md shadow-sm transition-all hover:bg-white active:scale-95 group/heart cursor-pointer flex items-center justify-center border border-slate-100"
-          >
-            <Heart 
-              size={16} 
-              className={`${isFavorite ? "fill-red-500 text-red-500" : "text-slate-400 group-hover/heart:text-red-500"}`} 
-            />
+            <div 
+              role="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (toggleFavorite) toggleFavorite(course.id);
+              }}
+              className="p-2.5 rounded-xl bg-white/95 backdrop-blur-md shadow-sm transition-all hover:bg-white active:scale-95 group/heart cursor-pointer flex items-center justify-center border border-slate-100"
+            >
+              <Heart 
+                size={16} 
+                className={`${isFavorite ? "fill-red-500 text-red-500" : "text-slate-400 group-hover/heart:text-red-500"}`} 
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* --- Content Area --- */}
@@ -146,7 +155,6 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
         <div className="mt-auto">
           <div className="flex items-center justify-between pt-6 border-t border-slate-100">
             <div className="flex items-center gap-5">
-                {/* Модули */}
                 <div className="flex flex-col gap-1.5">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Модули</span>
                   <div className="flex items-center gap-1.5 text-slate-900 font-bold text-xs">
@@ -155,7 +163,6 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
                   </div>
                 </div>
 
-                {/* Уроки */}
                 <div className="flex flex-col gap-1.5">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Уроки</span>
                   <div className="flex items-center gap-1.5 text-slate-900 font-bold text-xs">
@@ -164,7 +171,6 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
                   </div>
                 </div>
 
-                {/* Автор (теперь здесь) */}
                 <div className="flex flex-col gap-1.5 border-l border-slate-100 pl-5">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Автор</span>
                   <div className="flex items-center gap-1.5 text-slate-700 font-bold text-[11px] truncate">

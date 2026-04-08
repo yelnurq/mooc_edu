@@ -2,15 +2,19 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { 
   Search, LayoutGrid, FilterX, Clock, 
   Sparkles, AlertCircle, BookOpen, CheckCircle2,
-  TrendingUp, GraduationCap, ArrowRight, Database
+  TrendingUp, GraduationCap, ArrowRight, Database, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../../api/axios';
 import { CourseCard } from '../../../../components/Course/CourseCard/CourseCard';
+import { Link } from 'react-router-dom';
 
-// Компонент карточки статистики в стиле админки
-const StatCard = ({ icon: Icon, label, value, colorClass, description }) => (
-  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden transition-all hover:shadow-md text-left">
+const StatCard = ({ icon: Icon, label, value, colorClass, description, onClick }) => (
+  <button 
+    onClick={onClick}
+    disabled={!onClick}
+    className={`w-full bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden transition-all text-left ${onClick ? 'hover:border-indigo-400 hover:shadow-md cursor-pointer' : ''}`}
+  >
     <div className="flex justify-between items-start mb-4">
       <div className="space-y-1">
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{label}</p>
@@ -21,7 +25,7 @@ const StatCard = ({ icon: Icon, label, value, colorClass, description }) => (
       </div>
     </div>
     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-relaxed">{description}</p>
-  </div>
+  </button>
 );
 
 const STATUS_OPTIONS = ['Все', 'В процессе', 'Завершено'];
@@ -32,6 +36,7 @@ const MyCourses = () => {
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('Все');
+  const [showPendingModal, setShowPendingModal] = useState(false); // Состояние модалки
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
@@ -70,20 +75,8 @@ const MyCourses = () => {
     return { filteredCourses: filtered, stats: { total, completed, avgProgress }, pending };
   }, [courses, searchQuery, selectedStatus]);
 
-  if (loading && courses.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8fafc]">
-        <div className="relative">
-          <div className="w-12 h-12 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
-          <GraduationCap className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600" size={16} />
-        </div>
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-6">Загрузка программ</span>
-      </div>
-    );
-  }
-
   return (
-    <main className="mx-auto px-4 md:px-10 py-10 bg-[#f8fafc] min-h-screen text-slate-900">
+    <main className="mx-auto px-4 md:px-10 py-10 bg-[#f8fafc] min-h-screen text-slate-900 relative">
       
       {/* HEADER */}
       <div className="flex justify-between items-end mb-10">
@@ -97,45 +90,26 @@ const MyCourses = () => {
         </div>
       </div>
 
-      {/* STATS (ADMIN STYLE) */}
+      {/* STATS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
-        <StatCard 
-          label="Всего курсов" 
-          value={stats.total} 
-          icon={BookOpen} 
-          colorClass="bg-slate-100 text-slate-600" 
-          description="Доступные программы" 
-        />
-        <StatCard 
-          label="Общий прогресс" 
-          value={`${stats.avgProgress}%`} 
-          icon={TrendingUp} 
-          colorClass="bg-indigo-100 text-indigo-600" 
-          description="Средний показатель" 
-        />
-        <StatCard 
-          label="Завершено" 
-          value={stats.completed} 
-          icon={CheckCircle2} 
-          colorClass="bg-emerald-100 text-emerald-600" 
-          description="Курсы со 100% прогрессом" 
-        />
+        <StatCard label="Всего курсов" value={stats.total} icon={BookOpen} colorClass="bg-slate-100 text-slate-600" description="Доступные программы" />
+        <StatCard label="Общий прогресс" value={`${stats.avgProgress}%`} icon={TrendingUp} colorClass="bg-indigo-100 text-indigo-600" description="Средний показатель" />
+        <StatCard label="Завершено" value={stats.completed} icon={CheckCircle2} colorClass="bg-emerald-100 text-emerald-600" description="Курсы со 100% прогрессом" />
+        
+        {/* Кликабельная карточка ожидания */}
         <StatCard 
           label="В ожидании" 
           value={pending.length} 
           icon={Clock} 
           colorClass="bg-amber-100 text-amber-600" 
-          description="Заявки на проверке" 
+          description="Нажмите, чтобы посмотреть" 
+          onClick={pending.length > 0 ? () => setShowPendingModal(true) : null}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* SIDEBAR: FILTERS & SEARCH */}
         <div className="lg:col-span-3">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sticky top-10 text-left space-y-8">
-            
-            {/* Search Section */}
             <div className="space-y-3">
               <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-widest">Поиск</label>
               <div className="relative">
@@ -150,7 +124,6 @@ const MyCourses = () => {
               </div>
             </div>
 
-            {/* Filter Section */}
             <div className="space-y-3">
               <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-widest">Статус</label>
               <div className="flex flex-col gap-2">
@@ -170,41 +143,10 @@ const MyCourses = () => {
                 ))}
               </div>
             </div>
-
-            <div className="pt-4 border-t border-slate-50">
-               <div className="flex items-center gap-2 text-[10px] font-bold text-slate-300 uppercase">
-                  <Sparkles size={12} className="text-amber-400" />
-                  Удачного обучения!
-               </div>
-            </div>
           </div>
         </div>
 
-        {/* MAIN LIST */}
         <div className="lg:col-span-9 space-y-6">
-          
-          {/* Pending Requests Alert Style */}
-          {pending.length > 0 && (
-            <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="bg-amber-500 text-white p-2 rounded-lg">
-                  <Clock size={16} />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-amber-900">Ожидают подтверждения ({pending.length})</h4>
-                  <p className="text-[10px] font-bold text-amber-600 uppercase tracking-tight">Доступ будет открыт в ближайшее время</p>
-                </div>
-              </div>
-              <div className="flex -space-x-2">
-                {pending.slice(0, 3).map(c => (
-                  <div key={c.id} className="w-8 h-8 rounded-full bg-white border-2 border-amber-50 flex items-center justify-center text-[10px] font-bold text-amber-500 shadow-sm">
-                    {c.title.substring(0, 1)}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {error ? (
             <div className="p-20 bg-rose-50 rounded-[32px] border border-rose-100 text-center">
                <AlertCircle size={40} className="mx-auto text-rose-500 mb-4" />
@@ -213,38 +155,116 @@ const MyCourses = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-2 gap-6">
-              <AnimatePresence mode='popLayout'>
-                {filteredCourses.map((course) => (
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    key={course.id}
-                  >
-                    <CourseCard course={course} isMyCourse={true} />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
+      <AnimatePresence mode='popLayout'>
+        {filteredCourses.map((course) => {
+          // Получаем прогресс из данных сводной таблицы (pivot)
+          const progress = course.pivot?.progress || 0;
 
-          {/* Empty State */}
+          return (
+            <motion.div 
+              layout 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95 }} 
+              key={course.id}
+              className="space-y-3" // Отступ между карточкой и прогресс-баром
+            >
+              
+              <div className="px-2">
+                <div className="flex justify-between items-center mb-1.5 px-1">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Прогресс обучения</span>
+                  <span className="text-[10px] font-bold text-indigo-600">{progress}%</span>
+                </div>
+                <div className="h-2 w-full bg-slate-200/50 rounded-full overflow-hidden shadow-sm">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className={`h-full rounded-full ${
+                      progress === 100 ? 'bg-emerald-500' : 'bg-indigo-600'
+                    }`}
+                  />
+                </div>
+              </div>
+              <Link to={`/app/courses/${course.id}`} className="block transition-transform active:scale-[0.98]">
+                <CourseCard course={course} isMyCourse={true} />
+                </Link>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+    </div>
+  )}
           {filteredCourses.length === 0 && !loading && (
             <div className="p-32 bg-white rounded-[32px] border border-dashed border-slate-200 text-center">
               <Database size={48} className="mx-auto text-slate-200 mb-6" />
               <h3 className="text-xl font-bold text-slate-900 tracking-tight">Ничего не найдено</h3>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-2">Попробуйте изменить параметры фильтрации</p>
-              <button 
-                onClick={() => {setSelectedStatus('Все'); setSearchQuery('');}}
-                className="mt-8 px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200"
-              >
+              <button onClick={() => {setSelectedStatus('Все'); setSearchQuery('');}} className="mt-8 px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200">
                 Сбросить поиск
               </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* MODAL: PENDING COURSES LIST */}
+      <AnimatePresence>
+        {showPendingModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white w-full max-w-lg rounded-[32px] shadow-2xl relative overflow-hidden flex flex-col max-h-[80vh]"
+            >
+              <div className="absolute top-0 left-0 w-2 h-full bg-amber-500" />
+              
+              <div className="p-8 border-b border-slate-100 bg-white flex justify-between items-center">
+                <div className="text-left">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 text-[9px] font-black uppercase rounded-md bg-amber-100 text-amber-600">
+                      Ожидание доступа
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tighter">Заявки в обработке</h3>
+                </div>
+                <button onClick={() => setShowPendingModal(false)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="p-8 overflow-y-auto bg-slate-50/50 flex-1 space-y-3">
+                {pending.map((course) => (
+                  <div key={course.id} className="bg-white border border-slate-200 p-4 rounded-2xl flex items-center gap-4 text-left shadow-sm">
+                    <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                      <BookOpen size={20} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-slate-800 leading-tight">{course.title}</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Clock size={10} className="text-slate-400" />
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Подано: {new Date().toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1 bg-slate-50 rounded-full text-[9px] font-black text-slate-400 uppercase">
+                      In Review
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-6 bg-white border-t border-slate-100">
+                <button 
+                  onClick={() => setShowPendingModal(false)}
+                  className="w-full py-4 bg-slate-900 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-amber-600 transition-all"
+                >
+                  Понятно
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </main>
   );
 };
