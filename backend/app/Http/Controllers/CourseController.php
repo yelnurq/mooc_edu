@@ -240,22 +240,21 @@ public function enroll(Request $request, $courseId)
 }
 public function show(Request $request, $id)
 {
-    // 1. Получаем юзера через твой кастомный метод
+    // 1. Получаем юзера
     $user = $this->getAuthenticatedUser($request);
     
-    // 2. Если юзер не найден — сразу 401
     if (!$user) {
         return response()->json(['message' => 'Пользователь не авторизован'], 401);
     }
 
-    // 3. Загружаем курс со всеми связями
+    // 2. Загружаем курс (добавили загрузку ресурсов)
     $course = \App\Models\Course::with(['modules.lessons', 'resources'])->find($id);
     
     if (!$course) {
         return response()->json(['message' => 'Курс не найден'], 404);
     }
 
-    // 4. ПРОВЕРКА ПОДПИСКИ (теперь $user точно объект)
+    // 3. Проверка подписки
     $isEnrolled = $user->courses()->where('course_id', $id)->exists();
 
     if (!$isEnrolled) {
@@ -265,29 +264,34 @@ public function show(Request $request, $id)
         ], 403);
     }
 
-    // 5. Если дошли сюда — юзер подписан. Собираем прогресс.
-    // Вытягиваем ID всех уроков курса
+    // 4. Сбор ID пройденных уроков
     $courseLessonIds = $course->modules->flatMap(function($module) {
         return $module->lessons->pluck('id');
     })->toArray();
 
-    // Получаем пройденные уроки именно этого курса для этого юзера
     $completedLessonsIds = \Illuminate\Support\Facades\DB::table('lesson_user')
         ->where('user_id', $user->id)
         ->whereIn('lesson_id', $courseLessonIds)
         ->pluck('lesson_id')
-        ->map(fn($id) => (int)$id) // Принудительно в число для React
+        ->map(fn($id) => (int)$id)
         ->values()
         ->toArray();
 
-    // 6. Обработка путей (PDF и видео)
+    // 5. Обработка ресурсов курса (course_resources)
     $course->resources->transform(function ($resource) {
-        if ($resource->type === 'pdf' && $resource->file_path) {
+        // Формируем полный URL для скачивания/просмотра
+        if ($resource->file_path) {
             $resource->file_url = asset('storage/' . $resource->file_path);
         }
         return $resource;
     });
 
+    // Переименовываем коллекцию для соответствия фронтенду (course_resources)
+    $course->setRelation('course_resources', $course->resources);
+    // Опционально: скрываем оригинальный ключ 'resources', чтобы не дублировать данные
+    $course->unsetRelation('resources');
+
+    // 6. Обработка путей в уроках
     $course->modules->each(function ($module) {
         $module->lessons->transform(function ($lesson) {
             if ($lesson->type === 'pdf' && $lesson->file_path) {
@@ -297,7 +301,7 @@ public function show(Request $request, $id)
         });
     });
 
-    // 7. Добавляем мета-данные в ответ
+    // 7. Добавляем мета-данные
     $course->is_enrolled = true;
     $course->completed_lessons_ids = $completedLessonsIds;
 
