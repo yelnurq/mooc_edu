@@ -17,7 +17,7 @@ const CourseDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [openModules, setOpenModules] = useState([0]);
@@ -43,22 +43,25 @@ const CourseDetailPage = () => {
   }, [id]);
 
   const handleEnroll = async () => {
-    if (!isAuthenticated) {
-      navigate('/login', { state: { from: location.pathname, autoEnroll: true } });
-      return;
-    }
-    if (enrollmentStatus) return;
-    setIsSubmitting(true);
-    try {
-      await api.post(`/courses/${id}/enroll`);
+  if (!isAuthenticated) {
+    navigate('/login', { state: { from: location.pathname, autoEnroll: true } });
+    return;
+  }
+  if (enrollmentStatus) return;
+  setIsSubmitting(true);
+  try {
+    await api.post(`/courses/${id}/enroll`);
+    setEnrollmentStatus('pending');
+    setShowEnrollModal(true); // Открываем модальное окно здесь
+  } catch (error) {
+    if (error.response?.status === 400) {
       setEnrollmentStatus('pending');
-    } catch (error) {
-      if (error.response?.status === 400) setEnrollmentStatus('pending');
-    } finally {
-      setIsSubmitting(false);
+      setShowEnrollModal(true); // Если уже подана, тоже можно показать
     }
-  };
-
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   const toggleModule = (index) => {
     setOpenModules(prev => 
       prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
@@ -109,7 +112,45 @@ const getYoutubeThumbnail = (url) => {
           </motion.div>
         )}
       </AnimatePresence>
+{/* МОДАЛЬНОЕ ОКНО ПОСЛЕ ПОДАЧИ ЗАЯВКИ */}
+<AnimatePresence>
+  {showEnrollModal && (
+    <motion.div 
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[110] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4"
+    >
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-[2.5rem] p-8 md:p-12 max-w-lg w-full shadow-2xl text-center relative overflow-hidden"
+      >
+        {/* Декоративный элемент */}
+        <div className="absolute top-0 left-0 w-full h-2 bg-blue-600" />
+        
+        <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-8">
+          <Clock size={40} />
+        </div>
 
+        <h3 className="text-2xl font-bold text-slate-900 mb-4">Заявка отправлена!</h3>
+        
+        <div className="space-y-4 text-slate-500 font-medium leading-relaxed mb-10 text-sm md:text-base">
+          <p>Ваша заявка на курс <span className="text-slate-900 font-bold">"{course?.title}"</span> успешно принята.</p>
+          <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-blue-900">
+            Для получения полного доступа, пожалуйста, <span className="font-bold underline">обратитесь в учебный отдел для оплаты обучения</span>.
+          </div>
+        </div>
+
+        <button 
+          onClick={() => setShowEnrollModal(false)}
+          className="w-full py-4 bg-slate-900 text-white rounded-xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-lg"
+        >
+          Хорошо, понятно
+        </button>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
       <div className="max-w-[1640px] mx-auto px-6 lg:px-12 py-12">
         {/* BACK BUTTON */}
         <Link to="/courses" className="flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-colors mb-12 font-black text-[10px] uppercase tracking-[0.2em]">
@@ -133,10 +174,6 @@ const getYoutubeThumbnail = (url) => {
           {course.category.name}
         </span>
       )}
-      <div className="flex items-center gap-1.5 text-slate-400 bg-white border border-slate-200 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-        <User size={12} className="text-blue-500" />
-        <span>{course?.students_count || 0} Студентов</span>
-      </div>
     </div>
 
     <h1 
@@ -235,38 +272,60 @@ const getYoutubeThumbnail = (url) => {
                 {course?.description || "Описание курса уточняется."}
               </p>
             </section>
- {/* RESOURCES (НОВЫЙ БЛОК) */}
-  {course?.resources && course.resources.length > 0 && (
-    <section className="space-y-6">
-      <div className="flex items-center gap-2 px-2">
-        <Files size={16} className="text-blue-600" />
-        <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">Дополнительные ресурсы</h3>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {course.resources.map((res, index) => (
+{/* RESOURCES */}
+{course?.resources && course.resources.length > 0 && (
+  <section className="space-y-6">
+    <div className="flex items-center gap-2 px-2">
+      <Files size={16} className="text-blue-600" />
+      <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">Дополнительные ресурсы</h3>
+    </div>
+    
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {course.resources.map((res, index) => {
+        // Проверяем, является ли ресурс видео (по ссылке или по типу)
+        const isVideo = res.type === 'video' || (res.link_url && res.link_url.includes('youtube.com') || res.link_url?.includes('youtu.be'));
+
+        const handleClick = (e) => {
+          if (isVideo) {
+            e.preventDefault(); // Отменяем переход по ссылке
+            setActiveContent({ 
+              url: getYoutubeEmbed(res.link_url), 
+              title: res.title, 
+              type: 'video' 
+            });
+          }
+        };
+
+        return (
           <a 
             key={index}
             href={res.file_url || res.link_url} 
-            target="_blank" 
+            target={isVideo ? "_self" : "_blank"} 
             rel="noopener noreferrer"
-            className="flex items-center justify-between p-5 bg-white border border-slate-200 rounded-xl hover:border-blue-600 hover:shadow-md transition-all group"
+            onClick={handleClick}
+            className="flex items-center justify-between p-5 bg-white border border-slate-200 rounded-xl hover:border-blue-600 hover:shadow-md transition-all group cursor-pointer"
           >
             <div className="flex items-center gap-4">
               <div className="p-3 bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 rounded-lg transition-colors">
-                {res.type === 'link' ? <ExternalLink size={18} /> : <FileText size={18} />}
+                {isVideo ? <PlayCircle size={18} /> : (res.type === 'link' ? <ExternalLink size={18} /> : <FileText size={18} />)}
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">{res.title}</p>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{res.type}</p>
+                <p className="text-left text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">
+                  {isVideo ? 'Видео' : res.type}
+                </p>
               </div>
             </div>
-            <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+            <div className="flex items-center gap-2">
+               {isVideo && <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all">Смотреть</span>}
+               <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+            </div>
           </a>
-        ))}
-      </div>
-    </section>
-  )}
+        );
+      })}
+    </div>
+  </section>
+)}
             {/* CURRICULUM */}
             <section className="space-y-6">
               <div className="flex items-center gap-2 px-2">
@@ -303,10 +362,8 @@ const getYoutubeThumbnail = (url) => {
                                     <div className={`p-2 rounded-lg ${isLocked ? 'bg-slate-100 text-slate-400' : 'bg-blue-100 text-blue-600'}`}>
                                       {isLocked ? <Lock size={16} /> : (lesson.type === 'pdf' ? <FileText size={16} /> : <PlayCircle size={16} />)}
                                     </div>
-                                    <div>
                                       <p className={`text-sm font-bold ${isLocked ? 'text-slate-400' : 'text-slate-700'}`}>{lesson.title}</p>
-                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{lesson.type}</p>
-                                    </div>
+                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{lesson.type}</p>
                                   </div>
                                   {!isLocked && (
                                     <button 
@@ -326,7 +383,14 @@ const getYoutubeThumbnail = (url) => {
                   </div>
                 ))}
               </div>
+            <div className="p-6 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-4">
+                  <Info className="text-blue-600 shrink-0" size={20} />
+                  <p className="text-xs font-bold text-blue-900 uppercase tracking-wider">
+                    Запишитесь на курс, чтобы получить доступ ко всем видеоматериалам и заданиям.
+                  </p>
+                </div>
             </section>
+            
           </div>
 
           {/* RIGHT SIDEBAR */}
