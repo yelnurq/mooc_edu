@@ -141,33 +141,30 @@ public function myCourses()
     $user = auth()->user();
 
     $courses = $user->courses()
-        ->with(['modules' => function($query) {
-            $query->select('id', 'course_id')->withCount('lessons');
-        }])
+        ->with([
+            'category', // Загружаем связанную модель категории
+            'modules' => function($query) {
+                $query->select('id', 'course_id')->withCount('lessons');
+            }
+        ])
         ->get()
         ->map(function ($course) {
-            // Считаем общее количество уроков во всех модулях
             $totalLessons = $course->modules->sum('lessons_count');
             
-            // Имитация прогресса (если у вас нет таблицы lesson_user для трекинга)
-            // В реальном проекте здесь должен быть расчет выполненных уроков юзером
-            $progress = $course->pivot->progress ?? 0;
-
             return [
                 'id' => $course->id,
                 'title' => $course->title,
                 'description' => $course->description,
-                'image' => $course->image_url ?? 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=800',
+                'image' => $course->image ? asset('storage/' . $course->image) : null,
                 'lessons_count' => $totalLessons,
                 'modules_count' => $course->modules->count(),
-                // Данные для прогресс-бара в React
+                'status' => $course->pivot->status ?? 'pending',
+                // БЕРЕМ ИЗ БД: если есть связь category, берем name, иначе дефолт
+                'category' => $course->category->name ?? 'Общее', 
                 'pivot' => [
-                    'progress' => $progress,
-                    'last_accessed' => $course->pivot->updated_at ?? now(),
+                    'progress' => $course->pivot->progress ?? 0,
+                    'last_accessed' => $course->pivot->updated_at,
                 ],
-                // Дополнительные мета-данные для бейджиков
-                'is_premium' => true, 
-                'category' => 'Web Development',
             ];
         });
 

@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   BookOpen, ChevronRight, LayoutDashboard, 
   Zap, Trophy, Star, ArrowUpRight, Lock, Eye, EyeOff, 
-  ShieldCheck, User, Search,
+  ShieldCheck, User, Search, Clock,
   Settings, Flame
 } from 'lucide-react';
 import api from '../../../api/axios';
@@ -43,31 +43,40 @@ const Dashboard = () => {
     fetchMyCourses();
   }, []);
 
+  // --- ЛОГИКА ФИЛЬТРАЦИИ (Берем из статусов в БД) ---
+  const approvedCourses = useMemo(() => 
+    courses.filter(c => c.status === 'approved'), [courses]
+  );
+
+  const pendingCourses = useMemo(() => 
+    courses.filter(c => c.status === 'pending'), [courses]
+  );
+
   const filteredCourses = useMemo(() => {
-    return courses.filter(c => 
+    return approvedCourses.filter(c => 
       c.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [courses, searchQuery]);
+  }, [approvedCourses, searchQuery]);
 
   const totalProgress = useMemo(() => {
-    if (courses.length === 0) return 0;
-    const total = courses.reduce((acc, c) => acc + (c.pivot?.progress || 0), 0);
-    return Math.round(total / courses.length);
-  }, [courses]);
+    if (approvedCourses.length === 0) return 0;
+    const total = approvedCourses.reduce((acc, c) => acc + (c.pivot?.progress || 0), 0);
+    return Math.round(total / approvedCourses.length);
+  }, [approvedCourses]);
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     if (passwords.new_password !== passwords.new_password_confirmation) {
-        alert("Passwords do not match!");
+        alert("Пароли не совпадают!");
         return;
     }
     setPassLoading(true);
     try {
       await api.post('/user/change-password', passwords);
-      alert('Password updated successfully');
+      alert('Пароль успешно обновлен');
       setPasswords({ current_password: '', new_password: '', new_password_confirmation: '' });
     } catch (err) {
-      alert('Error updating password.');
+      alert('Ошибка при обновлении пароля.');
     } finally {
       setPassLoading(false);
     }
@@ -92,10 +101,10 @@ const Dashboard = () => {
             <div>
               <div className="flex items-center gap-2 text-blue-600 mb-1">
                  <Flame size={14} fill="currentColor" />
-                 <span className="text-[10px] font-black uppercase tracking-widest">Learning Mode Active</span>
+                 <span className="text-[10px] font-black uppercase tracking-widest">Личный кабинет</span>
               </div>
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight">Welcome back!</h1>
-              <p className="text-slate-400 text-sm font-medium">Track your progress and continue your courses.</p>
+              <h1 className="text-4xl font-black text-slate-900 tracking-tight">Добро пожаловать!</h1>
+              <p className="text-slate-400 text-sm font-medium">Отслеживайте свой прогресс и продолжайте обучение.</p>
             </div>
           </div>
           
@@ -109,7 +118,7 @@ const Dashboard = () => {
                       activeTab === id ? 'bg-white text-slate-900 shadow-lg shadow-slate-200/50' : 'text-slate-400 hover:text-slate-600'
                     }`}
                   >
-                    {id === 'courses' ? `Library (${courses.length})` : id}
+                    {id === 'courses' ? `Библиотека (${approvedCourses.length})` : id === 'overview' ? 'Обзор' : 'Настройки'}
                   </button>
                 ))}
              </nav>
@@ -130,32 +139,42 @@ const Dashboard = () => {
             
             {/* --- TOP STATS --- */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-               <StatCard title="Average Progress" value={`${totalProgress}%`} icon={<Zap size={20} />} color="text-blue-600" bg="bg-blue-50" />
-               <StatCard title="My Courses" value={courses.length} icon={<BookOpen size={20} />} color="text-orange-500" bg="bg-orange-50" />
-               <StatCard title="Certificates" value="Locked" icon={<Trophy size={20} />} color="text-emerald-500" bg="bg-emerald-50" />
-               <StatCard title="Target" value="100%" icon={<Star size={20} />} color="text-purple-600" bg="bg-purple-50" />
+               <StatCard title="Ср. прогресс" value={`${totalProgress}%`} icon={<Zap size={20} />} color="text-blue-600" bg="bg-blue-50" />
+               <StatCard title="Мои курсы" value={approvedCourses.length} icon={<BookOpen size={20} />} color="text-orange-500" bg="bg-orange-50" />
+               <StatCard title="На рассмотрении" value={pendingCourses.length} icon={<Clock size={20} />} color="text-emerald-500" bg="bg-emerald-50" />
+               <StatCard title="Цель" value="100%" icon={<Star size={20} />} color="text-purple-600" bg="bg-purple-50" />
             </section>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
               <div className="lg:col-span-8 space-y-12">
                 {activeTab === 'overview' ? (
                   <section className="space-y-6">
-                    <SectionHeader title="Jump Back In" />
-                    {courses.length > 0 ? (
-                      <ActiveCourseHero course={courses[0]} />
+                    <SectionHeader title="Продолжить обучение" />
+                    {approvedCourses.length > 0 ? (
+                      <ActiveCourseHero course={approvedCourses[0]} />
                     ) : (
                       <EmptyState />
+                    )}
+
+                    {/* Показываем заявки на рассмотрении на главном табе */}
+                    {pendingCourses.length > 0 && (
+                        <div className="mt-10 space-y-4">
+                            <SectionHeader title="Заявки на рассмотрении" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {pendingCourses.map(course => <PendingCard key={course.id} course={course} />)}
+                            </div>
+                        </div>
                     )}
                   </section>
                 ) : (
                   <section className="space-y-8">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                       <SectionHeader title="My Full Library" />
+                       <SectionHeader title="Вся библиотека" />
                        <div className="relative group">
                           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                           <input 
                             type="text" 
-                            placeholder="Filter courses..." 
+                            placeholder="Поиск по курсам..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="bg-slate-50 border-none rounded-2xl py-3 pl-12 pr-6 text-sm font-bold text-slate-900 w-full md:w-64 outline-none"
@@ -166,24 +185,14 @@ const Dashboard = () => {
                        {filteredCourses.length > 0 ? (
                          filteredCourses.map(course => <CourseRowItem key={course.id} course={course} />)
                        ) : (
-                         <div className="p-20 text-center text-slate-400 font-medium">No courses found.</div>
+                         <div className="p-20 text-center text-slate-400 font-medium tracking-widest uppercase text-[10px]">Курсы не найдены</div>
                        )}
                     </div>
                   </section>
                 )}
               </div>
 
-              <aside className="lg:col-span-4 space-y-10">
-                 <section className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
-                    <div className="relative z-10 space-y-6">
-                       <h3 className="text-2xl font-black leading-tight">Mangystau Travel Project</h3>
-                       <p className="text-slate-400 text-xs font-medium">Your current development ecosystem is being tracked. Keep it up!</p>
-                       <div className="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
-                          <div className="bg-blue-500 h-full w-[65%]" />
-                       </div>
-                    </div>
-                 </section>
-              </aside>
+         
             </div>
           </div>
         )}
@@ -203,22 +212,24 @@ const ActiveCourseHero = ({ course }) => (
       <div className="flex-1 space-y-6">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest">{course.category || 'General'}</span>
+            <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest">
+                {course.category || 'Общее'}
+            </span>
             <span className="text-slate-300">•</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{course.lessons_count} Lessons</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{course.lessons_count} уроков</span>
           </div>
           <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">{course.title}</h3>
           <p className="text-slate-500 text-sm font-medium line-clamp-2 max-w-md">{course.description}</p>
         </div>
         <div className="flex flex-wrap items-center gap-6">
           <Link to={`/app/courses/${course.id}`} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold text-[11px] uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center gap-3 shadow-lg">
-            Continue Learning <ArrowUpRight size={14} />
+            Продолжить <ArrowUpRight size={14} />
           </Link>
           <div className="flex items-center gap-4">
              <div className="w-12 h-12 rounded-full border-2 border-slate-100 flex items-center justify-center text-slate-900 font-black text-xs">
                 {course.pivot?.progress || 0}%
              </div>
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Total<br/>Progress</p>
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Общий<br/>прогресс</p>
           </div>
         </div>
       </div>
@@ -232,11 +243,16 @@ const CourseRowItem = ({ course }) => (
       <img src={course.image} className="w-full h-full object-cover" alt="" />
     </div>
     <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-2 mb-1">
+          <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter bg-blue-50 px-2 py-0.5 rounded">
+            {course.category || 'Общее'}
+          </span>
+      </div>
       <h4 className="font-bold text-slate-900 text-base tracking-tight truncate group-hover:text-blue-600 transition-colors">{course.title}</h4>
       <div className="flex items-center gap-3 mt-1">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{course.modules_count} Modules</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{course.modules_count} Модулей</p>
         <span className="w-1 h-1 bg-slate-200 rounded-full" />
-        <p className="text-[10px] font-medium text-slate-500">{course.lessons_count} total lessons</p>
+        <p className="text-[10px] font-medium text-slate-500">{course.lessons_count} всего уроков</p>
       </div>
     </div>
     <div className="flex items-center gap-12">
@@ -251,6 +267,24 @@ const CourseRowItem = ({ course }) => (
         </div>
     </div>
   </Link>
+);
+
+const PendingCard = ({ course }) => (
+    <div className="flex items-center gap-4 p-4 bg-orange-50/50 border border-orange-100 rounded-3xl opacity-90 transition-all hover:bg-orange-50">
+        <div className="w-14 h-14 rounded-2xl overflow-hidden grayscale bg-slate-200">
+            <img src={course.image} className="w-full h-full object-cover" alt="" />
+        </div>
+        <div className="flex-1">
+            <h4 className="font-black text-slate-800 text-sm tracking-tight">{course.title}</h4>
+            <div className="flex items-center gap-1.5 mt-1">
+                <Clock size={12} className="text-orange-500" />
+                <span className="text-[9px] font-black uppercase text-orange-500 tracking-wider">Ожидает одобрения</span>
+            </div>
+        </div>
+        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-orange-200 border border-orange-100 shadow-sm">
+            <Lock size={14} />
+        </div>
+    </div>
 );
 
 const SectionHeader = ({ title }) => (
@@ -283,8 +317,8 @@ const SettingsSection = ({ passwords, setPasswords, handlePasswordChange, passLo
          <div className="w-20 h-20 bg-slate-100 rounded-[2rem] flex items-center justify-center text-slate-300 border-2 border-dashed border-slate-200">
             <Settings size={32} />
          </div>
-         <h3 className="text-xl font-black text-slate-900">Security</h3>
-         <p className="text-sm text-slate-400 font-medium leading-relaxed">Ensure your account is protected with a strong, unique password.</p>
+         <h3 className="text-xl font-black text-slate-900">Безопасность</h3>
+         <p className="text-sm text-slate-400 font-medium leading-relaxed">Защитите свой аккаунт, используя сложный и уникальный пароль.</p>
       </div>
       
       <div className="lg:col-span-2">
@@ -292,7 +326,7 @@ const SettingsSection = ({ passwords, setPasswords, handlePasswordChange, passLo
           <div className="flex justify-between items-center border-b border-slate-50 pb-6">
             <div className="flex items-center gap-3">
               <ShieldCheck className="text-blue-600" size={20} />
-              <span className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">Change Password</span>
+              <span className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">Смена пароля</span>
             </div>
             <button 
               type="button" 
@@ -305,7 +339,7 @@ const SettingsSection = ({ passwords, setPasswords, handlePasswordChange, passLo
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Current Password</label>
+              <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Текущий пароль</label>
               <input 
                 type={showPasswords ? "text" : "password"}
                 value={passwords.current_password}
@@ -316,7 +350,7 @@ const SettingsSection = ({ passwords, setPasswords, handlePasswordChange, passLo
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-1">New Password</label>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Новый пароль</label>
                 <input 
                   type={showPasswords ? "text" : "password"}
                   value={passwords.new_password}
@@ -326,7 +360,7 @@ const SettingsSection = ({ passwords, setPasswords, handlePasswordChange, passLo
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Confirm New</label>
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Подтвердите новый</label>
                 <input 
                   type={showPasswords ? "text" : "password"}
                   value={passwords.new_password_confirmation}
@@ -343,7 +377,7 @@ const SettingsSection = ({ passwords, setPasswords, handlePasswordChange, passLo
             disabled={passLoading}
             className="w-full bg-slate-900 text-white p-6 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-blue-600 transition-all disabled:opacity-50"
           >
-            {passLoading ? 'Verifying...' : 'Update Password'}
+            {passLoading ? 'Загрузка...' : 'Обновить пароль'}
           </button>
         </form>
       </div>
@@ -354,8 +388,8 @@ const SettingsSection = ({ passwords, setPasswords, handlePasswordChange, passLo
 const EmptyState = () => (
   <div className="text-center py-24 bg-slate-50 rounded-[4rem] border-2 border-dashed border-slate-200">
     <LayoutDashboard size={28} className="text-slate-200 mx-auto mb-6" />
-    <h3 className="text-2xl font-black text-slate-900">No courses joined</h3>
-    <p className="text-slate-400 mt-2 text-sm">Join a course to start tracking your progress here.</p>
+    <h3 className="text-2xl font-black text-slate-900">У вас пока нет курсов</h3>
+    <p className="text-slate-400 mt-2 text-sm">Запишитесь на курс, чтобы начать обучение.</p>
   </div>
 );
 
