@@ -1,29 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  ArrowLeft, Bell, LogOut, Sparkles, 
-  Settings, GraduationCap, User, LayoutGrid
+  Link, 
+  useLocation, 
+  Outlet, 
+  useNavigate 
+} from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  Settings, 
+  LogOut,
+  GraduationCap,
+  Menu,
+  X,
+  User,
+  Bell,
+  Sparkles,
+  BookOpen
 } from 'lucide-react';
 
 const AppLayout = () => {
+  const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [user, setUser] = useState(null);
   const [lastCourseId, setLastCourseId] = useState(null);
+  const location = useLocation(); 
   const navigate = useNavigate();
-  const location = useLocation();
 
+  // 1. Загрузка данных пользователя и последнего курса
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
-    if (savedUser) setUser(JSON.parse(savedUser));
+    const token = localStorage.getItem('token');
 
+    if (!savedUser || !token) {
+      navigate('/login');
+      return;
+    }
+
+    setUser(JSON.parse(savedUser));
+    
     const savedLastCourse = localStorage.getItem('last_course_id');
     if (savedLastCourse) setLastCourseId(savedLastCourse);
-  }, []);
+  }, [navigate]);
 
+  // 2. Трекинг последнего посещенного курса
   useEffect(() => {
     const pathParts = location.pathname.split('/');
     if (pathParts.length === 4 && pathParts[2] === 'courses') {
       const courseId = pathParts[3];
-      if (courseId && courseId !== 'dashboard' && courseId !== 'admin') {
+      if (courseId && courseId !== 'dashboard') {
         localStorage.setItem('last_course_id', courseId);
         setLastCourseId(courseId);
       }
@@ -31,126 +54,155 @@ const AppLayout = () => {
   }, [location.pathname]);
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     navigate('/login');
   };
 
-  const isActive = (path) => location.pathname === path;
+  // Определяем активную вкладку для логики Dashboard
   const isSettingsActive = location.state?.activeTab === 'settings';
 
+  // Пункты меню
+  const menuItems = [
+    { 
+      id: 'dashboard', 
+      path: '/app/dashboard', 
+      state: { activeTab: 'overview' },
+      icon: <LayoutDashboard size={20} />, 
+      label: 'Мой кабинет',
+      activeCondition: location.pathname === '/app/dashboard' && !isSettingsActive
+    },
+    { 
+      id: 'settings', 
+      path: '/app/dashboard', 
+      state: { activeTab: 'settings' },
+      icon: <Settings size={20} />, 
+      label: 'Настройки',
+      activeCondition: isSettingsActive
+    },
+  ];
+
+  if (!user) return null;
+
   return (
-    <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
+    <div className="flex min-h-screen bg-[#F1F5F9] font-sans text-slate-900">
       
-      {/* HEADER */}
-      <header className="h-20 border-b border-slate-100 flex items-center justify-between px-8 shrink-0 bg-white z-[70]">
-        
-        <div className="flex items-center gap-6">
-          <button 
-            onClick={() => navigate(-1)} 
-            className="p-2.5 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-slate-900 transition-all"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div className="h-8 w-px bg-slate-100 hidden md:block" />
-          <Link to="/" className="flex items-center gap-2.5 group">
-             <div className="w-10 h-10">
-                <img src="/images/icons/logo.png" alt="Logo" className="h-full w-full object-contain" />
-              </div>
-            <span className="font-bold text-sm tracking-tight text-slate-900 uppercase">
-              KAZ<span className="text-blue-600">TBU</span>
+      {/* SIDEBAR (Тёмная тема как в Admin) */}
+      <aside className={`
+        ${isSidebarOpen ? 'w-72' : 'w-20'} 
+        bg-slate-900 border-r border-white/5 flex flex-col fixed h-full transition-all duration-300 z-50 shadow-2xl
+      `}>
+        {/* LOGO SECTION */}
+        <div className={`flex items-center border-white/5 bg-slate-950/50 h-20 transition-all duration-300 ${isSidebarOpen ? 'px-6 gap-3' : 'px-0 justify-center'}`}>
+          <div className="w-10 h-10 shrink-0">
+            <img src="/images/icons/logo.png" alt="Logo" className="h-full w-full object-contain" />
+          </div>
+          {isSidebarOpen && (
+            <span className="font-black text-xl tracking-tighter text-white uppercase">
+              KAZ<span className="text-blue-400">UTB</span><span className='italic text-[13px] lowercase ml-1'>edu</span>
             </span>
-          </Link>
+          )}
         </div>
 
-        {/* CENTER NAVIGATION */}
-        <nav className="hidden lg:flex items-center gap-1 bg-slate-50 p-1 rounded-2xl border border-slate-100">
-          <Link 
-            to="/app/dashboard" 
-            state={{ activeTab: 'overview' }}
-            className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-              isActive('/app/dashboard') && !isSettingsActive
-                ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
-                : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
-            }`}
-          >
-            <LayoutGrid size={14} className={isActive('/app/dashboard') && !isSettingsActive ? 'text-blue-600' : 'text-slate-400'} /> 
-            Кабинет
-          </Link>
+        {/* NAVIGATION */}
+        <nav className="flex-1 p-3 space-y-2 mt-4 overflow-y-auto">
+          {menuItems.map((item) => (
+            <Link 
+              key={item.id} 
+              to={item.path} 
+              state={item.state}
+              className={`w-full flex items-center rounded-2xl transition-all duration-300 ${isSidebarOpen ? 'px-4 py-3.5 gap-4' : 'justify-center py-3.5'} 
+                ${item.activeCondition ? 
+                  'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 
+                  'text-slate-400 hover:bg-white/5 hover:text-white'}`}
+            >
+              <span className={`${item.activeCondition ? 'scale-110' : 'group-hover:scale-110'} transition-transform`}>
+                {item.icon}
+              </span>
+              {isSidebarOpen && <span className="font-bold text-sm tracking-tight">{item.label}</span>}
+            </Link>
+          ))}
 
-          <Link 
-            to="/app/dashboard" 
-            state={{ activeTab: 'settings' }} 
-            className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-              isSettingsActive 
-                ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
-                : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
-            }`}
-          >
-            <Settings size={14} className={isSettingsActive ? 'text-blue-600' : 'text-slate-400'} /> 
-            Настройки
-          </Link>
-
+          {/* Специальная кнопка "Последний курс" */}
           {lastCourseId && (
-            <>
-              <div className="w-px h-4 bg-slate-200 mx-1" />
-              <Link 
-                to={`/app/courses/${lastCourseId}`} 
-                className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
-                  location.pathname === `/app/courses/${lastCourseId}`
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' 
-                    : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                }`}
-              >
-                <GraduationCap size={15} /> Последний курс
-              </Link>
-            </>
+            <div className={`pt-4 ${!isSidebarOpen && 'hidden'}`}>
+                <p className="px-4 mb-2 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Продолжить</p>
+                <Link 
+                    to={`/app/courses/${lastCourseId}`}
+                    className="w-full flex items-center px-4 py-3.5 gap-4 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all"
+                >
+                    <GraduationCap size={20} />
+                    <span className="font-bold text-sm tracking-tight truncate">Мой курс</span>
+                </Link>
+            </div>
           )}
         </nav>
 
-        {/* RIGHT SECTION */}
-        <div className="flex items-center gap-3">
-          <button className="p-2.5 text-slate-400 hover:text-slate-900 transition-colors relative">
-            <Bell size={20} />
-            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-blue-600 rounded-full border-2 border-white"></span>
-          </button>
-          
-          <div className="group relative ml-2">
-            <button className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-xs font-bold text-slate-900 border border-slate-200 hover:border-slate-900 transition-all overflow-hidden">
-              {user?.avatar ? (
-                <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
-              ) : (
-                <User size={18} />
-              )}
-            </button>
-            
-            <div className="absolute right-0 top-full pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-2 group-hover:translate-y-0 z-[100]">
-              <div className="w-64 bg-white border border-slate-100 rounded-[1.5rem] shadow-xl p-2">
-                <div className="px-4 py-3 mb-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Аккаунт</p>
-                  <p className="text-sm font-bold text-slate-900 truncate">{user?.name || 'Студент'}</p>
-                </div>
-                <div className="space-y-1">
-                  <Link 
-                    to="/app/dashboard" 
-                    state={{ activeTab: 'settings' }} 
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 rounded-xl transition-colors"
-                  >
-                    <Settings size={16} className="text-slate-400" />
-                    <span className="text-[11px] font-bold uppercase text-slate-600">Настройки</span>
-                  </Link>
-                  <div className="h-px bg-slate-50 mx-2 my-1" />
-                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 text-red-500 rounded-xl transition-colors">
-                    <LogOut size={16} /> <span className="text-[11px] font-bold uppercase">Выйти</span>
-                  </button>
-                </div>
+        {/* USER PROFILE SECTION */}
+        <div className="p-4 mt-auto border-t border-white/5 space-y-4 bg-slate-950/30">
+          <div className={`flex items-center gap-3 p-3 rounded-2xl transition-colors ${isSidebarOpen ? 'bg-white/5' : 'bg-transparent justify-center'}`}>
+            <div className="min-w-[40px] h-10 bg-slate-800 rounded-xl flex items-center justify-center text-white ring-1 ring-white/10 overflow-hidden">
+                {user.avatar ? (
+                    <img src={user.avatar} className="w-full h-full object-cover" alt="avatar" />
+                ) : (
+                    <span className="font-black text-xs uppercase">{user.name?.substring(0, 2)}</span>
+                )}
+            </div>
+            {isSidebarOpen && (
+              <div className="overflow-hidden text-left">
+                <p className="text-[10px] font-black text-white truncate uppercase tracking-tighter">
+                  {user.name}
+                </p>
+                <p className="text-[9px] text-slate-400 font-bold truncate uppercase tracking-widest">
+                  Студент
+                </p>
               </div>
+            )}
+          </div>
+          
+          <button 
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-2xl transition-all group ${!isSidebarOpen && 'justify-center'}`}
+          >
+            <LogOut size={20} />
+            {isSidebarOpen && <span className="text-[10px] font-black uppercase tracking-[0.2em]">Выйти</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT AREA */}
+      <main className={`flex-1 ${isSidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 flex flex-col`}>
+        {/* HEADER */}
+        <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-slate-200 flex items-center justify-between px-10 sticky top-0 z-40">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
+              {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+            <div className="h-6 w-[1px] bg-slate-200 mx-2" />
+            <div className="flex items-center gap-2">
+                <Sparkles size={14} className="text-blue-600" />
+                <h1 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  {isSettingsActive ? 'Настройки профиля' : 'Обучающая платформа'}
+                </h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+              <button className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all relative">
+                <Bell size={20} />
+                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+              </button>
+          </div>
+        </header>
+
+        {/* CONTENT */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-8 max-w-[1600px] mx-auto">
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <Outlet /> 
             </div>
           </div>
         </div>
-      </header>
-
-      <main className="flex-1 overflow-y-auto bg-[#F8FAFC]">
-        <Outlet />
       </main>
     </div>
   );

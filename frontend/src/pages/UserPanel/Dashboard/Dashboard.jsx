@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { 
   BookOpen, ChevronRight, LayoutDashboard, 
-  Zap, Trophy, Star, ArrowUpRight, Lock, Eye, EyeOff, 
-  ShieldCheck, User, Search, Clock,
-  Settings, Flame
+  Zap, Star, ArrowUpRight, Lock, Eye, EyeOff, 
+  ShieldCheck, Search, Clock, Settings, Flame,
+  TrendingUp, GraduationCap, User
 } from 'lucide-react';
 import api from '../../../api/axios';
 
@@ -43,7 +43,6 @@ const Dashboard = () => {
     fetchMyCourses();
   }, []);
 
-  // --- ЛОГИКА ФИЛЬТРАЦИИ (Берем из статусов в БД) ---
   const approvedCourses = useMemo(() => 
     courses.filter(c => c.status === 'approved'), [courses]
   );
@@ -85,151 +84,197 @@ const Dashboard = () => {
   if (loading) return <LoadingSkeleton />;
 
   return (
-    <div className="h-full overflow-y-auto bg-white custom-scrollbar selection:bg-blue-100 selection:text-blue-700">
-      <div className="max-w-[1440px] mx-auto p-6 md:p-10 space-y-10">
-        
-        {/* --- HEADER --- */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 border-b border-slate-100 pb-10">
-          <div className="flex items-center gap-6">
-            <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-500 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-                <div className="relative w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-xl">
-                    <User size={28} />
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 border-4 border-white rounded-full"></div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2 text-blue-600 mb-1">
-                 <Flame size={14} fill="currentColor" />
-                 <span className="text-[10px] font-black uppercase tracking-widest">Личный кабинет</span>
-              </div>
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight">Добро пожаловать!</h1>
-              <p className="text-slate-400 text-sm font-medium">Отслеживайте свой прогресс и продолжайте обучение.</p>
-            </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-             <nav className="flex items-center p-1.5 bg-slate-100/80 backdrop-blur-md rounded-2xl border border-slate-100">
-                {['overview', 'courses', 'settings'].map((id) => (
-                  <button 
-                    key={id}
-                    onClick={() => setActiveTab(id)}
-                    className={`px-6 py-3 text-[10px] font-black uppercase tracking-widest transition-all rounded-xl ${
-                      activeTab === id ? 'bg-white text-slate-900 shadow-lg shadow-slate-200/50' : 'text-slate-400 hover:text-slate-600'
-                    }`}
-                  >
-                    {id === 'courses' ? `Библиотека (${approvedCourses.length})` : id === 'overview' ? 'Обзор' : 'Настройки'}
-                  </button>
-                ))}
-             </nav>
-          </div>
-        </header>
+    <div className="max-w-[1400px] mx-auto space-y-8 p-4 md:p-8 animate-in fade-in duration-500">
+      
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-200 pb-8 gap-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold text-slate-800 tracking-tight">
+            {activeTab === 'settings' ? 'Настройки безопасности' : 'Личный кабинет студента'}
+          </h2>
+          <p className="text-slate-500 text-sm">Управляйте своим обучением и личными данными</p>
+        </div>
 
-        {activeTab === 'settings' ? (
-          <SettingsSection 
-            passwords={passwords} 
-            setPasswords={setPasswords} 
-            handlePasswordChange={handlePasswordChange}
-            passLoading={passLoading}
-            showPasswords={showPasswords}
-            setShowPasswords={setShowPasswords}
+        <div className="flex bg-slate-100 p-1 rounded-xl">
+          <TabButton 
+            active={activeTab === 'overview'} 
+            onClick={() => setActiveTab('overview')} 
+            label="Обзор" 
           />
-        ) : (
-          <div className="space-y-12 animate-in fade-in duration-700">
-            
-            {/* --- TOP STATS --- */}
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-               <StatCard title="Ср. прогресс" value={`${totalProgress}%`} icon={<Zap size={20} />} color="text-blue-600" bg="bg-blue-50" />
-               <StatCard title="Мои курсы" value={approvedCourses.length} icon={<BookOpen size={20} />} color="text-orange-500" bg="bg-orange-50" />
-               <StatCard title="На рассмотрении" value={pendingCourses.length} icon={<Clock size={20} />} color="text-emerald-500" bg="bg-emerald-50" />
-               <StatCard title="Цель" value="100%" icon={<Star size={20} />} color="text-purple-600" bg="bg-purple-50" />
-            </section>
+          <TabButton 
+            active={activeTab === 'courses'} 
+            onClick={() => setActiveTab('courses')} 
+            label="Мои курсы" 
+          />
+          <TabButton 
+            active={activeTab === 'settings'} 
+            onClick={() => setActiveTab('settings')} 
+            label="Настройки" 
+          />
+        </div>
+      </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-              <div className="lg:col-span-8 space-y-12">
-                {activeTab === 'overview' ? (
-                  <section className="space-y-6">
-                    <SectionHeader title="Продолжить обучение" />
+      {activeTab === 'settings' ? (
+        <SettingsSection 
+          passwords={passwords} 
+          setPasswords={setPasswords} 
+          handlePasswordChange={handlePasswordChange}
+          passLoading={passLoading}
+          showPasswords={showPasswords}
+          setShowPasswords={setShowPasswords}
+        />
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+          
+          {/* LEFT CONTENT */}
+          <div className="xl:col-span-8 space-y-8">
+            
+            {/* STATS GRID */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+               <StatCard title="Общий прогресс" value={`${totalProgress}%`} icon={<TrendingUp size={18} />} color="text-indigo-600" />
+               <StatCard title="В процессе" value={approvedCourses.length} icon={<BookOpen size={18} />} color="text-emerald-600" />
+               <StatCard title="Ожидают" value={pendingCourses.length} icon={<Clock size={18} />} color="text-amber-600" />
+            </div>
+
+            {activeTab === 'overview' ? (
+              <div className="space-y-8">
+                <section>
+                  <SectionHeader title="Продолжить обучение" />
+                  <div className="mt-4">
                     {approvedCourses.length > 0 ? (
                       <ActiveCourseHero course={approvedCourses[0]} />
                     ) : (
                       <EmptyState />
                     )}
+                  </div>
+                </section>
 
-                    {/* Показываем заявки на рассмотрении на главном табе */}
-                    {pendingCourses.length > 0 && (
-                        <div className="mt-10 space-y-4">
-                            <SectionHeader title="Заявки на рассмотрении" />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {pendingCourses.map(course => <PendingCard key={course.id} course={course} />)}
-                            </div>
-                        </div>
-                    )}
-                  </section>
-                ) : (
-                  <section className="space-y-8">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                       <SectionHeader title="Вся библиотека" />
-                       <div className="relative group">
-                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                          <input 
-                            type="text" 
-                            placeholder="Поиск по курсам..." 
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="bg-slate-50 border-none rounded-2xl py-3 pl-12 pr-6 text-sm font-bold text-slate-900 w-full md:w-64 outline-none"
-                          />
-                       </div>
-                    </div>
-                    <div className="bg-white rounded-[2.5rem] border border-slate-100 p-2 overflow-hidden shadow-sm">
-                       {filteredCourses.length > 0 ? (
-                         filteredCourses.map(course => <CourseRowItem key={course.id} course={course} />)
-                       ) : (
-                         <div className="p-20 text-center text-slate-400 font-medium tracking-widest uppercase text-[10px]">Курсы не найдены</div>
-                       )}
+                {pendingCourses.length > 0 && (
+                  <section>
+                    <SectionHeader title="Заявки на рассмотрении" />
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {pendingCourses.map(course => <PendingCard key={course.id} course={course} />)}
                     </div>
                   </section>
                 )}
               </div>
-
-         
-            </div>
+            ) : (
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                   <SectionHeader title="Все мои курсы" />
+                   <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                      <input 
+                        type="text" 
+                        placeholder="Поиск курсов..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="bg-white border border-slate-200 rounded-lg py-2 pl-9 pr-4 text-sm focus:ring-2 ring-indigo-500/20 outline-none w-64 transition-all"
+                      />
+                   </div>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                   {filteredCourses.length > 0 ? (
+                     filteredCourses.map(course => <CourseRowItem key={course.id} course={course} />)
+                   ) : (
+                     <div className="p-12 text-center text-slate-400 text-sm">Курсы не найдены</div>
+                   )}
+                </div>
+              </section>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* RIGHT SIDEBAR */}
+          <aside className="xl:col-span-4 space-y-6">
+            <div className="bg-indigo-900 rounded-2xl p-6 text-white shadow-lg shadow-indigo-200">
+               <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-indigo-800 rounded-lg">
+                    <User size={20} className="text-indigo-200" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-lg">Статус студента</h4>
+                    <p className="text-indigo-300 text-xs uppercase tracking-wider">Академический профиль</p>
+                  </div>
+               </div>
+               <p className="text-indigo-100 text-sm leading-relaxed mb-6">
+                 Ваша академическая активность за последнюю неделю выросла на 12%. Продолжайте в том же темпе!
+               </p>
+               <button className="w-full py-3 bg-white text-indigo-900 rounded-xl text-sm font-bold hover:bg-indigo-50 transition-colors">
+                  Открыть журнал
+               </button>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-2xl p-6">
+               <h4 className="text-sm font-bold text-slate-800 mb-5 flex items-center gap-2">
+                 <Clock size={16} className="text-slate-400" /> Последняя активность
+               </h4>
+               <div className="space-y-5">
+                 {approvedCourses.slice(0, 3).map(c => (
+                   <div key={c.id} className="flex items-start gap-3">
+                     <div className="mt-1 w-1.5 h-1.5 bg-indigo-500 rounded-full shrink-0" />
+                     <div>
+                       <p className="text-sm font-semibold text-slate-700 line-clamp-1">{c.title}</p>
+                       <p className="text-xs text-slate-400 mt-0.5">Прогресс: {c.pivot?.progress}%</p>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   );
 };
 
-/* --- UI HELPERS --- */
+/* --- REUSABLE COMPONENTS --- */
+
+const TabButton = ({ active, onClick, label }) => (
+  <button 
+    onClick={onClick}
+    className={`px-5 py-2 text-sm font-medium transition-all rounded-lg ${
+      active ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+    }`}
+  >
+    {label}
+  </button>
+);
+
+const StatCard = ({ title, value, icon, color }) => (
+  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+    <div className="flex items-center justify-between mb-2">
+      <span className={`p-2 rounded-lg bg-slate-50 ${color}`}>{icon}</span>
+      <span className="text-2xl font-bold text-slate-800">{value}</span>
+    </div>
+    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{title}</p>
+  </div>
+);
+
+const SectionHeader = ({ title }) => (
+  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+    {title}
+    <div className="h-px bg-slate-200 flex-1 ml-2" />
+  </h3>
+);
 
 const ActiveCourseHero = ({ course }) => (
-  <div className="group bg-white border border-slate-100 rounded-[3rem] p-5 hover:shadow-2xl transition-all duration-500">
-    <div className="flex flex-col md:flex-row gap-8 items-center">
-      <div className="w-full md:w-[320px] aspect-[16/10] rounded-[2rem] overflow-hidden bg-slate-100 shadow-inner">
-        <img src={course.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={course.title} />
+  <div className="group bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition-all">
+    <div className="flex flex-col md:flex-row gap-6">
+      <div className="w-full md:w-64 aspect-video rounded-xl overflow-hidden bg-slate-100 shrink-0">
+        <img src={course.image} className="w-full h-full object-cover" alt="" />
       </div>
-      <div className="flex-1 space-y-6">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest">
-                {course.category || 'Общее'}
-            </span>
-            <span className="text-slate-300">•</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{course.lessons_count} уроков</span>
-          </div>
-          <h3 className="text-3xl font-black text-slate-900 tracking-tight leading-tight">{course.title}</h3>
-          <p className="text-slate-500 text-sm font-medium line-clamp-2 max-w-md">{course.description}</p>
+      <div className="flex-1 flex flex-col justify-between py-1">
+        <div>
+          <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">{course.category || 'Курс'}</span>
+          <h4 className="text-xl font-bold text-slate-800 mt-1">{course.title}</h4>
         </div>
-        <div className="flex flex-wrap items-center gap-6">
-          <Link to={`/app/courses/${course.id}`} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold text-[11px] uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center gap-3 shadow-lg">
-            Продолжить <ArrowUpRight size={14} />
+        <div className="flex items-center gap-6 mt-4">
+          <Link to={`/app/courses/${course.id}`} className="bg-slate-800 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all flex items-center gap-2">
+            Продолжить <ArrowUpRight size={16} />
           </Link>
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 rounded-full border-2 border-slate-100 flex items-center justify-center text-slate-900 font-black text-xs">
-                {course.pivot?.progress || 0}%
-             </div>
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight">Общий<br/>прогресс</p>
+          <div className="flex flex-col">
+            <span className="text-[10px] text-slate-400 font-bold uppercase">Пройдено</span>
+            <span className="text-sm font-bold text-slate-700">{course.pivot?.progress || 0}%</span>
           </div>
         </div>
       </div>
@@ -238,166 +283,130 @@ const ActiveCourseHero = ({ course }) => (
 );
 
 const CourseRowItem = ({ course }) => (
-  <Link to={`/app/courses/${course.id}`} className="group flex items-center gap-6 py-6 px-6 hover:bg-slate-50 transition-all border-b border-slate-50 last:border-0">
-    <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 group-hover:border-blue-200 transition-all shadow-sm overflow-hidden">
+  <Link to={`/app/courses/${course.id}`} className="flex items-center gap-4 py-4 px-6 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
+    <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-slate-200">
       <img src={course.image} className="w-full h-full object-cover" alt="" />
     </div>
     <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-2 mb-1">
-          <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter bg-blue-50 px-2 py-0.5 rounded">
-            {course.category || 'Общее'}
-          </span>
-      </div>
-      <h4 className="font-bold text-slate-900 text-base tracking-tight truncate group-hover:text-blue-600 transition-colors">{course.title}</h4>
-      <div className="flex items-center gap-3 mt-1">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{course.modules_count} Модулей</p>
-        <span className="w-1 h-1 bg-slate-200 rounded-full" />
-        <p className="text-[10px] font-medium text-slate-500">{course.lessons_count} всего уроков</p>
-      </div>
+      <h4 className="font-semibold text-slate-800 text-sm truncate">{course.title}</h4>
+      <p className="text-[10px] text-slate-400 font-medium">{course.category}</p>
     </div>
-    <div className="flex items-center gap-12">
-        <div className="hidden md:block text-right">
-           <p className="text-sm font-black text-slate-900">{course.pivot?.progress || 0}%</p>
-           <div className="w-24 h-1 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
-              <div className="h-full bg-slate-900 transition-all duration-1000" style={{ width: `${course.pivot?.progress || 0}%` }} />
-           </div>
-        </div>
-        <div className="w-10 h-10 rounded-full flex items-center justify-center group-hover:bg-blue-50 text-slate-300 group-hover:text-blue-600 transition-all">
-          <ChevronRight size={20} />
-        </div>
+    <div className="hidden sm:block w-32 shrink-0">
+       <div className="flex items-center justify-between mb-1">
+          <span className="text-[10px] font-bold text-slate-500">{course.pivot?.progress || 0}%</span>
+       </div>
+       <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-full bg-indigo-500 transition-all" style={{ width: `${course.pivot?.progress || 0}%` }} />
+       </div>
     </div>
+    <ChevronRight size={18} className="text-slate-300" />
   </Link>
 );
 
 const PendingCard = ({ course }) => (
-    <div className="flex items-center gap-4 p-4 bg-orange-50/50 border border-orange-100 rounded-3xl opacity-90 transition-all hover:bg-orange-50">
-        <div className="w-14 h-14 rounded-2xl overflow-hidden grayscale bg-slate-200">
-            <img src={course.image} className="w-full h-full object-cover" alt="" />
-        </div>
-        <div className="flex-1">
-            <h4 className="font-black text-slate-800 text-sm tracking-tight">{course.title}</h4>
-            <div className="flex items-center gap-1.5 mt-1">
-                <Clock size={12} className="text-orange-500" />
-                <span className="text-[9px] font-black uppercase text-orange-500 tracking-wider">Ожидает одобрения</span>
-            </div>
-        </div>
-        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-orange-200 border border-orange-100 shadow-sm">
-            <Lock size={14} />
-        </div>
-    </div>
-);
-
-const SectionHeader = ({ title }) => (
-  <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400 flex items-center gap-3">
-    <span className="w-8 h-[2px] bg-slate-200" /> {title}
-  </h2>
-);
-
-const StatCard = ({ title, value, icon, color, bg }) => (
-  <div className="bg-white p-6 rounded-[2rem] border border-slate-100 hover:shadow-xl transition-all group overflow-hidden relative">
-    <div className={`absolute -right-4 -top-4 w-20 h-20 opacity-[0.03] group-hover:scale-150 transition-transform ${color}`}>
-      {icon}
-    </div>
-    <div className="flex items-center gap-5">
-      <div className={`w-12 h-12 ${bg} ${color} rounded-2xl flex items-center justify-center shadow-sm`}>
-        {icon}
+  <div className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+      <div className="w-12 h-12 rounded-lg overflow-hidden grayscale opacity-50 bg-slate-200 shrink-0">
+          <img src={course.image} className="w-full h-full object-cover" alt="" />
       </div>
-      <div>
-        <p className="text-2xl font-black text-slate-900 tracking-tight">{value}</p>
-        <p className="text-[10px] font-bold uppercase text-slate-400 tracking-wider mt-0.5">{title}</p>
+      <div className="flex-1 min-w-0">
+          <h4 className="font-bold text-slate-700 text-xs truncate uppercase tracking-tight">{course.title}</h4>
+          <div className="flex items-center gap-1.5 mt-1">
+              <Clock size={12} className="text-amber-500" />
+              <span className="text-[9px] font-bold uppercase text-amber-600 tracking-wider">Ожидает проверки</span>
+          </div>
       </div>
-    </div>
+      <Lock size={14} className="text-slate-300 shrink-0" />
   </div>
 );
 
 const SettingsSection = ({ passwords, setPasswords, handlePasswordChange, passLoading, showPasswords, setShowPasswords }) => (
-  <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700 pb-20">
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-      <div className="space-y-4">
-         <div className="w-20 h-20 bg-slate-100 rounded-[2rem] flex items-center justify-center text-slate-300 border-2 border-dashed border-slate-200">
-            <Settings size={32} />
-         </div>
-         <h3 className="text-xl font-black text-slate-900">Безопасность</h3>
-         <p className="text-sm text-slate-400 font-medium leading-relaxed">Защитите свой аккаунт, используя сложный и уникальный пароль.</p>
+  <div className="max-w-2xl mx-auto py-8 animate-in slide-in-from-bottom-4 duration-500">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-center gap-3">
+          <ShieldCheck className="text-indigo-600" size={24} />
+          <div>
+            <h3 className="font-bold text-slate-800">Безопасность аккаунта</h3>
+            <p className="text-xs text-slate-500">Смените пароль для обеспечения безопасности вашего профиля</p>
+          </div>
+        </div>
       </div>
       
-      <div className="lg:col-span-2">
-        <form onSubmit={handlePasswordChange} className="bg-white p-8 md:p-12 rounded-[3rem] border border-slate-100 shadow-xl space-y-8">
-          <div className="flex justify-between items-center border-b border-slate-50 pb-6">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="text-blue-600" size={20} />
-              <span className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">Смена пароля</span>
-            </div>
-            <button 
-              type="button" 
-              onClick={() => setShowPasswords(!showPasswords)}
-              className="text-slate-400 hover:text-blue-600"
-            >
-              {showPasswords ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
-
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Текущий пароль</label>
+      <form onSubmit={handlePasswordChange} className="p-8 space-y-5">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-600 ml-1">Текущий пароль</label>
+            <div className="relative">
               <input 
                 type={showPasswords ? "text" : "password"}
                 value={passwords.current_password}
                 onChange={(e) => setPasswords({...passwords, current_password: e.target.value})}
-                className="w-full bg-slate-50 border-2 border-transparent rounded-2xl p-5 font-bold focus:border-blue-500 outline-none transition-all" 
+                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 ring-indigo-500/20 outline-none transition-all" 
+                required
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPasswords(!showPasswords)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showPasswords ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 ml-1">Новый пароль</label>
+              <input 
+                type={showPasswords ? "text" : "password"}
+                value={passwords.new_password}
+                onChange={(e) => setPasswords({...passwords, new_password: e.target.value})}
+                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 ring-indigo-500/20 outline-none transition-all" 
                 required
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Новый пароль</label>
-                <input 
-                  type={showPasswords ? "text" : "password"}
-                  value={passwords.new_password}
-                  onChange={(e) => setPasswords({...passwords, new_password: e.target.value})}
-                  className="w-full bg-slate-50 border-2 border-transparent rounded-2xl p-5 font-bold focus:border-blue-500 outline-none transition-all" 
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Подтвердите новый</label>
-                <input 
-                  type={showPasswords ? "text" : "password"}
-                  value={passwords.new_password_confirmation}
-                  onChange={(e) => setPasswords({...passwords, new_password_confirmation: e.target.value})}
-                  className="w-full bg-slate-50 border-2 border-transparent rounded-2xl p-5 font-bold focus:border-blue-500 outline-none transition-all" 
-                  required
-                />
-              </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 ml-1">Подтверждение</label>
+              <input 
+                type={showPasswords ? "text" : "password"}
+                value={passwords.new_password_confirmation}
+                onChange={(e) => setPasswords({...passwords, new_password_confirmation: e.target.value})}
+                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 ring-indigo-500/20 outline-none transition-all" 
+                required
+              />
             </div>
           </div>
 
           <button 
             type="submit"
             disabled={passLoading}
-            className="w-full bg-slate-900 text-white p-6 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-blue-600 transition-all disabled:opacity-50"
+            className="w-full mt-4 bg-indigo-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-indigo-800 transition-all disabled:opacity-50"
           >
-            {passLoading ? 'Загрузка...' : 'Обновить пароль'}
+            {passLoading ? 'Обновление...' : 'Обновить пароль'}
           </button>
-        </form>
-      </div>
+      </form>
     </div>
   </div>
 );
 
 const EmptyState = () => (
-  <div className="text-center py-24 bg-slate-50 rounded-[4rem] border-2 border-dashed border-slate-200">
-    <LayoutDashboard size={28} className="text-slate-200 mx-auto mb-6" />
-    <h3 className="text-2xl font-black text-slate-900">У вас пока нет курсов</h3>
-    <p className="text-slate-400 mt-2 text-sm">Запишитесь на курс, чтобы начать обучение.</p>
+  <div className="text-center py-20 bg-slate-50 rounded-2xl border border-slate-200 border-dashed">
+    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+       <LayoutDashboard size={20} className="text-slate-300" />
+    </div>
+    <h3 className="font-bold text-slate-800">Учебный план пуст</h3>
+    <p className="text-slate-500 mt-1 text-sm max-w-xs mx-auto">Здесь появятся ваши курсы, когда вы начнете обучение.</p>
   </div>
 );
 
 const LoadingSkeleton = () => (
-  <div className="h-full p-10 space-y-10 animate-pulse bg-white">
-     <div className="h-24 bg-slate-50 rounded-[2rem]" />
-     <div className="grid grid-cols-4 gap-6">
-        {[1,2,3,4].map(i => <div key={i} className="h-32 bg-slate-50 rounded-[2rem]" />)}
+  <div className="max-w-[1400px] mx-auto space-y-8 p-8 animate-pulse">
+     <div className="h-12 w-full bg-slate-100 rounded-xl" />
+     <div className="grid grid-cols-3 gap-4">
+        {[1,2,3].map(i => <div key={i} className="h-28 bg-slate-100 rounded-2xl" />)}
+     </div>
+     <div className="grid grid-cols-12 gap-8">
+        <div className="col-span-8 h-96 bg-slate-100 rounded-2xl" />
+        <div className="col-span-4 h-96 bg-slate-100 rounded-2xl" />
      </div>
   </div>
 );

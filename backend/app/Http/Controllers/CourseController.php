@@ -74,37 +74,36 @@ public function getStructure(Course $course)
 public function getEnrollmentData()
 {
     try {
-        // 1. Проверяем существование таблицы пивота
         if (!\Schema::hasTable('course_user')) {
             return response()->json([
                 'status' => 'success',
                 'enrollments' => [],
-                'stats' => $this->calculateFallbackStats()
+                'stats' => ['total' => 0, 'active' => 0, 'pending_requests' => 0, 'programs' => 0]
             ]);
         }
 
-        // 2. Получаем данные (убираем created_at, если не уверены, что он есть)
         $enrollments = \DB::table('course_user')
             ->join('users', 'course_user.user_id', '=', 'users.id')
             ->join('courses', 'course_user.course_id', '=', 'courses.id')
             ->select(
                 'users.id as user_id', 
                 'users.name as user_name', 
+                'users.email as user_email', 
                 'courses.id as course_id', 
-                'courses.title as course_title'
+                'courses.title as course_title',
+                'course_user.status' // Важно: получаем статус из пивота
             )
             ->get();
 
-        // 3. Считаем статистику через модели
         $totalUsers = \App\Models\User::count();
         $totalCourses = \App\Models\Course::count();
-        $activeCount = $enrollments->count();
         
-        // Безопасный подсчет "ожидающих" (те, у кого нет курсов)
-        $usersWithNoCourses = 0;
-        if (method_exists(\App\Models\User::class, 'courses')) {
-            $usersWithNoCourses = \App\Models\User::whereDoesntHave('courses')->count();
-        }
+        // Считаем именно по статусам
+        $activeCount = $enrollments->where('status', 'approved')->count();
+        $pendingRequestsCount = $enrollments->where('status', 'pending')->count();
+        
+        // Студенты вообще без каких-либо записей в course_user
+        $usersWithNoEntries = \App\Models\User::whereDoesntHave('courses')->count();
 
         return response()->json([
             'status' => 'success',
@@ -112,21 +111,16 @@ public function getEnrollmentData()
             'stats' => [
                 'total' => $totalUsers,
                 'active' => $activeCount,
-                'waiting' => $usersWithNoCourses,
+                'pending_requests' => $pendingRequestsCount,
+                'waiting' => $usersWithNoEntries,
                 'programs' => $totalCourses,
             ]
         ], 200);
 
     } catch (\Exception $e) {
-        // Если упало — возвращаем ошибку в JSON, чтобы CORS пропустил ответ
-        return response()->json([
-            'status' => 'error',
-            'message' => 'PHP Error: ' . $e->getMessage(),
-            'line' => $e->getLine()
-        ], 500);
+        return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
     }
 }
-
 // Вспомогательный метод для пустых статов
 private function calculateFallbackStats() {
     return [
