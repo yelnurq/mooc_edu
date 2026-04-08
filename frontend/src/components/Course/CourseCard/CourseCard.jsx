@@ -10,7 +10,7 @@ const ASSET_URL = "http://localhost:8000/storage/";
 
 export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
   const [showPreview, setShowPreview] = useState(false);
-  const [copied, setCopied] = useState(false); // Состояние для анимации копирования
+  const [copied, setCopied] = useState(false);
   const timeoutRef = useRef(null);
 
   const handleMouseEnter = () => {
@@ -24,7 +24,6 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
     setShowPreview(false);
   };
 
-  // Функция "Поделиться"
   const handleShare = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -49,14 +48,14 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
   return (
     <Link 
       to={`/courses/${course.id}`}
-      className="group bg-white rounded-[2.5rem] border border-slate-200/60 flex flex-col hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-500 overflow-hidden relative h-full cursor-pointer"
+      className="group bg-white rounded-3xl border border-slate-200 flex flex-col hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-500 overflow-hidden relative h-full cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* --- Media Area --- */}
-      <div className="relative h-56 m-2.5 rounded-[2rem] overflow-hidden bg-slate-900">
+      <div className="relative h-56 m-3 rounded-2xl overflow-hidden bg-slate-900">
         <img 
-          src={course.image ? `${ASSET_URL}${course.image}` : '/api/placeholder/400/320'}
+          src={course.image && `${ASSET_URL}${course.image}`}
           alt={course.title} 
           className={`w-full h-full object-cover transition-all duration-700 ${showPreview ? 'scale-110 blur-md opacity-30' : 'scale-100 group-hover:scale-105'}`} 
         />
@@ -76,11 +75,11 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent" />
               <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center z-20">
-                <div className="flex items-center gap-2 bg-blue-600 px-2 py-1 rounded-lg shadow-lg">
+                <div className="flex items-center gap-2 bg-blue-600 px-3 py-1.5 rounded-lg shadow-lg">
                    <Play size={10} className="text-white fill-white" />
-                   <span className="text-[9px] font-black text-white uppercase tracking-wider">Preview</span>
+                   <span className="text-[9px] font-black text-white uppercase tracking-wider">Live Preview</span>
                 </div>
                 <VolumeX size={14} className="text-white/50" />
               </div>
@@ -88,36 +87,32 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
           )}
         </AnimatePresence>
 
-        {/* --- Action Buttons (Top Right) --- */}
         <div className="absolute top-4 right-4 z-30 flex flex-col gap-2">
-          {/* Поделиться */}
           <div 
             role="button"
             onClick={handleShare}
-            className="p-2.5 rounded-xl bg-white/90 backdrop-blur-md shadow-sm transition-all hover:scale-110 active:scale-95 group/share cursor-pointer flex items-center justify-center"
+            className="p-2.5 rounded-xl bg-white/95 backdrop-blur-md shadow-sm transition-all hover:bg-white active:scale-95 group/share cursor-pointer flex items-center justify-center border border-slate-100"
           >
             {copied ? (
               <Check size={16} className="text-emerald-500" />
             ) : (
-              <Share2 size={16} className="text-slate-400 group-hover/share:text-blue-500" />
+              <Share2 size={16} className="text-slate-400 group-hover/share:text-blue-600" />
             )}
             
-            {/* Тултип при копировании */}
             <AnimatePresence>
               {copied && (
                 <motion.div 
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0 }}
-                  className="absolute right-full mr-3 px-3 py-1.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg whitespace-nowrap"
+                  className="absolute right-full mr-3 px-3 py-1.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg whitespace-nowrap shadow-xl"
                 >
-                  Ссылка скопирована
+                  Скопировано
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          {/* Избранное */}
           <div 
             role="button"
             onClick={(e) => {
@@ -125,11 +120,11 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
               e.stopPropagation();
               toggleFavorite(course.id);
             }}
-            className="p-2.5 rounded-xl bg-white/90 backdrop-blur-md shadow-sm transition-all hover:scale-110 active:scale-95 group/heart cursor-pointer flex items-center justify-center"
+            className="p-2.5 rounded-xl bg-white/95 backdrop-blur-md shadow-sm transition-all hover:bg-white active:scale-95 group/heart cursor-pointer flex items-center justify-center border border-slate-100"
           >
             <Heart 
               size={16} 
-              className={`${isFavorite ? "fill-red-500 text-red-500" : "text-slate-400 group-hover/heart:text-red-400"}`} 
+              className={`${isFavorite ? "fill-red-500 text-red-500" : "text-slate-400 group-hover/heart:text-red-500"}`} 
             />
           </div>
         </div>
@@ -137,61 +132,46 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite }) => {
 
       {/* --- Content Area --- */}
       <div className="p-7 pt-2 flex flex-col flex-1 text-left">
-        <div className="flex items-center gap-2 mb-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">      
-            <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-              {course.category?.name || 'Общее'}
+        <div className="flex items-center gap-2 mb-4">      
+            <span className="text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border border-blue-100/50">
+              {course.category?.name || 'General'}
             </span>
         </div>
 
-        <h3 className="text-lg font-black text-slate-900 leading-tight mb-4 group-hover:text-blue-600 transition-colors line-clamp-2">
+        <h3 className="text-xl font-black text-slate-900 leading-[1.3] mb-8 group-hover:text-blue-600 transition-colors line-clamp-2">
           {course.title}
         </h3>
 
-        {/* --- Author Block --- */}
-        <div className="flex items-center gap-3 mb-6">
-            {course.author?.avatar ? (
-              <img 
-                src={course.author.avatar} 
-                className="w-7 h-7 rounded-full object-cover shadow-sm ring-2 ring-slate-50" 
-                alt={course.author_display_name} 
-              />
-            ) : (
-              <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center ring-2 ring-slate-50">
-                <User size={12} className="text-slate-400" />
-              </div>
-            )}
-            <span className="text-xs font-bold text-slate-600">
-              {course.author_display_name || 'Инструктор'}
-            </span>
-        </div>
-
-        {/* --- Stats Footer --- */}
+        {/* --- Stats & Author Footer --- */}
         <div className="mt-auto">
-          <div className="flex items-center justify-between pt-5 border-t border-slate-50">
-            <div className="flex items-center gap-4">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Модули</span>
-                  <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
-                    <div className="p-1.5 bg-blue-50 rounded-lg">
-                      <Layers size={14} className="text-blue-600" />
-                    </div>
+          <div className="flex items-center justify-between pt-6 border-t border-slate-100">
+            <div className="flex items-center gap-5">
+                {/* Модули */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Модули</span>
+                  <div className="flex items-center gap-1.5 text-slate-900 font-bold text-xs">
+                    <Layers size={13} className="text-blue-600" />
                     {course.modules_count || 0}
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Уроки</span>
-                  <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
-                    <div className="p-1.5 bg-indigo-50 rounded-lg">
-                      <BookOpen size={14} className="text-indigo-600" />
-                    </div>
+                {/* Уроки */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Уроки</span>
+                  <div className="flex items-center gap-1.5 text-slate-900 font-bold text-xs">
+                    <BookOpen size={13} className="text-indigo-600" />
                     {course.lessons_count || 0}
                   </div>
                 </div>
-            </div>
 
-            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-                <ArrowRight size={18} />
+                {/* Автор (теперь здесь) */}
+                <div className="flex flex-col gap-1.5 border-l border-slate-100 pl-5">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Автор</span>
+                  <div className="flex items-center gap-1.5 text-slate-700 font-bold text-[11px] truncate">
+                    <User size={13} className="text-slate-400 shrink-0" />
+                    <span className="truncate">{course.author_display_name || 'Expert'}</span>
+                  </div>
+                </div>
             </div>
           </div>
         </div>

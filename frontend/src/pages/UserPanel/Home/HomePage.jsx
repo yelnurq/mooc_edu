@@ -196,7 +196,7 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
         <div className="max-w-[1440px] mx-auto px-8 relative z-20">
           <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24 relative">
             <motion.div className="flex-[1.2] text-center lg:text-left" variants={containerVars} initial="hidden" animate="visible">
-              <motion.div variants={itemVars} className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 shadow-xl mb-8">
+              <motion.div variants={itemVars} className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-[0.7rem] border border-white/20 shadow-xl mb-8">
                 <GraduationCap size={16} className="text-yellow-400" />
                 <span className="text-xs font-black uppercase tracking-[0.2em] text-white">Мультидисциплинарная платформа</span>
               </motion.div>
@@ -210,10 +210,10 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
               </motion.p>
 
               <motion.div variants={itemVars} className="flex flex-wrap justify-center lg:justify-start gap-4">
-                <Link to="/courses" className="px-10 py-5 bg-white text-blue-700 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-yellow-400 hover:text-blue-900 transition-all shadow-2xl flex items-center gap-3 group">
+                <Link to="/courses" className="px-10 py-5 bg-white text-blue-700 rounded-[1rem] font-black uppercase text-xs tracking-widest hover:bg-yellow-400 hover:text-blue-900 transition-all shadow-2xl flex items-center gap-3 group">
                   Начать учиться <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <button className="px-10 py-5 bg-white/5 border border-white/20 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-white/10 backdrop-blur-sm transition-all flex items-center gap-3">
+                <button className="px-10 py-5 bg-white/5 border border-white/20 text-white rounded-[1rem] font-black uppercase text-xs tracking-widest hover:bg-white/10 backdrop-blur-sm transition-all flex items-center gap-3">
                   <BookOpen size={18} /> Публичная библиотека
                 </button>
               </motion.div>
@@ -375,10 +375,8 @@ const HomePage = ({ courses = FAKE_COURSES, toggleFavorite, favorites = [] }) =>
   initial={{ opacity: 0, scale: 0.95 }}
   whileInView={{ opacity: 1, scale: 1 }}
   viewport={{ once: true }}
-  /* rounded-t-[6rem] — оставили большой радиус сверху
-     rounded-b-none — убрали радиус снизу
-  */
-  className="relative bg-blue-600 rounded-t-[6rem] rounded-b-none p-12 lg:p-20 overflow-hidden shadow-2xl shadow-blue-200"
+
+  className="relative bg-blue-600 rounded-t-[6rem] rounded-b-none p-12 lg:p-20 overflow-hidden shadow-2xl"
 >
   {/* --- ДОБАВЛЕННЫЙ СЛОЙ С УЗОРОМ (как в Hero) --- */}
   <div 

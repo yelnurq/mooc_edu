@@ -90,18 +90,13 @@ const CoursesPage = () => {
     <div className="min-h-screen bg-[#f8fafc]">
       <div className="max-w-[1640px] mx-auto px-6 lg:px-12 py-12">
         
-        {/* BREADCRUMBS */}
-        <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-8">
-          <span className="hover:text-blue-600 cursor-pointer transition-colors">Главная</span>
-          <ChevronRight size={12} />
-          <span className="text-slate-900">Каталог курсов</span>
-        </nav>
+   
 
         {/* HEADER */}
         <div className="text-left flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
           <div>
-            <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter mb-4 uppercase">
-              Направления
+            <h1 style={{fontWeight:500}} className="text-5xl md:text-5xl text-slate-900 tracking-tighter mb-4 ">
+              Направления обучения
             </h1>
             <p className="text-slate-500 font-medium max-w-md leading-relaxed border-l-4 border-blue-600 pl-4">
               Выберите подходящую специализацию и начните профессиональный путь уже сегодня.
@@ -124,7 +119,7 @@ const CoursesPage = () => {
           
           {/* SIDEBAR */}
           <aside className="w-full xl:w-80 shrink-0">
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 sticky top-10">
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 sticky top-24">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-2">
                   <LayoutGrid size={16} className="text-blue-600" />
@@ -155,7 +150,8 @@ const CoursesPage = () => {
                     <button
                       key={catName}
                       onClick={() => setSelectedCategory(catName)}
-                      className={`text-left w-full flex items-center justify-between px-4 py-4 rounded-xl text-[10px] font-black transition-all group uppercase tracking-widest ${
+                      style={{fontWeight:500}}
+                      className={`text-left font-sans w-full flex items-center justify-between px-4 py-4 rounded-xl text-[13px] transition-all group ${
                         selectedCategory === catName 
                         ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' 
                         : 'text-slate-500 hover:bg-slate-50 hover:text-blue-600'
@@ -165,11 +161,7 @@ const CoursesPage = () => {
                         <Tag size={14} className={selectedCategory === catName ? 'text-blue-200' : 'text-slate-300 group-hover:text-blue-400'} />
                         {catName}
                       </span>
-                      <span className={`px-2 py-1 rounded-md text-[9px] ${
-                        selectedCategory === catName ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-blue-50'
-                      }`}>
-                        {count}
-                      </span>
+                    
                     </button>
                   );
                 })}
@@ -182,7 +174,7 @@ const CoursesPage = () => {
             <div className="flex flex-col sm:flex-row items-center justify-between mb-10 gap-6">
               <div className="flex items-center gap-3 bg-white px-6 py-4 rounded-xl border border-slate-200 shadow-sm">
                 <div className={`w-3 h-3 rounded-sm ${loading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+                <span className="text-[12px] font-black text-slate-500">
                   {courses.length} программ доступно
                 </span>
               </div>

@@ -136,93 +136,98 @@ const MainLayout = () => {
       <main className="flex-grow">
         <Outlet />
       </main>
-      {/* --- FOOTER --- */}
-<footer className="bg-white border-t border-slate-100 pt-20 pb-10">
-      <div className="max-w-[1440px] mx-auto px-8 lg:px-12">
-        
-        {/* Верхняя часть: Лого + Главный призыв */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-12 mb-20">
-          <div className="space-y-6">
-            <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center">
-                <img src="images/icons/logo.png" alt="Logo" className="h-6 w-6 invert" />
-              </div>
-              <span className="font-black text-xl tracking-tighter text-slate-900 uppercase">
-                KAZ<span className="text-blue-600">UTB</span>
-              </span>
-            </Link>
-            <p className="text-slate-500 text-sm font-medium max-w-[280px] leading-relaxed">
-              Будущее образования в ваших руках. Начните путь к мастерству сегодня.
-            </p>
+<footer className="bg-slate-950 pt-24 pb-12 text-slate-400">
+  <div className="max-w-[1440px] mx-auto px-8 lg:px-12">
+    
+    {/* Верхняя часть: Лого + Навигация */}
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-12 mb-20">
+      <div className="space-y-6">
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/20 transition-transform group-hover:scale-105">
+            <img src="images/icons/logo.png" alt="Logo" className="h-7 w-7 invert" />
           </div>
+          <div className="flex flex-col leading-none">
+            <span className="font-black text-2xl tracking-tighter text-white uppercase">
+              KAZ<span className="text-blue-500">UTB</span>
+            </span>
+            <span className="text-[9px] font-black text-blue-500/80 uppercase tracking-[0.3em] ml-0.5">Education First</span>
+          </div>
+        </Link>
+        <p className="text-slate-400 text-sm font-medium max-w-[300px] leading-relaxed">
+          Будущее образования в ваших руках. Платформа для тех, кто стремится к мастерству и новым вершинам.
+        </p>
+      </div>
 
-          <div className="flex flex-wrap gap-x-12 gap-y-6">
-            {['Все курсы', 'О проекте', 'Менторство', 'Помощь'].map((item) => (
-              <Link 
-                key={item} 
-                to="/" 
-                className="text-sm font-bold text-slate-900 hover:text-blue-600 transition-colors flex items-center gap-1 group"
-              >
-                {item}
-                <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 -translate-y-1 transition-all" />
-              </Link>
-            ))}
-          </div>
+      <div className="flex flex-wrap gap-x-12 gap-y-6">
+        {['Все курсы', 'О проекте', 'Менторство', 'Помощь'].map((item) => (
+          <Link 
+            key={item} 
+            to="/" 
+            className="text-[11px] font-black uppercase tracking-widest text-white hover:text-blue-400 transition-all flex items-center gap-2 group"
+          >
+            {item}
+            <ArrowUpRight size={14} className="opacity-0 group-hover:opacity-100 -translate-y-1 transition-all" />
+          </Link>
+        ))}
+      </div>
+    </div>
+
+    {/* Разделитель с легким свечением */}
+    <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+    {/* Нижняя часть: Копирайт + Контакты + Языки */}
+    <div className="pt-12 flex flex-col lg:flex-row justify-between items-center gap-10">
+      
+      {/* Копирайт и Почта */}
+      <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
+        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">
+          © 2026 KAZUTB LMS • DIGITAL EVOLUTION
+        </span>
+        <div className="hidden md:block w-1.5 h-1.5 bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.5)]" />
+        <a 
+          href="mailto:hello@kazutb.edu" 
+          className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-white hover:text-blue-400 transition-colors"
+        >
+          <Mail size={14} className="text-blue-500" />
+          hello@kazutb.edu.kz
+        </a>
+      </div>
+
+      {/* Соцсети и Языки */}
+      <div className="flex items-center gap-10">
+        <div className="flex items-center gap-6">
+          {['Instagram', 'YouTube', 'LinkedIn'].map((social) => (
+            <a 
+              key={social} 
+              href="#" 
+              className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
+            >
+              {social}
+            </a>
+          ))}
         </div>
 
-        {/* Разделитель */}
-        <div className="h-px w-full bg-slate-100" />
+        <div className="h-8 w-px bg-white/5 hidden sm:block" />
 
-        {/* Нижняя часть: Копирайт + Контакты + Языки */}
-        <div className="pt-10 flex flex-col lg:flex-row justify-between items-center gap-8">
-          
-          {/* Копирайт */}
-          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              © 2026 KAZUTB LMS
-            </span>
-            <div className="hidden md:block w-1 h-1 bg-slate-200 rounded-full" />
-            <a 
-              href="mailto:hello@kazutb.edu" 
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-900 hover:text-blue-600 transition-colors"
+        {/* Переключатель языков (Dark Glass Effect) */}
+        <div className="flex items-center gap-1.5 bg-white/5 p-1.5 rounded-xl border border-white/10 backdrop-blur-sm">
+          {['KZ', 'RU', 'EN'].map((lang) => (
+            <button 
+              key={lang} 
+              className={`px-4 py-1.5 rounded-lg text-[9px] font-black transition-all ${
+                lang === 'RU' 
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' 
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
             >
-              <Mail size={12} />
-              hello@kazutb.edu
-            </a>
-          </div>
-
-          {/* Соцсети и Языки */}
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-5">
-              {['Instagram', 'YouTube', 'LinkedIn'].map((social) => (
-                <a 
-                  key={social} 
-                  href="#" 
-                  className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
-                >
-                  {social}
-                </a>
-              ))}
-            </div>
-
-            <div className="h-6 w-px bg-slate-100 hidden sm:block" />
-
-            <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-lg border border-slate-100">
-              {['KZ', 'RU', 'EN'].map((lang) => (
-                <button 
-                  key={lang} 
-                  className={`px-3 py-1 rounded-md text-[9px] font-black transition-all ${
-                    lang === 'RU' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  {lang}
-                </button>
-              ))}
-            </div>
-          </div>
+              {lang}
+            </button>
+          ))}
         </div>
       </div>
-    </footer>
+    </div>
+  </div>
+</footer>
     </div>
   );
 };
