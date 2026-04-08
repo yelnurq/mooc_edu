@@ -7,6 +7,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../../api/axios';
 import { CourseCard } from '../../../../components/Course/CourseCard/CourseCard';
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0 }
+};
+
 const CoursesPage = () => {
   const [courses, setCourses] = useState([]);
   const [dbCategories, setDbCategories] = useState([]);
@@ -17,11 +30,8 @@ const CoursesPage = () => {
   const [sortBy, setSortBy] = useState('popular');
   const [favorites, setFavorites] = useState([]);
   const [visibleCount, setVisibleCount] = useState(12);
-
-  // Рекомендованные курсы (первые 3 из общего списка для Empty State)
   const [allCoursesBackup, setAllCoursesBackup] = useState([]);
 
-  // 1. Загрузка категорий при старте
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -34,7 +44,6 @@ const CoursesPage = () => {
     fetchCategories();
   }, []);
 
-  // 2. Основная функция загрузки данных
   const fetchCourses = useCallback(async () => {
     setLoading(true);
     try {
@@ -46,12 +55,9 @@ const CoursesPage = () => {
         }
       });
       setCourses(response.data);
-      
-      // Сохраняем копию для рекомендаций, если поиск пустой
       if (selectedCategory === 'Все' && !searchQuery && allCoursesBackup.length === 0) {
         setAllCoursesBackup(response.data.slice(0, 3));
       }
-      
       setVisibleCount(12);
     } catch (error) {
       console.error("Ошибка загрузки:", error);
@@ -60,13 +66,11 @@ const CoursesPage = () => {
     }
   }, [searchQuery, selectedCategory, sortBy, allCoursesBackup.length]);
 
-  // 3. Дебаунс для поиска
   useEffect(() => {
     const timer = setTimeout(fetchCourses, 300);
     return () => clearTimeout(timer);
   }, [fetchCourses]);
 
-  // Фильтрация списка категорий в сайдбаре (локальная)
   const filteredCategoriesSidebar = useMemo(() => {
     const list = ['Все', ...dbCategories.map(c => c.name)];
     return list.filter(cat => cat.toLowerCase().includes(categorySearch.toLowerCase()));
@@ -96,11 +100,11 @@ const CoursesPage = () => {
         {/* HEADER */}
         <div className="text-left flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
           <div>
-            <h1 className="text-5xl md:text-4xl font-black text-slate-900 tracking-tighter mb-4">
+            <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter mb-4 uppercase">
               Направления
             </h1>
-            <p className="text-slate-500 font-medium max-w-md leading-relaxed">
-              Выберите подходящую специализацию и начните обучение уже сегодня.
+            <p className="text-slate-500 font-medium max-w-md leading-relaxed border-l-4 border-blue-600 pl-4">
+              Выберите подходящую специализацию и начните профессиональный путь уже сегодня.
             </p>
           </div>
           
@@ -108,8 +112,8 @@ const CoursesPage = () => {
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
             <input 
               type="text" 
-              placeholder="Поиск по названию курса..." 
-              className="w-full pl-14 pr-6 py-5 bg-white border border-slate-200/50 rounded-[2rem] focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500/20 transition-all font-bold text-sm shadow-sm"
+              placeholder="ПОИСК ПО НАЗВАНИЮ..." 
+              className="w-full pl-14 pr-6 py-5 bg-white border border-slate-200 rounded-xl focus:ring-0 focus:border-blue-600 transition-all font-bold text-xs shadow-sm uppercase tracking-wider"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -120,14 +124,14 @@ const CoursesPage = () => {
           
           {/* SIDEBAR */}
           <aside className="w-full xl:w-80 shrink-0">
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-slate-200/60 sticky top-10">
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 sticky top-10">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-2">
                   <LayoutGrid size={16} className="text-blue-600" />
-                  <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">Отделения</h3>
+                  <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">Категории</h3>
                 </div>
                 {(selectedCategory !== 'Все' || searchQuery !== '') && (
-                  <button onClick={resetFilters} className="text-[10px] font-black uppercase text-blue-600 hover:text-blue-700 transition-all">Сброс</button>
+                  <button onClick={resetFilters} className="text-[10px] font-black uppercase text-blue-600 hover:underline">Сброс</button>
                 )}
               </div>
 
@@ -135,8 +139,8 @@ const CoursesPage = () => {
                 <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
                   type="text"
-                  placeholder="Найти отделение..."
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold outline-none"
+                  placeholder="ФИЛЬТР..."
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-bold outline-none focus:border-blue-200 transition-all uppercase tracking-widest"
                   value={categorySearch}
                   onChange={(e) => setCategorySearch(e.target.value)}
                 />
@@ -151,9 +155,9 @@ const CoursesPage = () => {
                     <button
                       key={catName}
                       onClick={() => setSelectedCategory(catName)}
-                      className={`text-left w-full flex items-center justify-between px-4 py-3.5 rounded-2xl text-xs font-black transition-all group ${
+                      className={`text-left w-full flex items-center justify-between px-4 py-4 rounded-xl text-[10px] font-black transition-all group uppercase tracking-widest ${
                         selectedCategory === catName 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' 
                         : 'text-slate-500 hover:bg-slate-50 hover:text-blue-600'
                       }`}
                     >
@@ -161,7 +165,7 @@ const CoursesPage = () => {
                         <Tag size={14} className={selectedCategory === catName ? 'text-blue-200' : 'text-slate-300 group-hover:text-blue-400'} />
                         {catName}
                       </span>
-                      <span className={`px-2 py-1 rounded-lg text-[9px] ${
+                      <span className={`px-2 py-1 rounded-md text-[9px] ${
                         selectedCategory === catName ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-blue-50'
                       }`}>
                         {count}
@@ -176,17 +180,17 @@ const CoursesPage = () => {
           {/* MAIN CONTENT */}
           <div className="flex-1">
             <div className="flex flex-col sm:flex-row items-center justify-between mb-10 gap-6">
-              <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-full border border-slate-200/50 shadow-sm">
-                <div className={`w-2 h-2 rounded-full ${loading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
+              <div className="flex items-center gap-3 bg-white px-6 py-4 rounded-xl border border-slate-200 shadow-sm">
+                <div className={`w-3 h-3 rounded-sm ${loading ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}`} />
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                  {courses.length} курсов найдено
+                  {courses.length} программ доступно
                 </span>
               </div>
 
               <div className="flex items-center gap-4">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Сортировка</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Сортировка:</span>
                 <select 
-                  className="bg-white border border-slate-200 rounded-2xl px-6 py-3 text-[11px] font-black uppercase outline-none cursor-pointer hover:border-blue-200 transition-all appearance-none shadow-sm"
+                  className="bg-white border border-slate-200 rounded-xl px-6 py-3 text-[11px] font-black uppercase outline-none cursor-pointer hover:border-blue-600 transition-all appearance-none shadow-sm"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                 >
@@ -200,20 +204,23 @@ const CoursesPage = () => {
             {loading && courses.length === 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-[480px] bg-white/50 rounded-[3rem] animate-pulse border border-slate-200/60" />
+                  <div key={i} className="h-[480px] bg-white rounded-2xl animate-pulse border border-slate-200" />
                 ))}
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8">
+                <motion.div 
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8"
+                >
                   <AnimatePresence mode='popLayout'>
                     {courses.slice(0, visibleCount).map((course) => (
                       <motion.div
                         layout
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
+                        variants={itemVariants}
+                        exit={{ opacity: 0, scale: 0.98 }}
                         key={course.id}
                       >
                         <CourseCard 
@@ -224,28 +231,28 @@ const CoursesPage = () => {
                       </motion.div>
                     ))}
                   </AnimatePresence>
-                </div>
+                </motion.div>
 
-                {/* Empty State + Рекомендации */}
+                {/* Empty State */}
                 {!loading && courses.length === 0 && (
                   <div className="space-y-16 py-10">
-                    <div className="py-24 text-center bg-white rounded-[4rem] border border-slate-200/60 shadow-sm px-10 max-w-4xl mx-auto">
+                    <div className="py-24 text-center bg-white rounded-3xl border border-slate-200 shadow-sm px-10 max-w-4xl mx-auto">
                       <FilterX size={48} className="mx-auto mb-8 text-slate-200" />
-                      <h3 className="text-3xl font-black text-slate-900 tracking-tight">Ничего не нашлось</h3>
-                      <p className="text-slate-400 mt-4 font-medium max-w-xs mx-auto">Попробуйте изменить параметры поиска или категорию</p>
-                      <button onClick={resetFilters} className="mt-10 bg-blue-600 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">Сбросить всё</button>
+                      <h3 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Ничего не найдено</h3>
+                      <p className="text-slate-400 mt-4 font-medium max-w-xs mx-auto">Попробуйте изменить параметры запроса или категорию обучения</p>
+                      <button onClick={resetFilters} className="mt-10 bg-blue-600 text-white px-10 py-5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">Сбросить всё</button>
                     </div>
 
                     {allCoursesBackup.length > 0 && (
                       <div className="space-y-10">
                         <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-3 shrink-0 bg-blue-50 px-5 py-2 rounded-full">
+                          <div className="flex items-center gap-3 shrink-0 bg-blue-50 px-5 py-3 rounded-lg border border-blue-100">
                             <Sparkles size={16} className="text-blue-600" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Возможно, вам понравится</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-600">Популярные направления</span>
                           </div>
-                          <div className="h-px w-full bg-slate-100" />
+                          <div className="h-px w-full bg-slate-200" />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8 opacity-80 hover:opacity-100 transition-opacity">
+                        <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-8">
                           {allCoursesBackup.map(course => (
                             <CourseCard key={`rec-${course.id}`} course={course} toggleFavorite={toggleFavorite} isFavorite={favorites.includes(course.id)} />
                           ))}
@@ -262,7 +269,7 @@ const CoursesPage = () => {
               <div className="mt-20 text-center">
                 <button 
                   onClick={() => setVisibleCount(v => v + 12)}
-                  className="group relative inline-flex items-center gap-4 px-12 py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-[11px] tracking-[0.2em] hover:bg-blue-600 hover:-translate-y-1 transition-all shadow-xl shadow-slate-200"
+                  className="group relative inline-flex items-center gap-4 px-12 py-6 bg-slate-900 text-white rounded-xl font-black uppercase text-[11px] tracking-[0.2em] hover:bg-blue-600 transition-all shadow-xl"
                 >
                   Показать еще
                   <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
