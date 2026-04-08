@@ -15,14 +15,19 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
-            $table->integer('progress')->default(0); // Для хранения прогресса (0-100%)
+            
+            // Статус заявки: pending (ожидание), approved (принят), rejected (отклонен)
+            $table->string('status')->default('pending'); 
+            
+            $table->integer('progress')->default(0);
             $table->timestamps();
             
-            // Чтобы нельзя было записаться дважды на один курс
+            // Ограничение: один пользователь — одна заявка на конкретный курс
             $table->unique(['user_id', 'course_id']);
         });
     }
-        /**
+
+    /**
      * Reverse the migrations.
      */
     public function down(): void

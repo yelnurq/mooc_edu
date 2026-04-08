@@ -17,7 +17,6 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
-            // Валидируем данные
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
@@ -27,14 +26,27 @@ class AuthController extends Controller
                 'department_id' => 'nullable|exists:departments,id',
             ]);
 
-            // Создаем пользователя, хэшируя пароль отдельно
-            $userData = $request->only(['name', 'email', 'mobile', 'faculty_id', 'department_id']);
-            $userData['password'] = Hash::make($request->password);
+            // 1. Создаем пользователя
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'mobile' => $request->mobile,
+                'faculty_id' => $request->faculty_id,
+                'department_id' => $request->department_id,
+                'password' => Hash::make($request->password),
+            ]);
 
-            $user = User::create($userData);
+            // 2. Генерируем токен сразу (как в методе login)
+            $tokenValue = Str::random(60);
+            Token::create([
+                "token"   => $tokenValue,
+                "user_id" => $user->id,    
+            ]);
+
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Сотрудник успешно создан',
+                'message' => 'Сотрудник успешно зарегистрирован',
+                'access_token' => $tokenValue, // Добавляем токен сюда
                 'user'    => $user
             ], 201);
 

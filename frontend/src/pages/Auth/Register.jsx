@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { User, Mail, Lock, Phone, Eye, EyeOff, Loader2, UserPlus, ArrowLeft } from 'lucide-react';
 
 const RegisterPage = () => {
@@ -8,7 +8,6 @@ const RegisterPage = () => {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
 
-  // Состояния полей
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -18,10 +17,10 @@ const RegisterPage = () => {
   });
 
   const navigate = useNavigate();
+  const location = useLocation(); // Перехватываем стейт откуда пришли
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Очищаем ошибку поля при вводе
     if (errors[e.target.name]) {
       setErrors({ ...errors, [e.target.name]: null });
     }
@@ -33,7 +32,6 @@ const RegisterPage = () => {
     setErrors({});
     setServerError('');
 
-    // Форматирование email (как в логине)
     let formattedEmail = formData.email.trim();
     if (formattedEmail && !formattedEmail.includes('@')) {
       formattedEmail = `${formattedEmail}@kaztbu.edu.kz`;
@@ -55,10 +53,23 @@ const RegisterPage = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Успешная регистрация
-        navigate('/login', { state: { message: 'Регистрация прошла успешно! Теперь вы можете войти.' } });
+        // --- АВТОМАТИЧЕСКИЙ ВХОД ПОСЛЕ РЕГИСТРАЦИИ ---
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // --- ЛОГИКА УМНОГО РЕДИРЕКТА ---
+        const origin = location.state?.from;
+        const autoEnroll = location.state?.autoEnroll;
+
+        if (origin) {
+          // Если регистрировались через страницу курса — возвращаемся и записываемся
+          navigate(origin, { state: { autoEnroll: autoEnroll } });
+        } else {
+          // Обычная регистрация — в дашборд
+          navigate('/app/dashboard');
+        }
+        
       } else if (response.status === 422) {
-        // Ошибки валидации от Laravel
         setErrors(data.errors);
       } else {
         setServerError(data.message || 'Произошла ошибка при регистрации.');
@@ -74,8 +85,11 @@ const RegisterPage = () => {
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 font-sans">
       <div className="w-full max-w-lg">
         
-        {/* BACK TO LOGIN */}
-        <Link to="/login" className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-900 font-bold text-[10px] uppercase tracking-widest mb-8 transition-colors group">
+        <Link 
+          to="/login" 
+          state={location.state} // Пробрасываем стейт обратно в логин при переключении
+          className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-900 font-bold text-[10px] uppercase tracking-widest mb-8 transition-colors group"
+        >
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Назад к входу
         </Link>
 
@@ -84,7 +98,6 @@ const RegisterPage = () => {
           <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Регистрация нового сотрудника KAZUTB</p>
         </div>
 
-        {/* CARD */}
         <div className="bg-white p-10 rounded-[40px] shadow-sm border border-slate-100">
           {serverError && (
             <div className="mb-6 p-4 bg-red-50 text-red-600 text-xs font-bold rounded-2xl border border-red-100">
@@ -147,7 +160,7 @@ const RegisterPage = () => {
                   value={formData.mobile}
                   onChange={handleChange}
                   className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
-                  placeholder="+7 (___) ___"
+                  placeholder="+7 (707) 000-0000"
                 />
               </div>
             </div>
@@ -168,6 +181,13 @@ const RegisterPage = () => {
                   placeholder="••••••••"
                   required
                 />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
@@ -194,7 +214,7 @@ const RegisterPage = () => {
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-200 disabled:opacity-50 disabled:bg-slate-400 transition-all flex items-center justify-center gap-3 group"
+                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-200 disabled:opacity-50 transition-all flex items-center justify-center gap-3 group"
               >
                 {loading ? <Loader2 size={18} className="animate-spin" /> : 'Зарегистрироваться'}
                 {!loading && <UserPlus size={18} className="group-hover:scale-110 transition-transform" />}

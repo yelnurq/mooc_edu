@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // Добавили Link
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { LogIn, Mail, Lock, Eye, EyeOff, Loader2, UserPlus } from 'lucide-react';
 
 const LoginPage = () => {
@@ -11,6 +11,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
 
   const navigate = useNavigate();
+  const location = useLocation(); // Добавили для получения пути возврата
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -41,10 +42,21 @@ const LoginPage = () => {
         const role = data.user.role;
         const adminRoles = ['super_admin', 'academic_office', 'dean', 'head_of_dept'];
 
-        if (adminRoles.includes(role)) {
-          navigate('/admin');
+        // --- ЛОГИКА УМНОГО РЕДИРЕКТА ---
+        const origin = location.state?.from;
+        const autoEnroll = location.state?.autoEnroll;
+
+        if (origin) {
+          // Если пользователь пришел с конкретной страницы (например, курса),
+          // возвращаем его назад и прокидываем флаг для авто-записи
+          navigate(origin, { state: { autoEnroll: autoEnroll } });
         } else {
-          navigate('/app/dashboard');
+          // Стандартная логика перенаправления по ролям
+          if (adminRoles.includes(role)) {
+            navigate('/admin');
+          } else {
+            navigate('/app/dashboard');
+          }
         }
       } else {
         setError(data.message || 'Ошибка авторизации.');
@@ -106,7 +118,7 @@ const LoginPage = () => {
                   <Lock size={18} />
                 </div>
                 <input 
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? "text" : "password"} 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-12 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all outline-none placeholder:text-slate-300"

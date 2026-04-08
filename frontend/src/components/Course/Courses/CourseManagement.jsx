@@ -230,6 +230,10 @@ const CourseManagement = () => {
                             <p className="text-xs font-black text-slate-900">{course.modules_count || 0}</p>
                         </div>
                         <div>
+                            <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Лекций</p>
+                            <p className="text-xs font-black text-slate-900">{course.lessons_count || 0}</p>
+                        </div>
+                        <div>
                             <p className="text-[8px] font-bold text-slate-400 uppercase mb-0.5">Студентов</p>
                             <p className="text-xs font-black text-slate-900">{course.students_count || 0}</p>
                         </div>

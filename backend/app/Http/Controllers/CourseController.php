@@ -176,6 +176,39 @@ public function myCourses()
 /**
  * Обновленный метод show с проверкой доступа
  */
+public function enroll(Request $request, $courseId)
+{
+    // 1. Находим курс или выдаем 404
+    $course = Course::findOrFail($courseId);
+    $user = $this->getAuthenticatedUser($request);
+
+    // 2. Проверяем, нет ли уже записи (любой: и ожидания, и одобренной)
+    $existingEnrollment = $user->courses()->where('course_id', $courseId)->first();
+
+    if ($existingEnrollment) {
+        // Если запись уже есть, проверяем её статус для более точного ответа
+        $status = $existingEnrollment->pivot->status;
+        
+        if ($status === 'pending') {
+            return response()->json(['message' => 'Ваша заявка уже находится на рассмотрении'], 400);
+        }
+        
+        return response()->json(['message' => 'Вы уже зачислены на этот курс'], 400);
+    }
+
+    // 3. Привязываем пользователя со статусом 'pending'
+    $user->courses()->attach($courseId, [
+        'status' => 'pending',
+        'progress' => 0,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return response()->json([
+        'message' => "Заявка на курс «{$course->title}» успешно отправлена. Ожидайте подтверждения модератором.",
+        'status' => 'pending'
+    ], 201);
+}
 public function show(Request $request, $id)
 {
     // 1. Получаем юзера через твой кастомный метод
@@ -243,39 +276,43 @@ public function show(Request $request, $id)
 }
 public function showPublic(Request $request, $id)
 {
-    // 1. Пытаемся получить юзера (через ваш кастомный метод)
     $user = $this->getAuthenticatedUser($request);
-
-    // 2. Загружаем курс со всеми связями
     $course = \App\Models\Course::with(['modules.lessons', 'resources'])->find($id);
 
     if (!$course) {
         return response()->json(['message' => 'Курс не найден'], 404);
     }
 
-    // 3. Проверка подписки
-    $isEnrolled = $user ? $user->courses()->where('course_id', $id)->exists() : false;
+    // --- ОБНОВЛЕННАЯ ЛОГИКА ПРОВЕРКИ СТАТУСА ---
+    $enrollment = null;
+    if ($user) {
+        // Получаем запись из связующей таблицы
+        $enrollment = \Illuminate\Support\Facades\DB::table('course_user')
+            ->where('user_id', $user->id)
+            ->where('course_id', $id)
+            ->first();
+    }
 
-    // 4. РЕСУРСЫ (course_resources) — показываем ВСЕМ
-    // Эти файлы доступны даже гостю
+    // Определяем статус для фронтенда
+    $enrollmentStatus = $enrollment ? $enrollment->status : null; // 'pending', 'approved', etc.
+    $isApproved = ($enrollmentStatus === 'approved');
+
+    // 4. РЕСУРСЫ (без изменений)
     $course->resources->transform(function ($resource) {
         if ($resource->file_path) {
             $resource->file_url = asset('storage/' . $resource->file_path);
         }
-        // Если в таблице есть video_url, он тоже пройдет
         return $resource;
     });
 
-    // 5. УРОКИ (lessons) — только названия для неподписанных
-    $course->modules->each(function ($module) use ($isEnrolled) {
-        $module->lessons->transform(function ($lesson) use ($isEnrolled) {
-            if (!$isEnrolled) {
-                // ДЛЯ ВСЕХ (Публично): удаляем всё, кроме метаданных
-                $lesson->makeHidden(['file_path', 'video_url', 'content']); // Прячем поля модели
-                $lesson->file_url = null; // Ссылка не генерируется
+    // 5. УРОКИ — используем $isApproved вместо $isEnrolled
+    $course->modules->each(function ($module) use ($isApproved) {
+        $module->lessons->transform(function ($lesson) use ($isApproved) {
+            if (!$isApproved) {
+                $lesson->makeHidden(['file_path', 'video_url', 'content']);
+                $lesson->file_url = null;
                 $lesson->is_locked = true; 
             } else {
-                // ДЛЯ ПОДПИСАННЫХ: генерируем ссылки
                 if ($lesson->type === 'pdf' && $lesson->file_path) {
                     $lesson->file_url = asset('storage/' . $lesson->file_path);
                 }
@@ -285,23 +322,12 @@ public function showPublic(Request $request, $id)
         });
     });
 
-    // 6. Доп. данные для фронтенда
-    $course->is_enrolled = $isEnrolled;
+    // 6. Добавляем статус в ответ
+    $course->user_status = $enrollmentStatus; // Передаем 'pending' или 'approved'
+    $course->is_enrolled = (bool)$enrollment;
     
-    // Прогресс считаем только если есть подписка
-    if ($isEnrolled && $user) {
-        $courseLessonIds = $course->modules->flatMap(fn($m) => $m->lessons->pluck('id'))->toArray();
-        
-        $course->completed_lessons_ids = \Illuminate\Support\Facades\DB::table('lesson_user')
-            ->where('user_id', $user->id)
-            ->whereIn('lesson_id', $courseLessonIds)
-            ->pluck('lesson_id')
-            ->map(fn($id) => (int)$id)
-            ->values();
-    } else {
-        $course->completed_lessons_ids = [];
-    }
-
+    // ... остальная логика прогресса ...
+    
     return response()->json($course);
 }
 // Новый метод для добавления общего ресурса

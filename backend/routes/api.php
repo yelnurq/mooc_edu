@@ -59,7 +59,7 @@ Route::middleware("logs")->group(function(){
         Route::post('/admin/enroll', [CourseController::class, 'adminEnroll']);
         Route::get('/admin/courses', [CourseController::class, 'indexCourses']);
         Route::get('/my-courses', [CourseController::class, 'myCourses']);
-        
+        Route::post('/courses/{id}/enroll', [CourseController::class, 'enroll']);
         
         Route::post('/lessons/{lesson}/complete', [CourseController::class, 'completeLesson']);
 
