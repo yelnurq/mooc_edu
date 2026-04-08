@@ -3,7 +3,10 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, FileText, PlayCircle, ChevronDown, 
   ChevronUp, Layout, X, Files, Play, ExternalLink, 
-  Lock, User, Clock, CheckCircle, Loader2, Info, BookOpen
+  Lock, User, Clock, CheckCircle, Loader2, Info, BookOpen,
+  Sparkles,
+  Tag,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../../api/axios';
@@ -96,7 +99,7 @@ const CourseDetailPage = () => {
 
       <div className="max-w-[1640px] mx-auto px-6 lg:px-12 py-12">
         {/* BACK BUTTON */}
-        <Link to="/courses" className="inline-flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-colors mb-12 font-black text-[10px] uppercase tracking-[0.2em]">
+        <Link to="/courses" className="flex items-center gap-2 text-slate-400 hover:text-blue-600 transition-colors mb-12 font-black text-[10px] uppercase tracking-[0.2em]">
           <ArrowLeft size={16} /> Назад к курсам
         </Link>
 
@@ -104,17 +107,95 @@ const CourseDetailPage = () => {
           
           {/* LEFT CONTENT */}
           <div className="flex-1 space-y-12">
-            <header>
-              <h1 style={{ fontWeight: 500 }} className="text-4xl md:text-6xl text-slate-900 tracking-tighter mb-8 leading-[1.1]">
-                {course?.title}
-              </h1>
-              <div className="flex items-center gap-3 bg-white w-fit px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
-                <BookOpen size={16} className="text-blue-600" />
-                <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider">
-                  {course?.modules?.length || 0} Модулей обучения
-                </span>
-              </div>
-            </header>
+{/* HEADER WITH PROMO SECTION */}
+<div className="flex flex-col lg:flex-row gap-12 items-start mb-16">
+  
+  {/* LEFT: TITLE & STATS */}
+{/* LEFT: TITLE & STATS */}
+<header className="flex-1 min-w-0 space-y-8"> {/* min-w-0 лечит баг с переполнением flex-контейнеров */}
+  <div className="space-y-6">
+    <div className="flex flex-wrap items-center gap-3">      
+      {course?.category && (
+        <span className="text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100/50">
+          {course.category.name}
+        </span>
+      )}
+      <div className="flex items-center gap-1.5 text-slate-400 bg-white border border-slate-200 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">
+        <User size={12} className="text-blue-500" />
+        <span>{course?.students_count || 0} Студентов</span>
+      </div>
+    </div>
+
+    <h1 
+      style={{ fontWeight: 500 }} 
+      className="text-left text-4xl md:text-5xl xl:text-6xl text-slate-900 tracking-tighter leading-[1.1] w-full"
+    >
+      {course?.title}
+    </h1>
+  </div>
+
+  {/* QUICK STATS ROW */}
+  <div className="flex flex-wrap items-center gap-6 py-2 border-t border-slate-100 pt-8">
+    <div className="flex flex-col gap-1">
+      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Сложность</span>
+      <span className="text-sm font-bold text-slate-700">{course?.level || 'Все уровни'}</span>
+    </div>
+    <div className="w-px h-8 bg-slate-200 hidden sm:block" />
+    <div className="flex flex-col gap-1">
+      <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Обновлено</span>
+      <span className="text-sm font-bold text-slate-700">
+        {course?.updated_at ? new Date(course.updated_at).toLocaleDateString('ru-RU') : 'Недавно'}
+      </span>
+    </div>
+  </div>
+</header>
+
+  {/* RIGHT: PROMO VIDEO CARD */}
+{/* RIGHT: PROMO VIDEO CARD */}
+<div className="w-full lg:w-[450px] xl:w-[550px] shrink-0">
+  <div 
+    onClick={() => {
+      // Используем видео из БД или фейковое видео для демонстрации
+      const videoUrl = course?.promo_video_url || "https://www.youtube.com/embed/dQw4w9WgXcQ"; // Замени на нужный embed
+      setActiveContent({ 
+        url: videoUrl, 
+        title: `Промо: ${course?.title}`, 
+        type: 'video' 
+      });
+    }}
+    className="relative aspect-video w-full overflow-hidden rounded-[2rem] border-[6px] border-white shadow-2xl shadow-blue-900/10 group cursor-pointer bg-slate-100"
+  >
+    {/* Основное превью (фоновое видео или картинка) */}
+    <div className="absolute inset-0 z-0">
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="w-full h-full object-cover opacity-60 group-hover:scale-110 transition-transform duration-[2s]"
+      >
+        <source src="https://assets.mixkit.co/videos/preview/mixkit-software-developer-working-on-code-screen-close-up-34449-large.mp4" type="video/mp4" />
+      </video>
+    </div>
+    
+    {/* Слой поверх видео для читаемости */}
+    <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-slate-900/40 group-hover:bg-slate-900/50 transition-all z-10 flex items-center justify-center">
+      <div className="relative">
+        <div className="absolute inset-0 bg-white/30 rounded-full animate-ping" />
+        <div className="relative w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl text-blue-600 transition-transform group-hover:scale-110">
+          <Play size={32} fill="currentColor" className="ml-1" />
+        </div>
+      </div>
+    </div>
+
+    <div className="absolute bottom-6 left-0 right-0 text-center z-20">
+      <span className="text-white text-[10px] font-black uppercase tracking-[0.2em] bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">
+        Посмотреть промо-ролик
+      </span>
+    </div>
+  </div>
+</div>
+</div>
 
             {/* DESCRIPTION */}
             <section className="bg-white p-8 md:p-10 rounded-2xl border border-slate-200 shadow-sm">
@@ -122,11 +203,42 @@ const CourseDetailPage = () => {
                 <Info size={16} className="text-blue-600" />
                 <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">О программе</h3>
               </div>
-              <p className="text-slate-500 font-medium leading-relaxed border-l-4 border-blue-600 pl-6 text-lg">
+              <p className="text-slate-500 font-medium leading-relaxed text-left border-l-4 border-blue-600 pl-6 text-[14px]">
                 {course?.description || "Описание курса уточняется."}
               </p>
             </section>
-
+ {/* RESOURCES (НОВЫЙ БЛОК) */}
+  {course?.resources && course.resources.length > 0 && (
+    <section className="space-y-6">
+      <div className="flex items-center gap-2 px-2">
+        <Files size={16} className="text-blue-600" />
+        <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">Дополнительные ресурсы</h3>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {course.resources.map((res, index) => (
+          <a 
+            key={index}
+            href={res.file_url || res.link_url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-5 bg-white border border-slate-200 rounded-xl hover:border-blue-600 hover:shadow-md transition-all group"
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 rounded-lg transition-colors">
+                {res.type === 'link' ? <ExternalLink size={18} /> : <FileText size={18} />}
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-700 group-hover:text-slate-900 transition-colors">{res.title}</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{res.type}</p>
+              </div>
+            </div>
+            <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
             {/* CURRICULUM */}
             <section className="space-y-6">
               <div className="flex items-center gap-2 px-2">
@@ -191,8 +303,17 @@ const CourseDetailPage = () => {
 
           {/* RIGHT SIDEBAR */}
           <aside className="w-full xl:w-96 shrink-0">
+            
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 sticky top-24 space-y-8">
-              
+{/* COURSE COVER */}
+<div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-slate-200 mb-8 group">
+  <img 
+    src={course?.image ? `${ASSET_URL}${course.image}` : '/placeholder-course.jpg'} 
+    alt={course?.title}
+    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+  />
+  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/20 to-transparent" />
+</div>              
               {/* AUTHOR */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
@@ -200,9 +321,7 @@ const CourseDetailPage = () => {
                   <h3 className="font-black text-[11px] uppercase tracking-[0.2em] text-slate-900">Преподаватель</h3>
                 </div>
                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
-                    {course?.author_display_name?.charAt(0) || 'A'}
-                  </div>
+            
                   <div>
                     <p className="font-bold text-slate-900">{course?.author_display_name || 'Инструктор'}</p>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fullstack Developer</p>
@@ -231,17 +350,50 @@ const CourseDetailPage = () => {
                 )}
               </div>
 
-              {/* ADDITIONAL INFO */}
-              <div className="space-y-4 pt-4">
-                <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest text-slate-400">
-                  <span>Доступ</span>
-                  <span className="text-slate-900">Пожизненный</span>
-                </div>
-                <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest text-slate-400">
-                  <span>Язык</span>
-                  <span className="text-slate-900">Русский</span>
-                </div>
-              </div>
+           {/* ADDITIONAL INFO */}
+<div className="space-y-4 pt-6 border-t border-slate-100">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+      <Layout size={14} className="text-slate-300" />
+      <span>Модули</span>
+    </div>
+    <span className="text-[11px] font-bold text-slate-900">{course?.modules?.length || 0} блоков</span>
+  </div>
+
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+      <FileText size={14} className="text-slate-300" />
+      <span>Материалы</span>
+    </div>
+    <span className="text-[11px] font-bold text-slate-900">
+      {course?.modules?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0)} уроков
+    </span>
+  </div>
+
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+      <Sparkles size={14} className="text-blue-500" />
+      <span>Документ</span>
+    </div>
+    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">Сертификат</span>
+  </div>
+
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+      <Clock size={14} className="text-slate-300" />
+      <span>Доступ</span>
+    </div>
+    <span className="text-[11px] font-bold text-slate-900">Пожизненный</span>
+  </div>
+
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">
+      <Tag size={14} className="text-slate-300" />
+      <span>Язык</span>
+    </div>
+    <span className="text-[11px] font-bold text-slate-900">Русский</span>
+  </div>
+</div>
             </div>
           </aside>
 
