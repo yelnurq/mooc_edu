@@ -151,7 +151,7 @@ const isStartedRef = useRef(false);
 // --- МОДАЛКА ПРЕДУПРЕЖДЕНИЯ ---
 const QuizIntroModal = ({ onStart, onCancel, title }) => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
-    <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white max-w-md w-full rounded-[2.5rem] p-10 shadow-2xl text-center">
+    <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white max-w-md w-full rounded-[1.5rem] p-10 shadow-2xl text-center">
       <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6"><AlertTriangle size={40} /></div>
       <h3 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tight">{title}</h3>
       <div className="space-y-4 mb-8">
@@ -313,7 +313,7 @@ const CourseAppPage = () => {
           <div className="max-w-[1500px] mx-auto space-y-8">
             <div className="flex flex-col xl:flex-row gap-8 items-stretch h-auto xl:h-[750px]"> 
               <div className="flex flex-col flex-[2.5] gap-4">
-                <div className="flex-1 bg-white rounded-[2.5rem] overflow-hidden shadow-2xl border-[6px] md:border-[10px] border-white relative aspect-video xl:aspect-auto">
+                <div className="flex-1 bg-white rounded-[1.5rem] overflow-hidden shadow-2xl border-[6px] md:border-[10px] border-white relative aspect-video xl:aspect-auto">
                     {testStarted && currentQuiz ? (
                         <QuizView 
                           quiz={currentQuiz} selectedAnswers={selectedAnswers} setSelectedAnswers={setSelectedAnswers} 
@@ -350,7 +350,7 @@ const CourseAppPage = () => {
                 </div>
               </div>
 
-              <div className="flex-1 bg-white rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/50 flex flex-col h-[600px] xl:h-full overflow-hidden border border-white/50">
+              <div className="flex-1 bg-white rounded-[1.5rem] p-6 shadow-xl shadow-slate-200/50 flex flex-col h-[600px] xl:h-full overflow-hidden border border-white/50 ">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6 px-2 shrink-0 text-left">Программа обучения</h3>
                 <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-8 h-0 text-left">
                   {modulesWithResults.map((module, mIdx) => (
@@ -408,11 +408,11 @@ const CourseAppPage = () => {
             </div>
 
             <div className="grid lg:grid-cols-3 gap-8 pb-20 items-start">
-              <div className="lg:col-span-2 bg-white/70 backdrop-blur-sm p-10 rounded-[2.5rem] border border-white shadow-sm text-left">
+              <div className="lg:col-span-2 bg-white/70 backdrop-blur-sm p-10 rounded-[1.5rem] border border-white shadow-sm text-left">
                   <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6">Описание занятия</h3>
                   <div className="prose prose-slate max-w-none text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{activeLesson?.description || course?.description || "Описание отсутствует."}</div>
               </div>
-              <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-white text-left">
+              <div className="bg-white p-8 rounded-[1.5rem] shadow-sm border border-white text-left">
                   <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6 flex items-center gap-2"><Download size={16} /> Материалы</h3>
                   <div className="space-y-4">
                     {(course?.course_resources || activeLesson?.resources)?.length > 0 ? (
