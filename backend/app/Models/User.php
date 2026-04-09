@@ -25,10 +25,10 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Department::class);
     }
-public function courses()
-{
-    return $this->belongsToMany(Course::class)->withPivot('status', 'progress');
-}
+    public function courses()
+    {
+        return $this->belongsToMany(Course::class)->withPivot('status', 'progress');
+    }
 
     public function completedLessons()
     {
