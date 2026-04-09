@@ -181,5 +181,4 @@ const MyCertificates = () => {
     </main>
   );
 };
-
 export default MyCertificates;
