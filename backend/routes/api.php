@@ -13,6 +13,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\QuizController;
+
 
 Route::middleware("logs")->group(function(){
 
@@ -49,6 +51,12 @@ Route::middleware("logs")->group(function(){
 
     Route::prefix('admin')->group(function () {
         Route::apiResource('users', UserController::class);
+
+        Route::post('/quizzes', [QuizController::class, 'store']);
+
+        Route::get('/quizzes/{type}/{id}', [QuizController::class, 'show']);
+        // Route::get('/courses/{course}/structure', [CourseController::class, 'structure']);
+
         Route::get('/logs', [ApiLogController::class, 'index']);
         Route::get('/logs/{id}', [ApiLogController::class, 'show']);
 

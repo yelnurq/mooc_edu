@@ -49,12 +49,16 @@ public function adminEnroll(Request $request)
 }
 public function getStructure(Course $course)
 {
-    $structure = $course->load([
-        'resources', // Загружаем ресурсы курса
+    $course->load([
+        'resources', 
+        'quiz', // Тест самого курса (финальный)
         'modules' => function($query) {
-            $query->with(['lessons' => function($q) {
-                $q->orderBy('order', 'asc');
-            }])->orderBy('order', 'asc');
+            $query->with([
+                'lessons' => function($q) {
+                    $q->orderBy('order', 'asc');
+                },
+                'quiz' // Тест конкретного модуля
+            ])->orderBy('order', 'asc');
         }
     ]);
 
@@ -66,9 +70,10 @@ public function getStructure(Course $course)
             'image' => $course->image,
             'description' => $course->description,
             'author' => $course->getAuthorDisplayNameAttribute(),
+            'quiz' => $course->quiz, // Отправляем данные теста курса
         ],
-        'resources' => $structure->resources, // Передаем ресурсы
-        'modules' => $structure->modules
+        'resources' => $course->resources,
+        'modules' => $course->modules
     ]);
 }
 public function approveEnrollment(Request $request)
