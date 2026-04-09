@@ -138,65 +138,91 @@ const StudentDashboard = () => {
           </section>
         </div>
 
-        {/* SIDEBAR */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm text-left sticky top-10">
-            
-            {/* ЕДИНЫЙ БЛОК СТАТИСТИКИ КУРСОВ */}
-            <div className="mb-10">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6 flex items-center gap-2">
-                <BarChart3 size={14} className="text-blue-600" /> Статистика обучения
-              </h4>
-              
-              <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                  <p className="text-[20px] font-black text-slate-900 leading-none mb-1">42</p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter leading-tight">Всего курсов за 4 года</p>
-                </div>
-                <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
-                  <p className="text-[20px] font-black text-blue-600 leading-none mb-1">38</p>
-                  <p className="text-[9px] font-bold text-blue-400 uppercase tracking-tighter leading-tight">Завершено успешно</p>
-                </div>
-              </div>
+     {/* SIDEBAR */}
+<div className="lg:col-span-4 space-y-6">
+  <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm text-left sticky top-10">
+    
+    {/* АКАДЕМИЧЕСКИЙ СТАТУС */}
+    <div className="mb-10">
+      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6 flex items-center gap-2">
+        <GraduationCap size={14} className="text-blue-600" /> Академический статус
+      </h4>
+      <div className="bg-slate-950 p-6 rounded-[24px] text-white relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
+          <Award size={64} />
+        </div>
+        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Текущий период</p>
+        <p className="text-lg font-bold tracking-tight mb-4">8-й семестр, Очное</p>
+        <div className="flex items-center gap-2 text-[9px] font-black uppercase bg-white/10 w-fit px-3 py-1.5 rounded-full border border-white/10">
+          <CheckCircle2 size={12} className="text-emerald-400" /> Студент активен
+        </div>
+      </div>
+    </div>
 
-              <div className="space-y-6">
-                <div>
-                  <div className="flex justify-between items-end mb-3">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Прогресс диплома</span>
-                    <span className="text-lg font-black text-slate-900 tracking-tighter">90%</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000" style={{ width: '90%' }} />
-                  </div>
-                </div>
-              </div>
+    {/* КУРСОВОЙ СЧЕТЧИК */}
+    <div className="mb-10">
+      <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6 flex items-center gap-2">
+        <BarChart3 size={14} className="text-blue-600" /> Курсовой счетчик
+      </h4>
+      
+      <div className="grid grid-cols-1 gap-3 mb-8">
+        {[
+          { label: 'Завершено курсов', count: 38, total: 42, color: 'bg-emerald-500', bg: 'bg-emerald-50' },
+          { label: 'В процессе сейчас', count: 3, total: 42, color: 'bg-blue-500', bg: 'bg-blue-50' },
+          { label: 'Осталось пройти', count: 1, total: 42, color: 'bg-slate-300', bg: 'bg-slate-50' }
+        ].map((item, i) => (
+          <div key={i} className={`flex items-center justify-between p-4 rounded-2xl border border-slate-100 ${item.bg}`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-2 h-2 rounded-full ${item.color}`} />
+              <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">{item.label}</span>
             </div>
+            <span className="text-sm font-black text-slate-900">{item.count}</span>
+          </div>
+        ))}
+      </div>
 
-            {/* ДЕДЛАЙНЫ */}
-            <div className="pt-8 border-t border-slate-100">
-              <span className="text-[10px] font-bold uppercase text-slate-400 block mb-5 tracking-widest">Ближайшие события</span>
-              <div className="space-y-5">
-                {[
-                  { title: 'Защита практики', date: 'Завтра, 11:30', type: 'Work' },
-                  { title: 'Экзамен: Cloud Systems', date: '18 Апреля', type: 'Exam' }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-600" />
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-slate-800 tracking-tight">{item.title}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">{item.date}</p>
-                    </div>
-                    <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded uppercase">{item.type}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <button className="w-full mt-10 py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-blue-600 transition-all shadow-lg active:scale-95">
-              Выгрузить транскрипт
-            </button>
+      {/* ОБЩИЙ ПРОГРЕСС В ПРОЦЕНТАХ */}
+      <div className="space-y-4 pt-4 border-t border-slate-50">
+        <div className="flex justify-between items-end">
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Общий прогресс</p>
+            <h3 className="text-4xl font-black text-slate-900 tracking-tighter">91%</h3>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">+2.4%</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase leading-none text-right">к прошлому мес.</p>
           </div>
         </div>
+        <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(37,99,235,0.3)]" 
+            style={{ width: '91%' }} 
+          />
+        </div>
+      </div>
+    </div>
+
+    {/* ДЕДЛАЙНЫ (Оставил, так как это важная часть "что еще добавить") */}
+    <div className="pt-8 border-t border-slate-100">
+      <span className="text-[10px] font-bold uppercase text-slate-400 block mb-5 tracking-widest">Ближайшие события</span>
+      <div className="space-y-4">
+        <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+          <div className="w-8 h-8 rounded-lg bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+            <Calendar size={16} />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-800 leading-tight">Защита дипломной работы</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">24 Мая • 10:00</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button className="w-full mt-10 py-4 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-slate-900 transition-all shadow-lg shadow-blue-200 active:scale-95 flex items-center justify-center gap-2">
+      <FileText size={14} /> Выгрузить транскрипт
+    </button>
+  </div>
+</div>
       </div>
     </main>
   );
