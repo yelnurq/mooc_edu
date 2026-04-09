@@ -188,19 +188,30 @@ const CourseAppPage = () => {
     fetchCourseData();
   }, [id]);
 
-  useEffect(() => {
-    if (activeLesson) {
-      const isAlreadyDone = completedLessons.includes(Number(activeLesson.id));
-      setCanComplete(isAlreadyDone);
-      setWatchProgress(0);
+ useEffect(() => {
+  if (activeLesson) {
+    const isAlreadyDone = completedLessons.includes(Number(activeLesson.id));
+    setCanComplete(isAlreadyDone);
+    setWatchProgress(0);
 
-      if (!activeLesson.video_url && activeLesson.file_url && !isAlreadyDone) {
-        const timer = setTimeout(() => setCanComplete(true), 30000);
-        return () => clearTimeout(timer);
-      }
+    // Страховочный таймер для видео
+    if (activeLesson.video_url && !isAlreadyDone) {
+      // Можно установить среднее время (например, через 1-2 минуты считать урок изученным)
+      // Или если у тебя в API есть длительность видео в секундах: activeLesson.duration
+      const safetyTimer = setTimeout(() => {
+        setCanComplete(true);
+      }, 60000); // 60 секунд как пример
+
+      return () => clearTimeout(safetyTimer);
     }
-  }, [activeLesson, completedLessons]);
 
+    // Логика для PDF (у тебя уже была)
+    if (!activeLesson.video_url && activeLesson.file_url && !isAlreadyDone) {
+      const timer = setTimeout(() => setCanComplete(true), 30000);
+      return () => clearTimeout(timer);
+    }
+  }
+}, [activeLesson, completedLessons]);
   const handleVideoProgress = (state) => {
     const progress = Math.round(state.played * 100);
     setWatchProgress(progress);
@@ -336,37 +347,30 @@ const CourseAppPage = () => {
 {activeLesson?.video_url ? (
   <div className="absolute inset-0 bg-black overflow-hidden rounded-[1rem]"> 
     {/* Контейнер должен быть absolute inset-0, чтобы заполнил всё пространство родителя */}
-    <ReactPlayer
-      key={activeLesson.id} // Важно для перерисовки
-      url={activeLesson.video_url.includes('http') 
-        ? activeLesson.video_url 
-        : `https://www.youtube.com/watch?v=${activeLesson.video_url}`}
-      width="100%"
-      height="100%"
-      controls={true}
-      playing={false}
-      onProgress={handleVideoProgress}
-      onEnded={() => setCanComplete(true)}
-      config={{
-        youtube: {
-          playerVars: { 
-            modestbranding: 1, 
-            rel: 0, 
-            origin: window.location.origin,
-            enablejsapi: 1 
-          }
-        }
-      }}
-      style={{ position: 'absolute', top: 0, left: 0 }}
-    />
-    
-    {!canComplete && !completedLessons.includes(Number(activeLesson.id)) && (
-      <div className="absolute top-6 right-6 bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10 z-20 pointer-events-none">
-        <p className="text-[10px] font-black text-white uppercase tracking-widest">
-          Досмотрите: {watchProgress}% / 85%
-        </p>
-      </div>
-    )}
+<ReactPlayer
+  key={activeLesson.id}
+  // Используйте url, но убедитесь, что ссылка корректная
+  src={activeLesson.video_url.includes('http') 
+    ? activeLesson.video_url 
+    : `https://www.youtube.com/watch?v=${activeLesson.video_url}`}
+  width="100%"
+  height="100%"
+  controls 
+  playing={false}
+  onProgress={handleVideoProgress} // Теперь прогресс будет считаться точно
+  onEnded={() => setCanComplete(true)}
+  config={{
+    youtube: {
+      playerVars: { 
+        modestbranding: 1, 
+        rel: 0, 
+        origin: window.location.origin 
+      }
+    }
+  }}
+  style={{ position: 'absolute', top: 0, left: 0 }}
+/>
+
   </div>
                         ) : activeLesson?.file_url ? (
                           <iframe key={`pdf-${activeLesson?.id}`} src={`${activeLesson.file_url}#toolbar=0`} className="w-full h-full bg-white border-none" title={activeLesson?.title} />
@@ -436,22 +440,20 @@ const CourseAppPage = () => {
                     );
                   })()}
                 </div>
-                <button 
-                  onClick={handleCompleteLesson} 
-                  disabled={completing || !activeLesson || completedLessons.includes(Number(activeLesson?.id)) || !canComplete} 
-                  className={`mt-6 w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl shrink-0 
-                    ${!canComplete && !completedLessons.includes(Number(activeLesson?.id))
-                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-70' 
-                      : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'}`}
-                >
-                  {completedLessons.includes(Number(activeLesson?.id)) 
-                    ? 'Урок завершен' 
-                    : canComplete 
-                      ? 'Подтвердить прохождение' 
-                      : activeLesson?.video_url 
-                        ? `Посмотрите видео (${watchProgress}%)`
-                        : 'Изучите PDF (30 сек)'}
-                </button>
+             <button 
+              onClick={handleCompleteLesson} 
+              disabled={completing || !activeLesson || completedLessons.includes(Number(activeLesson?.id)) || !canComplete} 
+              className={`mt-6 w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl shrink-0 
+                ${!canComplete && !completedLessons.includes(Number(activeLesson?.id))
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-70' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'}`}
+            >
+              {completedLessons.includes(Number(activeLesson?.id)) 
+                ? 'Урок завершен' 
+                : canComplete 
+                  ? 'Подтвердить прохождение' 
+                  : 'Материал изучается'} 
+            </button>
               </div>
             </div>
 
