@@ -50,7 +50,7 @@ export const sidebarMenuItems = [
   },
   { 
     id: 'settings', 
-    path: '/app/dashboard', 
+    path: '/app/settings', 
     icon: <Settings size={20} />, 
     label: 'Настройки' 
   },
