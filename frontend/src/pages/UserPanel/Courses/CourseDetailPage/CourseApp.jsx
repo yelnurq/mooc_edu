@@ -13,18 +13,14 @@ import ReactPlayer from 'react-player';
 const QuizView = ({ quiz, selectedAnswers, setSelectedAnswers, handleFinishTest, testResult, setTestStarted, completing, viewOnly }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const displayResult = testResult || quiz?.user_result;
-  
-  // Используем Ref, чтобы отследить финал в cleanup-функции
   const isFinishedRef = useRef(!!displayResult);
+  const isStartedRef = useRef(false);
 
   useEffect(() => {
     isFinishedRef.current = !!displayResult;
   }, [displayResult]);
 
-const isStartedRef = useRef(false);
-
   useEffect(() => {
-    // Ставим флаг, что компонент "пожил" хотя бы один цикл рендера
     const timer = setTimeout(() => {
       isStartedRef.current = true;
     }, 1000);
@@ -34,15 +30,7 @@ const isStartedRef = useRef(false);
     return () => {
       clearTimeout(timer);
       document.body.style.overflow = 'auto';
-      
-      // Отправляем 0 только если:
-      // 1. Прошло время инициализации (защита от Strict Mode)
-      // 2. Тест реально не завершен
-      // 3. Это не просто просмотр
-      // 4. Нет уже существующего результата
       if (isStartedRef.current && !isFinishedRef.current && !viewOnly && quiz?.id && !displayResult) {
-        // Используем navigator.sendBeacon или обычный axios, 
-        // но передаем ответы как пустой объект, чтобы пройти валидацию Laravel
         api.post(`/quizzes/${quiz.id}/submit`, { 
           answers: {}, 
           is_abandoned: true 
@@ -50,7 +38,7 @@ const isStartedRef = useRef(false);
       }
     };
   }, [quiz?.id, viewOnly, displayResult]);
-  // Предупреждение о закрытии вкладки
+
   useEffect(() => {
     if (displayResult || viewOnly) return;
     const handleBeforeUnload = (e) => {
@@ -63,7 +51,7 @@ const isStartedRef = useRef(false);
 
   if (viewOnly || displayResult) {
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-8 text-center">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 z-[50] bg-white flex flex-col items-center justify-center p-8 text-center rounded-[1.5rem]">
         <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6 bg-emerald-100 text-emerald-600">
           <Award size={40} />
         </div>
@@ -87,7 +75,7 @@ const isStartedRef = useRef(false);
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-slate-50 overflow-hidden">
+    <div className="absolute inset-0 z-[50] flex flex-col bg-slate-50 overflow-hidden rounded-[1.5rem]">
       <div className="bg-white px-8 py-4 border-b flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-4">
           <div className="bg-amber-100 text-amber-600 p-2 rounded-lg"><AlertTriangle size={16} /></div>
@@ -185,6 +173,7 @@ const CourseAppPage = () => {
   const [pendingQuiz, setPendingQuiz] = useState(null);
   const [canComplete, setCanComplete] = useState(false);
   const [watchProgress, setWatchProgress] = useState(0);
+
   useEffect(() => {
     const fetchCourseData = async () => {
       try {
@@ -198,13 +187,13 @@ const CourseAppPage = () => {
     };
     fetchCourseData();
   }, [id]);
+
   useEffect(() => {
     if (activeLesson) {
       const isAlreadyDone = completedLessons.includes(Number(activeLesson.id));
       setCanComplete(isAlreadyDone);
       setWatchProgress(0);
 
-      // Если это PDF и урок не пройден — включаем таймер на 30 сек
       if (!activeLesson.video_url && activeLesson.file_url && !isAlreadyDone) {
         const timer = setTimeout(() => setCanComplete(true), 30000);
         return () => clearTimeout(timer);
@@ -212,14 +201,14 @@ const CourseAppPage = () => {
     }
   }, [activeLesson, completedLessons]);
 
-  // Функция отслеживания прогресса видео
   const handleVideoProgress = (state) => {
     const progress = Math.round(state.played * 100);
     setWatchProgress(progress);
-    if (progress >= 85 && !canComplete) { // Разблокируем на 85% просмотра
+    if (progress >= 85 && !canComplete) {
       setCanComplete(true);
     }
   };
+
   const allLessonsFlat = useMemo(() => course?.modules?.flatMap(m => m.lessons) || [], [course]);
   const progressPercentage = useMemo(() => !allLessonsFlat.length ? 0 : Math.round((completedLessons.length / allLessonsFlat.length) * 100), [completedLessons, allLessonsFlat]);
   const isExamAccessible = useMemo(() => progressPercentage === 100, [progressPercentage]);
@@ -299,7 +288,7 @@ const CourseAppPage = () => {
   };
 
   if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 font-black text-slate-400 tracking-widest uppercase">Загрузка...</div>;
-console.log("Текущая ссылка на видео:", activeLesson?.video_url);
+
   return (
     <div className="h-screen w-full flex bg-[#F0F2F9] overflow-hidden font-sans">
       {showQuizIntro && (
@@ -334,43 +323,43 @@ console.log("Текущая ссылка на видео:", activeLesson?.video_
 
         <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           <div className="max-w-[1500px] mx-auto space-y-8">
-            <div className="flex flex-col xl:flex-row gap-8 items-stretch h-auto xl:h-[750px]"> 
+            <div className="flex flex-col xl:flex-row gap-8 items-stretch xl:h-[700px]"> 
               <div className="flex flex-col flex-[2.5] gap-4">
-                <div className="flex-1 bg-white rounded-[1.5rem] overflow-hidden shadow-2xl border-[6px] md:border-[10px] border-white relative aspect-video xl:aspect-auto">
+                <div className="flex-1 bg-white rounded-[1.5rem] overflow-hidden shadow-2xl border-[6px] md:border-[10px] border-white relative min-h-[400px]">
                     {testStarted && currentQuiz ? (
                         <QuizView 
                           quiz={currentQuiz} selectedAnswers={selectedAnswers} setSelectedAnswers={setSelectedAnswers} 
                           handleFinishTest={handleFinishTest} testResult={testResult} setTestStarted={setTestStarted} completing={completing} 
                         />
                     ) : (
-                        <>
+                        <div className="w-full h-full">
 {activeLesson?.video_url ? (
-  <div className="w-full h-full bg-slate-900 relative">
+  <div className="absolute inset-0 bg-black overflow-hidden rounded-[1rem]"> 
+    {/* Контейнер должен быть absolute inset-0, чтобы заполнил всё пространство родителя */}
     <ReactPlayer
-      // Проверка: если это ID, делаем из него ссылку YouTube
+      key={activeLesson.id} // Важно для перерисовки
       url={activeLesson.video_url.includes('http') 
         ? activeLesson.video_url 
-        : `https://www.youtube.com/watch?v=${activeLesson.video_url}`
-      }
+        : `https://www.youtube.com/watch?v=${activeLesson.video_url}`}
       width="100%"
       height="100%"
       controls={true}
-      playing={false} // Не запускать ли сразу
+      playing={false}
       onProgress={handleVideoProgress}
       onEnded={() => setCanComplete(true)}
-      onError={(e) => console.log("Ошибка плеера:", e)}
       config={{
         youtube: {
           playerVars: { 
             modestbranding: 1, 
-            rel: 0,
-            origin: window.location.origin 
+            rel: 0, 
+            origin: window.location.origin,
+            enablejsapi: 1 
           }
         }
       }}
+      style={{ position: 'absolute', top: 0, left: 0 }}
     />
     
-    {/* Плашка с процентами (показываем только если не пройдено) */}
     {!canComplete && !completedLessons.includes(Number(activeLesson.id)) && (
       <div className="absolute top-6 right-6 bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10 z-20 pointer-events-none">
         <p className="text-[10px] font-black text-white uppercase tracking-widest">
@@ -379,16 +368,15 @@ console.log("Текущая ссылка на видео:", activeLesson?.video_
       </div>
     )}
   </div>
-) : activeLesson?.file_url ? (
-  // Твой старый iframe для PDF остается тут
-  <iframe key={`pdf-${activeLesson?.id}`} src={`${activeLesson.file_url}#toolbar=0`} className="w-full h-full bg-white" title={activeLesson?.title} />
-) : (
-  <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-10 text-center">
-    <FileText size={48} className="text-slate-300 mb-4" />
-    <p className="text-slate-500 font-bold">Материалов нет</p>
-  </div>
-)}
-                        </>
+                        ) : activeLesson?.file_url ? (
+                          <iframe key={`pdf-${activeLesson?.id}`} src={`${activeLesson.file_url}#toolbar=0`} className="w-full h-full bg-white border-none" title={activeLesson?.title} />
+                        ) : (
+                          <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-10 text-center">
+                            <FileText size={48} className="text-slate-300 mb-4 opacity-50" />
+                            <p className="text-slate-500 font-bold">Материалов нет</p>
+                          </div>
+                        )}
+                        </div>
                     )}
                 </div>
                 <div className="flex items-center justify-between px-4">
