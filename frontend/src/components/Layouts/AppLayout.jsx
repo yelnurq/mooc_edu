@@ -87,21 +87,37 @@ const AppLayout = () => {
         </div>
 
         <nav className="flex-1 p-3 space-y-2 mt-4 overflow-y-auto">
-          {sidebarMenuItems.map((item) => {
-            const isActive = location.pathname.includes(item.path);
-            return (
-              <Link 
-                key={item.id} 
-                to={item.path} 
-                className={`w-full flex items-center rounded-2xl transition-all duration-300 ${effectiveSidebarOpen ? 'px-4 py-3.5 gap-4' : 'justify-center py-3.5'} 
-                  ${isActive ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
-              >
-                <span>{item.icon}</span>
-                {effectiveSidebarOpen && <span className="font-bold text-sm tracking-tight">{item.label}</span>}
-              </Link>
-            );
-          })}
-        </nav>
+  {sidebarMenuItems.map((item) => {
+    // 1. Стандартная проверка: совпадает ли путь
+    const isPathActive = location.pathname.includes(item.path);
+
+    // 2. Специальная проверка: если мы внутри курса, 
+    // подсвечиваем пункт "Курсы" (предположим, его ID или часть пути 'courses')
+    const isLearningActive = isCourseLearningPage && item.path.includes('courses');
+
+    const isActive = isPathActive || isLearningActive;
+
+    return (
+      <Link 
+        key={item.id} 
+        to={item.path} 
+        className={`w-full flex items-center rounded-2xl transition-all duration-300 
+          ${effectiveSidebarOpen ? 'px-4 py-3.5 gap-4' : 'justify-center py-3.5'} 
+          ${isActive 
+            ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' 
+            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+          }`}
+      >
+        <span className={`${isActive ? 'text-white' : 'text-slate-400'}`}>
+          {item.icon}
+        </span>
+        {effectiveSidebarOpen && (
+          <span className="font-bold text-sm tracking-tight">{item.label}</span>
+        )}
+      </Link>
+    );
+  })}
+</nav>
 
         <div className="p-4 mt-auto border-t border-slate-50">
           <button onClick={handleLogout} className={`w-full flex items-center gap-4 px-4 py-3 text-red-500 hover:bg-red-50 rounded-2xl transition-all font-bold text-sm uppercase tracking-widest ${!effectiveSidebarOpen && 'justify-center'}`}>
