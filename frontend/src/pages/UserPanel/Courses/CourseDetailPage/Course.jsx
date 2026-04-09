@@ -4,7 +4,7 @@ import {
   ArrowLeft, FileText, PlayCircle, ChevronDown, 
   ChevronUp, Layout, X, Files, Play, ExternalLink, 
   Lock, User, Clock, CheckCircle, Loader2, Info, BookOpen,
-  Sparkles,
+  Sparkles, ArrowRight,
   Tag,
   ChevronRight
 } from 'lucide-react';
@@ -24,7 +24,7 @@ const CourseDetailPage = () => {
   const [activeContent, setActiveContent] = useState(null); 
   const [enrollmentStatus, setEnrollmentStatus] = useState(null); 
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const { id: courseId } = useParams();
   const isAuthenticated = !!localStorage.getItem('token');
 
   useEffect(() => {
@@ -348,38 +348,60 @@ const getYoutubeThumbnail = (url) => {
                     </button>
                     
                     <AnimatePresence>
-                      {openModules.includes(mIdx) && (
-                        <motion.div 
-                          initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                          className="overflow-hidden border-t border-slate-50"
-                        >
-                          <div className="p-4 space-y-2">
-                            {module.lessons?.map((lesson) => {
-                              const isLocked = enrollmentStatus !== 'approved';
-                              return (
-                                <div key={lesson.id} className="flex items-center justify-between p-4 rounded-xl hover:bg-blue-50/50 transition-colors group">
-                                  <div className="flex items-center gap-4">
-                                    <div className={`p-2 rounded-lg ${isLocked ? 'bg-slate-100 text-slate-400' : 'bg-blue-100 text-blue-600'}`}>
-                                      {isLocked ? <Lock size={16} /> : (lesson.type === 'pdf' ? <FileText size={16} /> : <PlayCircle size={16} />)}
-                                    </div>
-                                      <p className={`text-sm font-bold ${isLocked ? 'text-slate-400' : 'text-slate-700'}`}>{lesson.title}</p>
-                                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{lesson.type}</p>
-                                  </div>
-                                  {!isLocked && (
-                                    <button 
-                                      onClick={() => setActiveContent({ url: lesson.type === 'pdf' ? lesson.file_url : lesson.video_url, title: lesson.title, type: lesson.type })}
-                                      className="text-blue-600 opacity-0 group-hover:opacity-100 transition-all font-black text-[10px] uppercase tracking-widest"
-                                    >
-                                      Открыть
-                                    </button>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </motion.div>
+      {openModules.includes(mIdx) && (
+        <motion.div 
+          initial={{ height: 0 }} 
+          animate={{ height: 'auto' }} 
+          exit={{ height: 0 }}
+          className="overflow-hidden border-t border-slate-50"
+        >
+          <div className="p-4 space-y-2">
+            {module.lessons?.map((lesson) => {
+              const isLocked = enrollmentStatus !== 'approved';
+              
+              return (
+                <div 
+                  key={lesson.id} 
+                  className={`flex items-center justify-between p-4 rounded-xl transition-colors group ${
+                    isLocked ? 'cursor-not-allowed' : 'hover:bg-blue-50/50 cursor-pointer'
+                  }`}
+                  // Добавляем клик на всю область карточки для удобства
+                  onClick={() => {
+                    if (!isLocked) {
+                      navigate(`/app/courses/${courseId}`);
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-4 text-left">
+                    <div className={`p-2 rounded-lg ${isLocked ? 'bg-slate-100 text-slate-400' : 'bg-blue-100 text-blue-600'}`}>
+                      {isLocked ? (
+                        <Lock size={16} />
+                      ) : (
+                        lesson.type === 'pdf' ? <FileText size={16} /> : <PlayCircle size={16} />
                       )}
-                    </AnimatePresence>
+                    </div>
+                    <div>
+                      <p className={`text-sm font-bold ${isLocked ? 'text-slate-400' : 'text-slate-700'}`}>
+                        {lesson.title}
+                      </p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        {lesson.type}
+                      </p>
+                    </div>
+                  </div>
+
+                  {!isLocked && (
+                    <div className="flex items-center gap-2 text-blue-600 opacity-0 group-hover:opacity-100 transition-all font-black text-[10px] uppercase tracking-widest">
+                      Перейти <ArrowRight size={14} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
                   </div>
                 ))}
               </div>
