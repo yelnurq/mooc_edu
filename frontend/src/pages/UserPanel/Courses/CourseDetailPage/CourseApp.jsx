@@ -447,20 +447,48 @@ const CourseAppPage = () => {
                     );
                   })()}
                 </div>
-             <button 
-              onClick={handleCompleteLesson} 
-              disabled={completing || !activeLesson || completedLessons.includes(Number(activeLesson?.id)) || !canComplete} 
-              className={`mt-6 w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl shrink-0 
-                ${!canComplete && !completedLessons.includes(Number(activeLesson?.id))
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-70' 
-                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'}`}
-            >
-              {completedLessons.includes(Number(activeLesson?.id)) 
-                ? 'Урок завершен' 
-                : canComplete 
-                  ? 'Подтвердить прохождение' 
-                  : 'Материал изучается'} 
-            </button>
+       <div className="mt-6 flex gap-3 shrink-0">
+  {/* Кнопка НАЗАД */}
+  <button 
+    onClick={() => navigateLesson('prev')} 
+    disabled={allLessonsFlat.findIndex(l => l.id === activeLesson?.id) <= 0}
+    className="flex-1 py-5 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 hover:text-slate-900 hover:border-slate-300 disabled:opacity-20 transition-all shadow-sm"
+  >
+    <ChevronLeft size={16} /> Назад
+  </button>
+
+  {/* Кнопка ДЕЙСТВИЯ */}
+  <button 
+    onClick={() => {
+      if (!completedLessons.includes(Number(activeLesson?.id))) {
+        handleCompleteLesson();
+      } else {
+        navigateLesson('next');
+      }
+    }} 
+    disabled={
+      completing || 
+      (!canComplete && !completedLessons.includes(Number(activeLesson?.id))) ||
+      (completedLessons.includes(Number(activeLesson?.id)) && allLessonsFlat.findIndex(l => l.id === activeLesson?.id) >= allLessonsFlat.length - 1)
+    }
+    className={`flex-[2] py-5 rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] transition-all shadow-xl
+      ${completedLessons.includes(Number(activeLesson?.id)) 
+        ? 'bg-slate-900 text-white hover:bg-black shadow-slate-200' 
+        : canComplete 
+          ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200' 
+          : 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-70 shadow-none'}`}
+  >
+    {completing ? (
+      <RefreshCw className="animate-spin" size={16} />
+    ) : completedLessons.includes(Number(activeLesson?.id)) ? (
+      <>Следующий урок <ChevronRight size={16} /></>
+    ) : canComplete ? (
+      <>Подтвердить прохождение <Check size={16} /></>
+    ) : (
+      <>Материал изучается <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-pulse" /></>
+    )}
+  </button>
+</div>
               </div>
             </div>
 
