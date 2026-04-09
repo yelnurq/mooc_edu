@@ -338,10 +338,17 @@ const CourseAppPage = () => {
               <div className="flex flex-col flex-[2.5] gap-4">
                 <div className="flex-1 bg-white rounded-[1.5rem] overflow-hidden shadow-2xl border-[6px] md:border-[10px] border-white relative min-h-[400px]">
                     {testStarted && currentQuiz ? (
+                       <div className="fixed inset-0 z-[100] bg-white">
                         <QuizView 
-                          quiz={currentQuiz} selectedAnswers={selectedAnswers} setSelectedAnswers={setSelectedAnswers} 
-                          handleFinishTest={handleFinishTest} testResult={testResult} setTestStarted={setTestStarted} completing={completing} 
+                          quiz={currentQuiz} 
+                          selectedAnswers={selectedAnswers} 
+                          setSelectedAnswers={setSelectedAnswers} 
+                          handleFinishTest={handleFinishTest} 
+                          testResult={testResult} 
+                          setTestStarted={setTestStarted} 
+                          completing={completing} 
                         />
+                      </div>
                     ) : (
                         <div className="w-full h-full">
 {activeLesson?.video_url ? (
@@ -440,20 +447,42 @@ const CourseAppPage = () => {
                     );
                   })()}
                 </div>
-             <button 
-              onClick={handleCompleteLesson} 
-              disabled={completing || !activeLesson || completedLessons.includes(Number(activeLesson?.id)) || !canComplete} 
-              className={`mt-6 w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl shrink-0 
-                ${!canComplete && !completedLessons.includes(Number(activeLesson?.id))
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-70' 
-                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'}`}
-            >
-              {completedLessons.includes(Number(activeLesson?.id)) 
-                ? 'Урок завершен' 
-                : canComplete 
-                  ? 'Подтвердить прохождение' 
-                  : 'Материал изучается'} 
-            </button>
+       <div className="mt-6 space-y-3 shrink-0">
+  {/* Основная кнопка действия */}
+  <button 
+    onClick={handleCompleteLesson} 
+    disabled={completing || !activeLesson || completedLessons.includes(Number(activeLesson?.id)) || !canComplete} 
+    className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-xl 
+      ${!canComplete && !completedLessons.includes(Number(activeLesson?.id))
+        ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-70' 
+        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'}`}
+  >
+    {completedLessons.includes(Number(activeLesson?.id)) 
+      ? 'Урок завершен' 
+      : canComplete 
+        ? 'Подтвердить прохождение' 
+        : 'Материал изучается'} 
+  </button>
+
+  {/* Блок навигации */}
+  <div className="flex gap-2">
+    <button 
+      onClick={() => navigateLesson('prev')} 
+      disabled={allLessonsFlat.findIndex(l => l.id === activeLesson?.id) <= 0}
+      className="flex-1 py-4 bg-white border border-slate-100 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 hover:border-blue-100 disabled:opacity-30 transition-all shadow-sm"
+    >
+      <ChevronLeft size={14} /> Назад
+    </button>
+    
+    <button 
+      onClick={() => navigateLesson('next')} 
+      disabled={!activeLesson || allLessonsFlat.findIndex(l => l.id === activeLesson?.id) >= allLessonsFlat.length - 1 || isLessonLocked(allLessonsFlat[allLessonsFlat.findIndex(l => l.id === activeLesson?.id) + 1]?.id)}
+      className="flex-1 py-4 bg-white border border-slate-100 rounded-xl flex items-center justify-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 hover:border-blue-100 disabled:opacity-30 transition-all shadow-sm"
+    >
+      Далее <ChevronRight size={14} />
+    </button>
+  </div>
+</div>
               </div>
             </div>
 
