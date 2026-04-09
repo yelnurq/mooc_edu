@@ -8,6 +8,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CourseResourceController;
 use App\Http\Controllers\HelperController;
 use App\Http\Controllers\LdapController;
+use App\Http\Controllers\OptionController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
@@ -68,6 +69,15 @@ Route::middleware("logs")->group(function(){
         Route::post('/enroll/approve', [CourseController::class, 'approveEnrollment']);
         
         Route::delete('/enroll/{userId}/{courseId}', [CourseController::class, 'unrollStudent']);
+        
+        Route::post('/questions/{question}/options', [OptionController::class, 'store']);
+    // Обновление текста варианта
+    Route::patch('/options/{option}', [OptionController::class, 'update']);
+    // Переключение правильного ответа
+    Route::patch('/options/{option}/correct', [OptionController::class, 'toggleCorrect']);
+    // Удаление варианта
+    Route::delete('/options/{option}', [OptionController::class, 'destroy']);
+        
         });
         
         Route::post('/logout', [AuthController::class, "logout"]);
@@ -86,5 +96,5 @@ Route::middleware("logs")->group(function(){
     Route::post('/admin/modules/{module}/lessons', [LessonController::class, 'store']);
     Route::post('/admin/courses/{course}/resources', [CourseResourceController::class, 'store']);
     });
-
+Route::post('quizzes/{quiz}/submit', [QuizController::class, 'submit']);
 });

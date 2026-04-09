@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\Module;
 use App\Models\Quiz;
+use App\Models\QuizResult;
+use App\Models\Token;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -58,16 +61,18 @@ class QuizController extends Controller
     /**
      * Получить тест конкретной сущности
      */
-    public function show(Quiz $quiz)
+public function show($id)
 {
-    // Загружаем вопросы и саму модель, к которой привязан тест (курс или модуль)
-    return response()->json($quiz->load(['questions', 'quizable']));
+    // Загружаем тест вместе с вопросами И их вариантами
+    $quiz = Quiz::with(['questions.options'])->findOrFail($id);
+    return response()->json($quiz);
 }
 public function update(Request $request, Quiz $quiz)
 {
     $quiz->update($request->only('title'));
     return response()->json($quiz);
 }
+
 public function structure(Course $course)
 {
     // Загружаем курс со всеми вложенными связями
@@ -93,6 +98,66 @@ public function structure(Course $course)
         ],
         'modules' => $course->modules,
         'resources' => $course->resources
+    ]);
+}
+    private function getAuthenticatedUser(Request $request)
+    {
+        $bearerToken = $request->bearerToken();
+        if (!$bearerToken) return null;
+
+        $tokenRecord = Token::where("token", $bearerToken)->first();
+        if (!$tokenRecord) return null;
+
+        return User::find($tokenRecord->user_id);
+    }
+
+public function submit(Request $request, Quiz $quiz)
+{
+    $validated = $request->validate([
+        'answers' => 'required|array',
+    ]);
+
+    $userAnswers = $validated['answers'];
+    $correctCount = 0;
+
+    // Подгружаем вопросы вместе с опциями
+    $questions = $quiz->questions()->with('options')->get();
+
+    foreach ($questions as $question) {
+    $submittedOptionId = $userAnswers[$question->id] ?? null;
+    
+    $correctOption = $question->options->where('is_correct', true)->first();
+
+    // Если $correctOption null, то $correctOption?->id тоже станет null
+    if ($submittedOptionId == $correctOption?->id) {
+        $correctCount++;
+    }
+}
+
+    $total = $questions->count();
+    $score = $total > 0 ? round(($correctCount / $total) * 100) : 0;
+    $passed = $score >= 80;
+    $user = $this->getAuthenticatedUser($request);
+
+    $result = \App\Models\QuizResult::updateOrCreate(
+        [
+            'user_id' => $user->id, 
+            'quiz_id' => $quiz->id
+        ],
+        [
+            'score' => $score,
+            'correct_answers' => $correctCount,
+            'total_questions' => $total,
+            'passed' => $passed,
+        ]
+    );
+
+    return response()->json([
+        'passed' => $passed,
+        'score' => $score,
+        'correct_count' => $correctCount,
+        'total_count' => $total,
+        'result_id' => $result->id
     ]);
 }
 }

@@ -252,9 +252,16 @@ public function show(Request $request, $id)
         return response()->json(['message' => 'Пользователь не авторизован'], 401);
     }
 
-    // 2. Загружаем курс (добавили загрузку ресурсов)
-    $course = \App\Models\Course::with(['modules.lessons', 'resources'])->find($id);
-    
+    // 2. Загружаем курс со всеми связями
+ $course = \App\Models\Course::with([
+    'resources',
+    // Загружаем вопросы и опции для теста курса
+    'quiz.questions.options', 
+    'modules.lessons',
+    // Загружаем вопросы и опции для тестов модулей
+    'modules.quiz.questions.options'
+])->find($id);
+
     if (!$course) {
         return response()->json(['message' => 'Курс не найден'], 404);
     }
@@ -269,6 +276,17 @@ public function show(Request $request, $id)
         ], 403);
     }
 
+    // --- НОВОЕ: Загружаем результаты тестов пользователя для этого курса ---
+    // Собираем все ID квизов этого курса
+    $quizIds = $course->modules->pluck('quiz.id')->filter()->toArray();
+    
+    // Получаем попытки пользователя
+    $quizResults = \Illuminate\Support\Facades\DB::table('quiz_results')
+        ->where('user_id', $user->id)
+        ->whereIn('quiz_id', $quizIds)
+        ->select('quiz_id', 'score', 'passed', 'correct_answers', 'total_questions')
+        ->get();
+
     // 4. Сбор ID пройденных уроков
     $courseLessonIds = $course->modules->flatMap(function($module) {
         return $module->lessons->pluck('id');
@@ -282,18 +300,15 @@ public function show(Request $request, $id)
         ->values()
         ->toArray();
 
-    // 5. Обработка ресурсов курса (course_resources)
+    // 5. Обработка ресурсов курса
     $course->resources->transform(function ($resource) {
-        // Формируем полный URL для скачивания/просмотра
         if ($resource->file_path) {
             $resource->file_url = asset('storage/' . $resource->file_path);
         }
         return $resource;
     });
 
-    // Переименовываем коллекцию для соответствия фронтенду (course_resources)
     $course->setRelation('course_resources', $course->resources);
-    // Опционально: скрываем оригинальный ключ 'resources', чтобы не дублировать данные
     $course->unsetRelation('resources');
 
     // 6. Обработка путей в уроках
@@ -309,10 +324,12 @@ public function show(Request $request, $id)
     // 7. Добавляем мета-данные
     $course->is_enrolled = true;
     $course->completed_lessons_ids = $completedLessonsIds;
+    
+    // Добавляем результаты тестов в основной объект курса
+    $course->quiz_results = $quizResults; 
 
     return response()->json($course);
-}
-public function showPublic(Request $request, $id)
+}public function showPublic(Request $request, $id)
 {
     $user = $this->getAuthenticatedUser($request);
     $course = \App\Models\Course::with(['modules.lessons', 'resources'])->find($id);

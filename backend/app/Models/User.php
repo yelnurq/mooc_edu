@@ -25,6 +25,10 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Department::class);
     }
+    public function quizResults()
+    {
+        return $this->hasMany(QuizResult::class);
+    }
     public function courses()
     {
         return $this->belongsToMany(Course::class)->withPivot('status', 'progress');

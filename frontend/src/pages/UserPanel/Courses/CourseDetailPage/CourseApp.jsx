@@ -3,31 +3,113 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
   FileText, PlayCircle, ChevronDown, 
   ChevronUp, CheckCircle, Menu, X, 
-  ChevronRight, Lock, Check, Layout, 
-  Download, MessageSquare, Info, BookOpen,
-  ExternalLink, FileArchive, Maximize2, Minimize2,
-  ArrowRight, Share2
+  ChevronRight, Lock, Check, BookOpen,
+  Download, MessageSquare, Info,
+  Maximize2, Minimize2, ArrowRight, Share2, 
+  Award, RefreshCw, ExternalLink, FileArchive, Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../../api/axios';
 
+// --- КОМПОНЕНТ ТЕСТА ---
+const QuizView = ({ quiz, selectedAnswers, setSelectedAnswers, handleFinishTest, testResult, setTestStarted, completing, viewOnly }) => {
+  const displayResult = testResult || quiz?.user_result;
+
+  if (viewOnly || testResult) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-full bg-white p-8 text-center overflow-y-auto custom-scrollbar">
+        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${displayResult?.passed ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+          {displayResult?.passed ? <Award size={40} /> : <Info size={40} />}
+        </div>
+        <h2 className="text-2xl font-black uppercase tracking-tighter mb-2 text-slate-900">
+          {displayResult?.passed ? 'Тест пройден' : 'Результаты теста'}
+        </h2>
+        <p className="text-slate-500 mb-8 font-medium max-w-xs">
+          Ваш результат: <span className="text-slate-900 font-bold">{displayResult?.score}%</span> 
+          <br /> 
+          Правильных ответов: {displayResult?.correct_answers || displayResult?.correct_count} из {displayResult?.total_questions || displayResult?.total_count}
+        </p>
+
+        <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 mb-8 w-full max-w-md">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Статус доступа</p>
+            <p className="text-xs font-bold text-slate-700">Повторное прохождение заблокировано системой.</p>
+        </div>
+
+        <button 
+          onClick={() => setTestStarted(false)}
+          className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all"
+        >
+          Вернуться к материалам
+        </button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col bg-slate-50 overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10 custom-scrollbar">
+        <div className="max-w-2xl mx-auto mb-8 text-center">
+            <h3 className="text-sm font-black uppercase tracking-[0.3em] text-blue-600 mb-2">Тестирование</h3>
+            <h2 className="text-xl font-bold text-slate-900">{quiz?.title}</h2>
+        </div>
+
+        {quiz?.questions?.map((q, idx) => (
+          <div key={q.id} className="max-w-2xl mx-auto bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm">
+            <div className="flex gap-4 mb-6">
+              <span className="shrink-0 w-8 h-8 bg-slate-900 text-white rounded-xl flex items-center justify-center text-[10px] font-black">{idx + 1}</span>
+              <p className="text-base font-bold text-slate-800 leading-tight pt-1">{q.question_text}</p>
+            </div>
+            <div className="grid gap-2">
+              {q.options?.map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setSelectedAnswers(prev => ({ ...prev, [q.id]: opt.id }))}
+                  className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left ${
+                    selectedAnswers[q.id] === opt.id 
+                    ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm' 
+                    : 'border-transparent bg-slate-50 hover:bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedAnswers[q.id] === opt.id ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}`}>
+                    {selectedAnswers[q.id] === opt.id && <div className="w-2 h-2 bg-white rounded-full" />}
+                  </div>
+                  <span className="text-xs font-bold">{opt.option_text}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="p-6 bg-white border-t flex justify-center">
+        <button 
+          disabled={completing || !quiz?.questions || Object.keys(selectedAnswers).length < quiz.questions.length}
+          onClick={handleFinishTest}
+          className="bg-slate-900 text-white px-12 py-5 rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all disabled:opacity-20 flex items-center gap-3"
+        >
+          {completing ? <RefreshCw className="animate-spin" size={16} /> : <CheckCircle size={16} />}
+          Отправить ответы
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const CourseAppPage = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const sidebarRef = useRef(null);
   
   const [course, setCourse] = useState(null);
   const [completedLessons, setCompletedLessons] = useState([]);
   const [activeLesson, setActiveLesson] = useState(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
-  const [error, setError] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [openModules, setOpenModules] = useState([0]);
-  const [activeTab, setActiveTab] = useState('description');
 
-  // Загрузка данных
+  const [testStarted, setTestStarted] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  const [selectedAnswers, setSelectedAnswers] = useState({});
+
   useEffect(() => {
     const fetchCourseData = async () => {
       setLoading(true);
@@ -35,22 +117,13 @@ const CourseAppPage = () => {
         const response = await api.get(`/courses/${id}`);
         const data = response.data;
         setCourse(data);
-        const completedIds = (data.completed_lessons_ids || []).map(id => Number(id));
-        setCompletedLessons(completedIds);
+        setCompletedLessons((data.completed_lessons_ids || []).map(id => Number(id)));
         
         const allLessons = data.modules?.flatMap(m => m.lessons) || [];
-        const nextToComplete = allLessons.find(l => !completedIds.includes(Number(l.id)));
-        const initialLesson = nextToComplete || allLessons[0];
-        setActiveLesson(initialLesson);
-
-        if (initialLesson) {
-          const mIdx = data.modules.findIndex(m => 
-            m.lessons.some(l => Number(l.id) === Number(initialLesson.id))
-          );
-          if (mIdx !== -1) setOpenModules([mIdx]);
-        }
+        const nextToComplete = allLessons.find(l => !data.completed_lessons_ids.includes(Number(l.id)));
+        setActiveLesson(nextToComplete || allLessons[0]);
       } catch (err) {
-        setError(err.response?.status === 403 ? 'ACCESS_DENIED' : 'SERVER_ERROR');
+        console.error("Ошибка загрузки:", err);
       } finally {
         setLoading(false);
       }
@@ -58,356 +131,231 @@ const CourseAppPage = () => {
     fetchCourseData();
   }, [id]);
 
-  // Авто-скролл к активному уроку в сайдбаре
-  useEffect(() => {
-    if (activeLesson) {
-      const timer = setTimeout(() => {
-        const element = document.getElementById(`lesson-${activeLesson.id}`);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [activeLesson]);
+  // Склеиваем модули с их результатами
+  const modulesWithResults = useMemo(() => {
+    if (!course || !course.modules) return [];
+    return course.modules.map(module => {
+      if (!module.quiz) return module;
+      const result = course.quiz_results?.find(r => Number(r.quiz_id) === Number(module.quiz.id));
+      return { ...module, quiz: { ...module.quiz, user_result: result || null } };
+    });
+  }, [course]);
+
+  // Итоговый экзамен курса (полиморфная связь Course -> Quiz)
+  const courseExam = useMemo(() => {
+    if (!course || !course.quiz) return null;
+    const result = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz.id));
+    return { ...course.quiz, user_result: result || null };
+  }, [course]);
+
+  const activeModule = useMemo(() => {
+    if (!modulesWithResults.length || !activeLesson) return null;
+    return modulesWithResults.find(m => 
+      m.lessons.some(l => Number(l.id) === Number(activeLesson.id))
+    );
+  }, [modulesWithResults, activeLesson]);
+
+  // Определение текущего квиза: либо модуль, либо курс
+  const currentQuiz = useMemo(() => {
+    if (!testStarted) return null;
+    if (activeLesson && activeModule?.quiz) return activeModule.quiz;
+    return courseExam;
+  }, [testStarted, activeLesson, activeModule, courseExam]);
 
   const flatLessons = useMemo(() => course?.modules?.flatMap(m => m.lessons) || [], [course]);
-  const courseResources = useMemo(() => course?.course_resources || [], [course]);
-
   const progressPercentage = useMemo(() => {
     if (!flatLessons.length) return 0;
     return Math.round((completedLessons.length / flatLessons.length) * 100);
   }, [flatLessons, completedLessons]);
-
-  const currentIndex = flatLessons.findIndex(l => Number(l.id) === Number(activeLesson?.id));
-  const nextLesson = flatLessons[currentIndex + 1];
-
-  const isLessonLocked = (lessonId) => {
-    const lessonIdx = flatLessons.findIndex(l => Number(l.id) === Number(lessonId));
-    if (lessonIdx <= 0) return false;
-    const prevLesson = flatLessons[lessonIdx - 1];
-    return !completedLessons.includes(Number(prevLesson.id));
-  };
 
   const handleCompleteLesson = async () => {
     if (!activeLesson || completing) return;
     setCompleting(true);
     try {
       await api.post(`/lessons/${activeLesson.id}/complete`);
-      const lessonId = Number(activeLesson.id);
-      if (!completedLessons.includes(lessonId)) {
-        setCompletedLessons(prev => [...prev, lessonId]);
-      }
-      if (nextLesson) handleNextLesson();
+      setCompletedLessons(prev => Array.from(new Set([...prev, Number(activeLesson.id)])));
+    } catch (err) { console.error(err); } 
+    finally { setCompleting(false); }
+  };
+
+  const handleFinishTest = async () => {
+    if (!currentQuiz || completing) return;
+    setCompleting(true);
+    try {
+      const response = await api.post(`/quizzes/${currentQuiz.id}/submit`, {
+        answers: selectedAnswers
+      });
+      setTestResult(response.data);
+      
+      setCourse(prev => ({
+          ...prev,
+          quiz_results: [...(prev.quiz_results || []), { 
+              quiz_id: currentQuiz.id, 
+              ...response.data 
+          }]
+      }));
+
+      if (response.data.passed && activeLesson) handleCompleteLesson();
     } catch (err) {
-      console.error("Ошибка при завершении:", err);
+      console.error("Ошибка теста:", err);
     } finally {
       setCompleting(false);
     }
   };
 
-  const handleNextLesson = () => {
-    if (nextLesson) {
-      setActiveLesson(nextLesson);
-      const mIdx = course.modules.findIndex(m => m.lessons.some(l => Number(l.id) === Number(nextLesson.id)));
-      if (!openModules.includes(mIdx)) setOpenModules(prev => [...prev, mIdx]);
-    }
-  };
-
-  const getEmbedUrl = (url) => {
-    if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    const videoId = (match && match[2].length === 11) ? match[2] : null;
-    return videoId ? `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&autoplay=1` : url;
-  };
-
-  const getFileIcon = (fileName) => {
-    const ext = fileName?.split('.').pop().toLowerCase();
-    if (ext === 'pdf') return <FileText size={20} />;
-    if (['zip', 'rar', '7z'].includes(ext)) return <FileArchive size={20} />;
-    return <Download size={20} />;
-  };
-
-  if (loading) return (
-    <div className="h-screen flex flex-col items-center justify-center bg-slate-50">
-       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full mb-4" />
-       <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">Подготовка окружения...</p>
-    </div>
-  );
+  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 font-black uppercase tracking-widest text-slate-400">Загрузка...</div>;
 
   return (
     <div className={`h-screen w-full flex bg-white overflow-hidden relative font-sans ${isFocusMode ? 'focus-mode' : ''}`}>
       
       {/* SIDEBAR */}
       {!isFocusMode && (
-        <aside className={`h-full bg-slate-50 border-r transition-all duration-300 ease-in-out flex-shrink-0 z-[60] relative ${isSidebarOpen ? 'w-[320px]' : 'w-[80px]'}`}>
+        <aside className={`h-full bg-slate-50 border-r transition-all duration-300 flex-shrink-0 z-[60] relative ${isSidebarOpen ? 'w-[320px]' : 'w-[80px]'}`}>
           <div className="h-full flex flex-col overflow-hidden">
-            <div className="p-4 h-[81px] border-b flex justify-between items-center bg-white overflow-hidden">
-              <div className="flex items-center gap-3 min-w-max">
-                <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg shrink-0">
-                  <BookOpen size={20} />
+            <div className="p-4 h-[81px] border-b flex justify-between items-center bg-white shrink-0">
+                <h2 className="font-black text-[11px] uppercase tracking-widest text-slate-900">Программа</h2>
+                {isSidebarOpen && <button onClick={() => setIsSidebarOpen(false)}><X size={18} className="text-slate-400"/></button>}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar">
+              {modulesWithResults.map((module, mIdx) => (
+                <div key={module.id} className="space-y-2">
+                  <button 
+                    onClick={() => setOpenModules(prev => prev.includes(mIdx) ? prev.filter(i => i !== mIdx) : [...prev, mIdx])}
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-white shadow-sm ring-1 ring-slate-200"
+                  >
+                    <span className="font-bold text-[11px] text-slate-700 uppercase truncate">{module.title}</span>
+                    <ChevronDown size={14} className={openModules.includes(mIdx) ? 'rotate-180' : ''} />
+                  </button>
+                  
+                  {openModules.includes(mIdx) && (
+                    <div className="ml-2 pl-2 border-l-2 border-slate-100 space-y-1">
+                      {module.lessons.map((lesson) => (
+                        <button
+                          key={lesson.id}
+                          onClick={() => { setActiveLesson(lesson); setTestStarted(false); setTestResult(null); setSelectedAnswers({}); }}
+                          className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-[11px] font-semibold transition-all ${Number(activeLesson?.id) === Number(lesson.id) && !testStarted ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'}`}
+                        >
+                          {completedLessons.includes(Number(lesson.id)) ? <Check size={14} className="text-green-500"/> : <PlayCircle size={14}/>}
+                          <span className="truncate">{lesson.title}</span>
+                        </button>
+                      ))}
+
+                      {module.quiz && (
+                        <button
+                          onClick={() => { setActiveLesson(module.lessons[0]); setTestStarted(true); setTestResult(null); setSelectedAnswers({}); }}
+                          className={`w-full flex items-center gap-3 p-2.5 rounded-xl border border-dashed mt-2 ${testStarted && activeModule?.id === module.id ? 'bg-slate-900 text-white' : 'text-blue-600 border-blue-200 bg-blue-50/50'}`}
+                        >
+                          {module.quiz.user_result ? <CheckCircle size={14} className="text-emerald-500" /> : <Award size={14} />}
+                          <div className="flex flex-col text-left">
+                              <span className="text-[10px] font-black uppercase">Тест модуля</span>
+                              <span className="text-[9px] opacity-70">{module.quiz.user_result ? `Результат: ${module.quiz.user_result.score}%` : 'Пройти проверку'}</span>
+                          </div>
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {isSidebarOpen && (
-                  <div className="flex flex-col min-w-0">
-                    <h2 className="font-black text-[11px] uppercase tracking-widest text-slate-900 truncate">Программа</h2>
-                    <span className="text-[9px] text-slate-400 font-bold truncate max-w-[150px]">{course?.title}</span>
-                  </div>
-                )}
-              </div>
-              {isSidebarOpen && (
-                <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400">
-                  <X size={18} />
-                </button>
+              ))}
+
+              {/* ЭКЗАМЕН КУРСА */}
+              {courseExam && (
+                <div className="mt-8 pt-4 border-t border-slate-200">
+                  <p className="px-3 text-[9px] font-black uppercase text-slate-400 tracking-widest mb-3">Итоговая аттестация</p>
+                  <button
+                    onClick={() => { setActiveLesson(null); setTestStarted(true); setTestResult(null); setSelectedAnswers({}); }}
+                    className={`w-full flex items-center gap-4 p-4 rounded-[1.5rem] border-2 transition-all ${testStarted && !activeLesson ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-emerald-50 border-emerald-100 text-emerald-700 hover:border-emerald-200'}`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${testStarted && !activeLesson ? 'bg-white/10' : 'bg-emerald-100'}`}>
+                        <Award size={20} />
+                    </div>
+                    <div className="flex flex-col text-left">
+                        <span className="text-[11px] font-black uppercase leading-none mb-1">Экзамен курса</span>
+                        <span className="text-[10px] opacity-70 font-bold">
+                          {courseExam.user_result ? `Пройден: ${courseExam.user_result.score}%` : 'Начать финал'}
+                        </span>
+                    </div>
+                  </button>
+                </div>
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar overflow-x-hidden" ref={sidebarRef}>
-              {course?.modules?.map((module, mIdx) => (
-                <div key={module.id} className="space-y-2">
-                  {isSidebarOpen ? (
-                    <button 
-                      onClick={() => setOpenModules(prev => prev.includes(mIdx) ? prev.filter(i => i !== mIdx) : [...prev, mIdx])}
-                      className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${openModules.includes(mIdx) ? 'bg-white shadow-sm ring-1 ring-slate-200' : 'hover:bg-white/60'}`}
-                    >
-                      <span className="font-bold text-[11px] text-slate-700 text-left leading-tight truncate pr-2 uppercase">{module.title}</span>
-                      {openModules.includes(mIdx) ? <ChevronUp size={14} className="text-blue-500" /> : <ChevronDown size={14} className="text-slate-400" />}
-                    </button>
-                  ) : (
-                    <div className="w-full text-center py-2 border-b border-slate-200 text-[10px] font-black text-slate-300">{mIdx + 1}</div>
-                  )}
-                  
-                  <AnimatePresence>
-                    {(openModules.includes(mIdx) || !isSidebarOpen) && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <div className={`${isSidebarOpen ? 'ml-2 pl-2 border-l-2 border-slate-100 space-y-1' : 'space-y-2'}`}>
-                          {module.lessons?.map((lesson) => {
-                            const locked = isLessonLocked(lesson.id);
-                            const active = Number(activeLesson?.id) === Number(lesson.id);
-                            const done = completedLessons.includes(Number(lesson.id));
-                            return (
-                              <button
-                                id={`lesson-${lesson.id}`}
-                                key={lesson.id}
-                                disabled={locked}
-                                onClick={() => setActiveLesson(lesson)}
-                                className={`flex items-center rounded-xl transition-all group ${isSidebarOpen ? 'w-full gap-3 p-2.5 text-left' : 'w-12 h-12 justify-center mx-auto'} ${active ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-white'} ${locked ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}
-                              >
-                                <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center ${active ? 'bg-white/20' : 'bg-slate-100 group-hover:bg-blue-50'}`}>
-                                  {locked ? <Lock size={12} /> : done ? <Check size={14} className={active ? 'text-white' : 'text-green-500'} /> : (lesson.type === 'pdf' ? <FileText size={14}/> : <PlayCircle size={14}/>)}
-                                </div>
-                                {isSidebarOpen && <span className="text-[11px] font-semibold truncate leading-none">{lesson.title}</span>}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ))}
-            </div>
-
-            {isSidebarOpen && (
-              <div className="p-4 bg-white border-t">
-                 <div className="flex justify-between items-end mb-2">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Твой прогресс</span>
+            <div className="p-4 bg-white border-t shrink-0">
+                <div className="flex justify-between items-end mb-2">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Прогресс курса</span>
                     <span className="text-xs font-bold text-blue-600">{progressPercentage}%</span>
-                 </div>
-                 <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${progressPercentage}%` }} className="h-full bg-blue-600" />
-                 </div>
-              </div>
-            )}
+                </div>
+                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-600 transition-all duration-500" style={{ width: `${progressPercentage}%` }} />
+                </div>
+            </div>
           </div>
         </aside>
       )}
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 flex flex-col bg-white overflow-hidden relative w-full">
-        
-        <header className="h-[81px] px-4 md:px-8 flex items-center justify-between border-b bg-white shrink-0 z-30">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            {!isSidebarOpen && !isFocusMode && (
-              <button onClick={() => setIsSidebarOpen(true)} className="p-2.5 bg-slate-900 text-white rounded-xl shadow-lg shrink-0 transition-transform active:scale-95">
-                <Menu size={20} />
-              </button>
-            )}
-            <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-1 text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">
-                   <Link to="/app/courses" className="hover:text-blue-600">Курсы</Link>
-                   <ChevronRight size={10} />
-                   <span className="truncate max-w-[100px]">{course?.title}</span>
-                </div>
-                <h2 className="text-sm font-bold text-slate-900 truncate">{activeLesson?.title}</h2>
+      <main className="flex-1 flex flex-col bg-white overflow-hidden relative">
+        <header className="h-[81px] px-8 flex items-center justify-between border-b bg-white shrink-0 z-30">
+            <h2 className="text-sm font-bold text-slate-900 truncate">
+                {testStarted 
+                  ? (activeLesson ? `Тест модуля: ${activeModule?.title}` : `Итоговый экзамен курса`) 
+                  : activeLesson?.title}
+            </h2>
+            <div className="flex gap-4">
+                <button onClick={() => setIsFocusMode(!isFocusMode)} className="h-10 w-10 text-slate-400 hover:bg-slate-50 rounded-xl flex items-center justify-center border">
+                    {isFocusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                </button>
+                {!testStarted && activeLesson && (
+                    <button onClick={handleCompleteLesson} disabled={completing || completedLessons.includes(Number(activeLesson?.id))} className={`h-10 px-6 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all ${completedLessons.includes(Number(activeLesson?.id)) ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-emerald-500 text-white shadow-lg shadow-emerald-100 hover:bg-emerald-600'}`}>
+                        {completedLessons.includes(Number(activeLesson?.id)) ? 'Урок пройден' : 'Завершить урок'}
+                    </button>
+                )}
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 md:gap-4 shrink-0">
-            <button 
-              onClick={() => setIsFocusMode(!isFocusMode)}
-              className="hidden sm:flex items-center justify-center h-10 w-10 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
-              title={isFocusMode ? "Выйти из режима фокуса" : "Режим фокуса"}
-            >
-              {isFocusMode ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-            </button>
-
-            {activeLesson && !completedLessons.includes(Number(activeLesson.id)) ? (
-              <button onClick={handleCompleteLesson} disabled={completing} className="bg-emerald-500 hover:bg-emerald-600 text-white h-10 px-4 md:px-6 rounded-xl font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg shadow-emerald-100">
-                {completing ? <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle size={16} />}
-                <span className="hidden sm:inline">Готово</span>
-              </button>
-            ) : (
-              <div className="bg-slate-50 text-emerald-600 h-10 px-4 rounded-xl font-bold text-[10px] uppercase flex items-center gap-2 border border-emerald-100">
-                <CheckCircle size={16} /> <span className="hidden sm:inline">Пройдено</span>
-              </div>
-            )}
-            
-            <button 
-              onClick={handleNextLesson} 
-              disabled={!nextLesson || !completedLessons.includes(Number(activeLesson?.id))} 
-              className="bg-slate-900 hover:bg-blue-600 text-white h-10 px-4 rounded-xl flex items-center gap-2 transition-all disabled:opacity-20"
-            >
-              <span className="hidden md:inline font-black text-[10px] uppercase tracking-widest">Вперед</span>
-              <ChevronRight size={18} />
-            </button>
-          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar bg-slate-50/50">
-          
-          {/* PLAYER SECTION */}
-          <div className={`w-full bg-slate-900 flex justify-center transition-all duration-500 ${isFocusMode ? 'p-0 h-[80vh]' : 'p-4 md:p-8 lg:p-12'}`}>
-            <div className={`w-full max-w-6xl aspect-video bg-black shadow-2xl overflow-hidden relative group ${isFocusMode ? 'h-full' : 'rounded-3xl border-[6px] border-white/5'}`}>
-              {activeLesson?.type === 'pdf' ? (
-                <iframe src={activeLesson.file_url ? `${activeLesson.file_url}#toolbar=0` : ''} className="w-full h-full border-none bg-white" title="PDF" />
+          <div className={`w-full flex justify-center transition-all duration-500 ${isFocusMode ? 'p-0 h-[85vh]' : 'p-4 md:p-12'}`}>
+            <div className={`w-full max-w-6xl aspect-video bg-black shadow-2xl overflow-hidden relative ${isFocusMode ? 'h-full' : 'rounded-[3rem] border-[8px] border-white'}`}>
+              
+              {testStarted ? (
+                <QuizView 
+                    quiz={currentQuiz}
+                    selectedAnswers={selectedAnswers}
+                    setSelectedAnswers={setSelectedAnswers}
+                    handleFinishTest={handleFinishTest}
+                    testResult={testResult}
+                    setTestStarted={setTestStarted}
+                    completing={completing}
+                    viewOnly={!!currentQuiz?.user_result}
+                />
               ) : (
-                <iframe src={getEmbedUrl(activeLesson?.video_url)} className="w-full h-full border-none" allow="autoplay; fullscreen" allowFullScreen title="Video" />
+                <iframe 
+                  src={activeLesson?.type === 'pdf' ? activeLesson.file_url : `https://www.youtube.com/embed/${activeLesson?.video_url?.split('v=')[1]}?rel=0&modestbranding=1`} 
+                  className="w-full h-full border-none bg-white" 
+                  allowFullScreen 
+                />
               )}
             </div>
           </div>
 
-          <div className="max-w-5xl mx-auto w-full p-6 md:p-12 pb-32">
-             <div className="flex flex-col lg:flex-row gap-12">
-                
-                <div className="flex-1">
-                   <div className="flex items-center gap-8 border-b border-slate-200 mb-8 overflow-x-auto no-scrollbar">
-                      {[
-                        { id: 'description', label: 'Инструкции', icon: <Info size={16} /> },
-                        { id: 'files', label: `Ресурсы (${courseResources.length})`, icon: <Download size={16} /> },
-                        { id: 'support', label: 'Помощь', icon: <MessageSquare size={16} /> }
-                      ].map((tab) => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 pb-4 text-[10px] font-black uppercase tracking-widest transition-all relative whitespace-nowrap ${activeTab === tab.id ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>
-                          {tab.icon} {tab.label}
-                          {activeTab === tab.id && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />}
-                        </button>
-                      ))}
-                   </div>
-
-                   <div className="min-h-[300px]">
-                      <AnimatePresence mode="wait">
-                        {activeTab === 'description' && (
-                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="desc">
-                            <h3 className="text-xl font-bold text-slate-900 mb-4">Описание урока</h3>
-                            <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed text-sm whitespace-pre-wrap">
-                              {activeLesson?.description || "Инструкции отсутствуют."}
-                            </div>
-                            
-                            {/* Блок "Что дальше" */}
-                            {nextLesson && completedLessons.includes(Number(activeLesson?.id)) && (
-                              <div className="mt-12 p-8 bg-white border border-slate-200 rounded-[2.5rem] flex items-center justify-between group cursor-pointer hover:border-blue-400 transition-all" onClick={handleNextLesson}>
-                                <div>
-                                  <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-2">Следующий этап</p>
-                                  <h4 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{nextLesson.title}</h4>
-                                </div>
-                                <div className="w-12 h-12 bg-slate-900 text-white rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                                  <ArrowRight size={20} />
-                                </div>
-                              </div>
-                            )}
-                          </motion.div>
-                        )}
-
-                        {activeTab === 'files' && (
-                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="files" className="space-y-3">
-                             <h3 className="text-xl font-bold text-slate-900 mb-6">Материалы для скачивания</h3>
-                             {courseResources.length > 0 ? (
-                               courseResources.map((resource, index) => (
-                                 <a key={resource.id || index} href={resource.file_url} target="_blank" rel="noopener noreferrer" className="group flex items-center justify-between p-5 bg-white border border-slate-200 rounded-[1.5rem] hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5 transition-all">
-                                    <div className="flex items-center gap-4">
-                                       <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                                          {getFileIcon(resource.title || resource.file_url)}
-                                       </div>
-                                       <div className="flex flex-col">
-                                          <span className="text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{resource.title || 'Ресурс'}</span>
-                                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight mt-0.5">Нажмите, чтобы загрузить</span>
-                                       </div>
-                                    </div>
-                                    <ExternalLink size={18} className="text-slate-300 group-hover:text-blue-600" />
-                                 </a>
-                               ))
-                             ) : (
-                               <div className="py-20 text-center bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
-                                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Файлы отсутствуют</p>
-                               </div>
-                             )}
-                          </motion.div>
-                        )}
-
-                        {activeTab === 'support' && (
-                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="support" className="bg-slate-900 rounded-[2.5rem] p-10 text-white">
-                             <h3 className="text-2xl font-bold mb-4">Нужна помощь?</h3>
-                             <p className="text-slate-400 text-sm mb-8 leading-relaxed">Если возникли сложности с уроком или вы нашли ошибку, свяжитесь с куратором курса.</p>
-                             <div className="flex flex-wrap gap-4">
-                               <button className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95">
-                                 Задать вопрос
-                               </button>
-                               <button className="bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all">
-                                 Сообщество
-                               </button>
-                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                   </div>
+          {!testStarted && activeLesson && (
+            <div className="max-w-4xl mx-auto w-full p-12 pb-32">
+                <div className="flex items-center gap-8 border-b border-slate-200 mb-8">
+                    <button className="flex items-center gap-2 pb-4 text-[10px] font-black uppercase tracking-widest text-blue-600 border-b-2 border-blue-600">
+                        <Info size={16} /> Инструкции к уроку
+                    </button>
                 </div>
-
-                {/* SIDE INFO */}
-                {!isFocusMode && (
-                  <div className="lg:w-[320px] space-y-6">
-                     <div className="p-8 bg-white border border-slate-200 rounded-[2.5rem] shadow-sm">
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Инфо-панель</h4>
-                        <div className="space-y-5">
-                           <div className="flex justify-between items-center">
-                              <span className="text-[11px] text-slate-400 font-bold uppercase">Формат</span>
-                              <span className="text-[11px] font-black text-slate-900 uppercase bg-slate-100 px-2 py-1 rounded-md">{activeLesson?.type || 'Видео'}</span>
-                           </div>
-                           <div className="flex justify-between items-center">
-                              <span className="text-[11px] text-slate-400 font-bold uppercase">Урок</span>
-                              <span className="text-[11px] font-black text-slate-900">{currentIndex + 1} / {flatLessons.length}</span>
-                           </div>
-                           <div className="pt-6 border-t flex flex-col gap-4">
-                              <button className="w-full py-4 bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-600 rounded-2xl flex items-center justify-center gap-2 transition-all font-bold text-[10px] uppercase tracking-widest">
-                                <Share2 size={14} /> Поделиться
-                              </button>
-                           </div>
-                        </div>
-                     </div>
-                 
-                  </div>
-                )}
-             </div>
-          </div>
+                <div className="prose prose-slate max-w-none text-slate-600 text-sm whitespace-pre-wrap leading-loose">
+                    {activeLesson?.description || "Для этого урока нет дополнительных инструкций."}
+                </div>
+            </div>
+          )}
         </div>
       </main>
 
       <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .focus-mode header { border-bottom: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
       `}</style>
     </div>
   );
