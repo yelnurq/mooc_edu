@@ -8,6 +8,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CourseResourceController;
 use App\Http\Controllers\HelperController;
 use App\Http\Controllers\LdapController;
+use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -54,9 +55,12 @@ Route::middleware("logs")->group(function(){
 
         Route::post('/quizzes', [QuizController::class, 'store']);
 
-        Route::get('/quizzes/{type}/{id}', [QuizController::class, 'show']);
+        Route::get('/quizzes/{quiz}', [QuizController::class, 'show']);
+        Route::patch('/questions/{question}', [QuestionController::class, 'update']);
+        Route::patch('/quizzes/{quiz}', [QuizController::class, 'update']);
         // Route::get('/courses/{course}/structure', [CourseController::class, 'structure']);
-
+        Route::post('/quizzes/{quiz}/questions', [QuestionController::class, 'store']);
+        Route::delete('/questions/{question}', [QuestionController::class, 'destroy']);
         Route::get('/logs', [ApiLogController::class, 'index']);
         Route::get('/logs/{id}', [ApiLogController::class, 'show']);
 

@@ -58,17 +58,16 @@ class QuizController extends Controller
     /**
      * Получить тест конкретной сущности
      */
-    public function show($type, $id)
-    {
-        $model = $type === 'course' ? Course::find($id) : Module::find($id);
-
-        if (!$model || !$model->quiz) {
-            return response()->json(['message' => 'Тест не найден'], 404);
-        }
-
-        return response()->json($model->quiz->load('questions'));
-    }
-
+    public function show(Quiz $quiz)
+{
+    // Загружаем вопросы и саму модель, к которой привязан тест (курс или модуль)
+    return response()->json($quiz->load(['questions', 'quizable']));
+}
+public function update(Request $request, Quiz $quiz)
+{
+    $quiz->update($request->only('title'));
+    return response()->json($quiz);
+}
 public function structure(Course $course)
 {
     // Загружаем курс со всеми вложенными связями

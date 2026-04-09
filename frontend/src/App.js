@@ -21,6 +21,7 @@ import CourseEditor from './pages/AdminPanel/Courses/CourseEdit/Edit';
 import ApiLogsMonitor from './pages/AdminPanel/Logs/LogMonitor';
 import MyCourses from './pages/UserPanel/Courses/MyCourses/MyCourses';
 import Certificates from './pages/UserPanel/Courses/Certificates/Certificates';
+import QuizEditor from './pages/UserPanel/Courses/QuizEditor/Quiz';
 
 // Локальный компонент для защиты роутов
 const ProtectedRoute = () => {
@@ -58,6 +59,7 @@ function App() {
               <Route path="/admin" element={<div>asd</div>} />
               <Route path="/admin/settings" element={<CategoryManagement />} />
               <Route path="/admin/courses" element={<CourseManagement />} />
+              <Route path="/admin/quizzes/:id/edit" element={<QuizEditor />} />
               <Route path="/admin/courses/:id/edit" element={<CourseEditor />} />
               <Route path="/admin/users/" element={<UsersManagement />} />
               <Route path="/admin/users/ldap" element={<LdapManagement />} />
