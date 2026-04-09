@@ -17,8 +17,12 @@ const AppLayout = () => {
   const location = useLocation(); 
   const navigate = useNavigate();
 
-  // Режим обучения: скрываем глобальный интерфейс, если зашли в урок
+  // Режим обучения: если true, сайдбар будет всегда закрыт (w-20)
   const isCourseLearningPage = /^\/app\/courses\/[^/]+$/.test(location.pathname);
+
+  // Эффективное состояние ширины сайдбара
+  // Если мы на странице курса — всегда false (закрыт)
+  const effectiveSidebarOpen = isCourseLearningPage ? false : isSidebarOpen;
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -66,55 +70,53 @@ const AppLayout = () => {
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] font-sans text-slate-900">
       
-      {/* GLOBAL SIDEBAR */}
-      {!isCourseLearningPage && (
-        <aside className={`
-          ${isSidebarOpen ? 'w-72' : 'w-20'} 
-          bg-white border-r border-slate-200 flex flex-col fixed h-full transition-all duration-300 z-50
-        `}>
-          <div className={`flex items-center border-b border-slate-50 h-20 transition-all duration-300 ${isSidebarOpen ? 'px-6 gap-3' : 'px-0 justify-center'}`}>
-            <div className="w-11 h-11 shrink-0">
-              <img src="/images/icons/logo.png" alt="Logo" className="h-full w-full object-contain" />
-            </div>
-            {isSidebarOpen && (
-              <span className="font-black text-xl tracking-tighter text-slate-800 uppercase">
-                KAZ<span className="text-blue-600">UTB</span>
-              </span>
-            )}
+      {/* GLOBAL SIDEBAR - Теперь отображается всегда */}
+      <aside className={`
+        ${effectiveSidebarOpen ? 'w-72' : 'w-20'} 
+        bg-white border-r border-slate-200 flex flex-col fixed h-full transition-all duration-300 z-50
+      `}>
+        <div className={`flex items-center border-b border-slate-50 h-20 transition-all duration-300 ${effectiveSidebarOpen ? 'px-6 gap-3' : 'px-0 justify-center'}`}>
+          <div className="w-11 h-11 shrink-0">
+            <img src="/images/icons/logo.png" alt="Logo" className="h-full w-full object-contain" />
           </div>
+          {effectiveSidebarOpen && (
+            <span className="font-black text-xl tracking-tighter text-slate-800 uppercase">
+              KAZ<span className="text-blue-600">UTB</span>
+            </span>
+          )}
+        </div>
 
-          <nav className="flex-1 p-3 space-y-2 mt-4 overflow-y-auto">
-            {sidebarMenuItems.map((item) => {
-              const isActive = location.pathname.includes(item.path);
-              return (
-                <Link 
-                  key={item.id} 
-                  to={item.path} 
-                  className={`w-full flex items-center rounded-2xl transition-all duration-300 ${isSidebarOpen ? 'px-4 py-3.5 gap-4' : 'justify-center py-3.5'} 
-                    ${isActive ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
-                >
-                  <span>{item.icon}</span>
-                  {isSidebarOpen && <span className="font-bold text-sm tracking-tight">{item.label}</span>}
-                </Link>
-              );
-            })}
-          </nav>
+        <nav className="flex-1 p-3 space-y-2 mt-4 overflow-y-auto">
+          {sidebarMenuItems.map((item) => {
+            const isActive = location.pathname.includes(item.path);
+            return (
+              <Link 
+                key={item.id} 
+                to={item.path} 
+                className={`w-full flex items-center rounded-2xl transition-all duration-300 ${effectiveSidebarOpen ? 'px-4 py-3.5 gap-4' : 'justify-center py-3.5'} 
+                  ${isActive ? 'bg-slate-900 text-white shadow-xl shadow-slate-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+              >
+                <span>{item.icon}</span>
+                {effectiveSidebarOpen && <span className="font-bold text-sm tracking-tight">{item.label}</span>}
+              </Link>
+            );
+          })}
+        </nav>
 
-          <div className="p-4 mt-auto border-t border-slate-50">
-            <button onClick={handleLogout} className={`w-full flex items-center gap-4 px-4 py-3 text-red-500 hover:bg-red-50 rounded-2xl transition-all font-bold text-sm uppercase tracking-widest ${!isSidebarOpen && 'justify-center'}`}>
-              <LogOut size={20} />
-              {isSidebarOpen && <span>Выйти</span>}
-            </button>
-          </div>
-        </aside>
-      )}
+        <div className="p-4 mt-auto border-t border-slate-50">
+          <button onClick={handleLogout} className={`w-full flex items-center gap-4 px-4 py-3 text-red-500 hover:bg-red-50 rounded-2xl transition-all font-bold text-sm uppercase tracking-widest ${!effectiveSidebarOpen && 'justify-center'}`}>
+            <LogOut size={20} />
+            {effectiveSidebarOpen && <span>Выйти</span>}
+          </button>
+        </div>
+      </aside>
 
       {/* MAIN CONTENT */}
       <main className={`flex-1 transition-all duration-300 flex flex-col 
-        ${!isCourseLearningPage ? (isSidebarOpen ? 'ml-72' : 'ml-20') : 'ml-0'}
+        ${effectiveSidebarOpen ? 'ml-72' : 'ml-20'}
       `}>
         
-        {/* GLOBAL HEADER */}
+        {/* GLOBAL HEADER - Скрывается только на странице обучения */}
         {!isCourseLearningPage && (
           <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-10 sticky top-0 z-40">
             <div className="flex items-center gap-4">
@@ -139,6 +141,7 @@ const AppLayout = () => {
           </header>
         )}
 
+        {/* Контейнер Outlet */}
         <div className={`flex-1 flex flex-col ${!isCourseLearningPage ? 'p-8 max-w-[1600px] mx-auto w-full' : 'h-screen w-full overflow-hidden'}`}>
           <Outlet /> 
         </div>

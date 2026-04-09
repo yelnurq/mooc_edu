@@ -278,15 +278,24 @@ public function show(Request $request, $id)
 
     // --- НОВОЕ: Загружаем результаты тестов пользователя для этого курса ---
     // Собираем все ID квизов этого курса
-    $quizIds = $course->modules->pluck('quiz.id')->filter()->toArray();
-    
-    // Получаем попытки пользователя
-    $quizResults = \Illuminate\Support\Facades\DB::table('quiz_results')
-        ->where('user_id', $user->id)
-        ->whereIn('quiz_id', $quizIds)
-        ->select('quiz_id', 'score', 'passed', 'correct_answers', 'total_questions')
-        ->get();
+    $quizIds = collect([$course->quiz?->id])
+    ->merge($course->modules->pluck('quiz.id'))
+    ->filter()
+    ->unique()
+    ->toArray();
 
+// Получаем попытки
+$quizResults = \Illuminate\Support\Facades\DB::table('quiz_results')
+    ->where('user_id', $user->id)
+    ->whereIn('quiz_id', $quizIds)
+    ->select('quiz_id', 'score', 'passed')
+    ->get()
+    ->map(function($item) {
+        $item->quiz_id = (int)$item->quiz_id;
+        $item->passed = (bool)$item->passed;
+        $item->score = (int)$item->score;
+        return $item;
+    });
     // 4. Сбор ID пройденных уроков
     $courseLessonIds = $course->modules->flatMap(function($module) {
         return $module->lessons->pluck('id');
@@ -329,7 +338,8 @@ public function show(Request $request, $id)
     $course->quiz_results = $quizResults; 
 
     return response()->json($course);
-}public function showPublic(Request $request, $id)
+}
+public function showPublic(Request $request, $id)
 {
     $user = $this->getAuthenticatedUser($request);
     $course = \App\Models\Course::with(['modules.lessons', 'resources'])->find($id);

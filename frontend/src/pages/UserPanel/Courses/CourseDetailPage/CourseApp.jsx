@@ -1,76 +1,174 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
-  FileText, PlayCircle, CheckCircle, X, Check, 
-  Award, Info, Maximize2, Minimize2, RefreshCw,
-  Rocket, Book, PenTool, User, MessageSquare, Download, ChevronRight
+  FileText, CheckCircle, Check, Award, Info, RefreshCw, Lock,
+  Rocket, Book, PenTool, User, MessageSquare, AlertTriangle, 
+  Download, ChevronLeft, ChevronRight
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import api from '../../../../api/axios';
 
-// --- КОМПОНЕНТ ТЕСТА (Встроенный в плеер) ---
+// --- КОМПОНЕНТ ТЕСТА (LOCKDOWN MODE) ---
 const QuizView = ({ quiz, selectedAnswers, setSelectedAnswers, handleFinishTest, testResult, setTestStarted, completing, viewOnly }) => {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const displayResult = testResult || quiz?.user_result;
+  
+  // Используем Ref, чтобы отследить финал в cleanup-функции
+  const isFinishedRef = useRef(!!displayResult);
 
-  if (viewOnly || testResult) {
+  useEffect(() => {
+    isFinishedRef.current = !!displayResult;
+  }, [displayResult]);
+
+const isStartedRef = useRef(false);
+
+  useEffect(() => {
+    // Ставим флаг, что компонент "пожил" хотя бы один цикл рендера
+    const timer = setTimeout(() => {
+      isStartedRef.current = true;
+    }, 1000);
+
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      clearTimeout(timer);
+      document.body.style.overflow = 'auto';
+      
+      // Отправляем 0 только если:
+      // 1. Прошло время инициализации (защита от Strict Mode)
+      // 2. Тест реально не завершен
+      // 3. Это не просто просмотр
+      // 4. Нет уже существующего результата
+      if (isStartedRef.current && !isFinishedRef.current && !viewOnly && quiz?.id && !displayResult) {
+        // Используем navigator.sendBeacon или обычный axios, 
+        // но передаем ответы как пустой объект, чтобы пройти валидацию Laravel
+        api.post(`/quizzes/${quiz.id}/submit`, { 
+          answers: {}, 
+          is_abandoned: true 
+        }).catch(err => console.error("Auto-submit failed:", err));
+      }
+    };
+  }, [quiz?.id, viewOnly, displayResult]);
+  // Предупреждение о закрытии вкладки
+  useEffect(() => {
+    if (displayResult || viewOnly) return;
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [displayResult, viewOnly]);
+
+  if (viewOnly || displayResult) {
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-full bg-white p-8 text-center overflow-y-auto custom-scrollbar">
-        <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${displayResult?.passed ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-          {displayResult?.passed ? <Award size={40} /> : <Info size={40} />}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6 bg-emerald-100 text-emerald-600">
+          <Award size={40} />
         </div>
-        <h2 className="text-2xl font-black uppercase tracking-tighter mb-2 text-slate-900">
-          {displayResult?.passed ? 'Тест пройден' : 'Результаты теста'}
-        </h2>
-        <p className="text-slate-500 mb-8 font-medium">
-          Ваш результат: <span className="text-slate-900 font-bold">{displayResult?.score}%</span> 
-        </p>
-        <button onClick={() => setTestStarted(false)} className="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-700 transition-all">
-          Вернуться к видео
+        <h2 className="text-2xl font-black uppercase tracking-tighter mb-2 text-slate-900">Тест завершен</h2>
+        <p className="text-slate-500 mb-8 font-medium">Ваш результат зафиксирован: <span className="text-slate-900 font-bold">{displayResult?.score || 0}%</span></p>
+        <button 
+          onClick={() => {
+            setTestStarted(false);
+            document.body.style.overflow = 'auto';
+          }} 
+          className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all"
+        >
+          Вернуться к материалам
         </button>
       </motion.div>
     );
   }
 
+  const questions = quiz?.questions || [];
+  const currentQuestion = questions[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
+
   return (
-    <div className="h-full flex flex-col bg-slate-50 overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-        <div className="text-center mb-8">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600 mb-2">Тестирование</h3>
-            <h2 className="text-xl font-bold text-slate-900">{quiz?.title}</h2>
+    <div className="fixed inset-0 z-[100] flex flex-col bg-slate-50 overflow-hidden">
+      <div className="bg-white px-8 py-4 border-b flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="bg-amber-100 text-amber-600 p-2 rounded-lg"><AlertTriangle size={16} /></div>
+          <div className="text-left">
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Режим тестирования</h3>
+            <p className="text-[9px] font-bold text-slate-400 uppercase">При выходе результат будет 0%</p>
+          </div>
         </div>
-        {quiz?.questions?.map((q, idx) => (
-          <div key={q.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-            <p className="text-sm font-bold text-slate-800 mb-4">{idx + 1}. {q.question_text}</p>
-            <div className="grid gap-2">
-              {q.options?.map((opt) => (
+        <div className="flex flex-col items-end gap-2">
+            <span className="text-[10px] font-black text-slate-900">Вопрос {currentQuestionIndex + 1} / {questions.length}</span>
+            <div className="flex gap-1">
+              {questions.map((_, i) => (
+                <div key={i} className={`h-1.5 w-8 rounded-full transition-all duration-500 ${i <= currentQuestionIndex ? 'bg-blue-600' : 'bg-slate-200'}`} />
+              ))}
+            </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-8 flex flex-col justify-center items-center custom-scrollbar">
+        <div className="max-w-3xl w-full">
+          <motion.div key={currentQuestionIndex} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white p-10 md:p-16 rounded-[3rem] border border-slate-100 shadow-2xl text-left relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-2 h-full bg-blue-600" />
+            <p className="text-xl md:text-2xl font-bold text-slate-800 mb-10 leading-tight">{currentQuestion?.question_text}</p>
+            <div className="grid gap-4">
+              {currentQuestion?.options?.map((opt) => (
                 <button
                   key={opt.id}
-                  onClick={() => setSelectedAnswers(prev => ({ ...prev, [q.id]: opt.id }))}
-                  className={`flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left text-xs font-bold ${selectedAnswers[q.id] === opt.id ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-transparent bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                  onClick={() => setSelectedAnswers(prev => ({ ...prev, [currentQuestion.id]: opt.id }))}
+                  className={`flex items-center gap-5 p-6 rounded-[2rem] border-2 transition-all text-left text-base font-bold 
+                    ${selectedAnswers[currentQuestion.id] === opt.id ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-md' : 'border-slate-100 bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
                 >
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${selectedAnswers[q.id] === opt.id ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'}`}>
-                    {selectedAnswers[q.id] === opt.id && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedAnswers[currentQuestion.id] === opt.id ? 'border-blue-600 bg-blue-600' : 'border-slate-300'}`}>
+                    {selectedAnswers[currentQuestion.id] === opt.id && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
                   </div>
                   {opt.option_text}
                 </button>
               ))}
             </div>
-          </div>
-        ))}
+          </motion.div>
+        </div>
       </div>
-      <div className="p-6 bg-white border-t flex justify-center">
-        <button 
-          disabled={completing || !quiz?.questions || Object.keys(selectedAnswers).length < quiz.questions.length}
-          onClick={handleFinishTest}
-          className="bg-indigo-600 text-white px-12 py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-30 transition-all flex items-center gap-2"
-        >
-          {completing ? <RefreshCw className="animate-spin" size={14} /> : <CheckCircle size={14} />}
-          Отправить ответы
+
+      <div className="p-8 bg-white border-t flex items-center justify-between px-12">
+        <button disabled={currentQuestionIndex === 0} onClick={() => setCurrentQuestionIndex(prev => prev - 1)} className="px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 disabled:opacity-0 transition-all flex items-center gap-2">
+          <ChevronLeft size={18} /> Назад
         </button>
+        {!isLastQuestion ? (
+          <button disabled={!selectedAnswers[currentQuestion?.id]} onClick={() => setCurrentQuestionIndex(prev => prev + 1)} className="bg-slate-900 text-white px-10 py-5 rounded-2xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-800 disabled:opacity-30 transition-all flex items-center gap-2 shadow-xl shadow-slate-200">
+            Следующий вопрос <ChevronRight size={18} />
+          </button>
+        ) : (
+          <button disabled={completing || Object.keys(selectedAnswers).length < questions.length} onClick={handleFinishTest} className="bg-blue-600 text-white px-12 py-5 rounded-2xl font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-blue-700 disabled:opacity-30 transition-all flex items-center gap-2 shadow-xl shadow-blue-200">
+            {completing ? <RefreshCw className="animate-spin" size={16} /> : <CheckCircle size={16} />}
+            Завершить тестирование
+          </button>
+        )}
       </div>
     </div>
   );
 };
+
+// --- МОДАЛКА ПРЕДУПРЕЖДЕНИЯ ---
+const QuizIntroModal = ({ onStart, onCancel, title }) => (
+  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4">
+    <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white max-w-md w-full rounded-[2.5rem] p-10 shadow-2xl text-center">
+      <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6"><AlertTriangle size={40} /></div>
+      <h3 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tight">{title}</h3>
+      <div className="space-y-4 mb-8">
+        <div className="flex items-start gap-3 text-left bg-slate-50 p-4 rounded-2xl">
+          <Info className="mt-1 text-blue-600" size={16}/><p className="text-xs font-bold text-slate-600 leading-relaxed">Экран будет заблокирован. Если вы покинете страницу, результат будет 0%.</p>
+        </div>
+        <div className="flex items-start gap-3 text-left bg-slate-50 p-4 rounded-2xl">
+          <Lock className="mt-1 text-amber-500" size={16}/><p className="text-xs font-bold text-slate-600 leading-relaxed">Не обновляйте страницу и не переключайтесь на другие уроки.</p>
+        </div>
+      </div>
+      <div className="flex flex-col gap-3">
+        <button onClick={onStart} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all">Начать тестирование</button>
+        <button onClick={onCancel} className="w-full py-4 text-slate-400 font-bold text-[10px] uppercase tracking-widest hover:text-slate-600 transition-all">Я еще не готов</button>
+      </div>
+    </motion.div>
+  </motion.div>
+);
 
 const CourseAppPage = () => {
   const { id } = useParams();
@@ -82,6 +180,8 @@ const CourseAppPage = () => {
   const [testStarted, setTestStarted] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [selectedAnswers, setSelectedAnswers] = useState({});
+  const [showQuizIntro, setShowQuizIntro] = useState(false);
+  const [pendingQuiz, setPendingQuiz] = useState(null);
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -97,7 +197,10 @@ const CourseAppPage = () => {
     fetchCourseData();
   }, [id]);
 
-  // Данные для сайдбара
+  const allLessonsFlat = useMemo(() => course?.modules?.flatMap(m => m.lessons) || [], [course]);
+  const progressPercentage = useMemo(() => !allLessonsFlat.length ? 0 : Math.round((completedLessons.length / allLessonsFlat.length) * 100), [completedLessons, allLessonsFlat]);
+  const isExamAccessible = useMemo(() => progressPercentage === 100, [progressPercentage]);
+
   const modulesWithResults = useMemo(() => {
     if (!course?.modules) return [];
     return course.modules.map(module => {
@@ -106,28 +209,44 @@ const CourseAppPage = () => {
     });
   }, [course]);
 
-  const courseExam = useMemo(() => {
-    if (!course?.quiz) return null;
-    const result = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz.id));
-    return { ...course.quiz, user_result: result || null };
-  }, [course]);
-
-  const activeModule = useMemo(() => {
-    return modulesWithResults.find(m => m.lessons.some(l => Number(l.id) === Number(activeLesson?.id)));
-  }, [modulesWithResults, activeLesson]);
+  const activeModule = useMemo(() => modulesWithResults.find(m => m.lessons.some(l => Number(l.id) === Number(activeLesson?.id))), [modulesWithResults, activeLesson]);
 
   const currentQuiz = useMemo(() => {
     if (!testStarted) return null;
-    return (activeLesson && activeModule?.quiz) ? activeModule.quiz : courseExam;
-  }, [testStarted, activeLesson, activeModule, courseExam]);
+    if (activeLesson && activeModule?.quiz) return activeModule.quiz;
+    if (!activeLesson && course?.quiz) {
+        const res = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz.id));
+        return { ...course.quiz, user_result: res || null };
+    }
+    return null;
+  }, [testStarted, activeLesson, activeModule, course]);
+
+  const isLessonLocked = (lessonId) => {
+    const index = allLessonsFlat.findIndex(l => l.id === lessonId);
+    return index === 0 ? false : !completedLessons.includes(Number(allLessonsFlat[index - 1].id));
+  };
 
   const handleCompleteLesson = async () => {
-    if (!activeLesson || completing) return;
+    if (!activeLesson || completing || completedLessons.includes(Number(activeLesson.id))) return;
     setCompleting(true);
     try {
       await api.post(`/lessons/${activeLesson.id}/complete`);
       setCompletedLessons(prev => [...new Set([...prev, Number(activeLesson.id)])]);
     } catch (err) { console.error(err); } finally { setCompleting(false); }
+  };
+
+  const handlePrepareTest = (type, module = null) => {
+    setPendingQuiz({ type, module });
+    setShowQuizIntro(true);
+  };
+
+  const handleStartTest = () => {
+    if (pendingQuiz.type === 'module') setActiveLesson(pendingQuiz.module.lessons[0]);
+    else setActiveLesson(null);
+    setTestStarted(true);
+    setTestResult(null);
+    setSelectedAnswers({});
+    setShowQuizIntro(false);
   };
 
   const handleFinishTest = async () => {
@@ -144,191 +263,176 @@ const CourseAppPage = () => {
     } catch (err) { console.error(err); } finally { setCompleting(false); }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 font-black text-slate-400 tracking-widest">ЗАГРУЗКА...</div>;
+  const navigateLesson = (direction) => {
+    const currentIndex = allLessonsFlat.findIndex(l => l.id === activeLesson?.id);
+    const nextIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+    const targetLesson = allLessonsFlat[nextIndex];
+    if (targetLesson && (direction === 'prev' || !isLessonLocked(targetLesson.id))) {
+      setActiveLesson(targetLesson);
+      setTestStarted(false);
+      setTestResult(null);
+      setSelectedAnswers({});
+    }
+  };
+
+  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 font-black text-slate-400 tracking-widest uppercase">Загрузка...</div>;
 
   return (
     <div className="h-screen w-full flex bg-[#F0F2F9] overflow-hidden font-sans">
-      
-      {/* 1. ГЛОБАЛЬНЫЙ САЙДБАР (Слева) */}
-      <aside className="w-[75px] bg-white border-r border-slate-200 flex flex-col items-center py-8 gap-10 shrink-0">
-        <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
-          <Rocket size={24} />
-        </div>
-        <nav className="flex flex-col gap-8 text-slate-300">
-          <Book size={22} className="text-indigo-600" />
-          <PenTool size={22} className="hover:text-slate-400 transition-colors cursor-pointer" />
-          <User size={22} className="hover:text-slate-400 transition-colors cursor-pointer" />
-          <MessageSquare size={22} className="hover:text-slate-400 transition-colors cursor-pointer" />
-        </nav>
-      </aside>
+      {showQuizIntro && (
+        <QuizIntroModal 
+          title={pendingQuiz?.type === 'module' ? "Тест модуля" : "Итоговый экзамен"} 
+          onStart={handleStartTest} 
+          onCancel={() => setShowQuizIntro(false)} 
+        />
+      )}
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        
-        {/* 2. HEADER */}
         <header className="h-[80px] px-10 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between shrink-0 z-10">
-          <div className="flex items-center gap-4">
-            <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest">Урок {activeLesson ? (course?.modules?.flatMap(m=>m.lessons).findIndex(l=>l.id===activeLesson.id)+1) : 'Экзамен'}</span>
-            <h1 className="text-lg font-bold text-slate-900">{testStarted ? 'Тестирование' : activeLesson?.title}</h1>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
+                <span className="bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest">
+                  {testStarted && !activeLesson ? 'ФИНАЛ' : `Урок ${activeLesson ? allLessonsFlat.findIndex(l=>l.id===activeLesson.id)+1 : '1'}`}
+                </span>
+                <h1 className="text-lg font-bold text-slate-900">{testStarted ? (activeLesson ? 'Тест модуля' : 'Итоговый экзамен') : activeLesson?.title}</h1>
+            </div>
+            <div className="hidden md:flex items-center gap-3 ml-6 border-l pl-6 border-slate-200">
+                <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${progressPercentage}%` }} className="h-full bg-blue-600" />
+                </div>
+                <span className="text-[10px] font-black text-slate-400">{progressPercentage}%</span>
+            </div>
           </div>
-          <div className="flex items-center gap-8">
-             <div className="flex items-center gap-3">
-                <div className="text-right">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">Преподаватель</p>
-                    <p className="text-xs font-bold text-slate-900">Алексей Ширяев</p>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden">
-                    <img src={`https://ui-avatars.com/api/?name=Алексей+Ширяев&background=6366f1&color=fff`} alt="avatar" />
-                </div>
-             </div>
+          <div className="flex items-center gap-3 text-right">
+             <div><p className="text-[10px] text-slate-400 font-bold uppercase leading-none">Преподаватель</p><p className="text-xs font-bold text-slate-900">Алексей Ширяев</p></div>
+             <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden"><img src={`https://ui-avatars.com/api/?name=Alexey&background=6366f1&color=fff`} alt="ava" /></div>
           </div>
         </header>
 
-        {/* 3. ОСНОВНОЙ КОНТЕНТ */}
         <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           <div className="max-w-[1500px] mx-auto space-y-8">
-            
-           {/* ВЕРХНИЙ РЯД (ПЛЕЕР + САЙДБАР) */}
-{/* ОСНОВНОЙ КОНТЕЙНЕР: xl:h-[750px] для больших, h-auto для маленьких */}
-<div className="flex flex-col xl:flex-row gap-8 items-stretch h-auto xl:h-[750px]"> 
-  
-  {/* ЛЕВАЯ КОЛОНКА: ПЛЕЕР */}
-  {/* На мобилках используем aspect-video, на больших — h-full (750px) */}
-  <div className="flex-[2.5] bg-white rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200 border-[6px] md:border-[10px] border-white relative aspect-video xl:aspect-auto xl:h-full">
-    {testStarted ? (
-       <QuizView /* ...props */ />
-    ) : (
-      <iframe 
-        src={activeLesson?.video_url ? `https://www.youtube.com/embed/${activeLesson.video_url.split('v=')[1]}?rel=0&modestbranding=1` : ''} 
-        className="w-full h-full bg-slate-900" 
-        allowFullScreen 
-      />
-    )}
-  </div>
-
-  {/* ПРАВАЯ КОЛОНКА: СПИСОК */}
-  {/* На маленьких экранах задаем max-height, чтобы список не уходил в бесконечность */}
-  <div className="flex-1 bg-white rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/50 flex flex-col h-[500px] xl:h-full overflow-hidden border border-white/50">
-    
-    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6 px-2 shrink-0">
-      Программа обучения
-    </h3>
-    
-    {/* ВНУТРЕННИЙ СКРОЛЛ */}
-    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-8 h-0">
-      {modulesWithResults.map((module, mIdx) => (
-        <div key={module.id} className="space-y-3">
-          <div className="px-2">
-            <p className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.2em]">Модуль {mIdx + 1}</p>
-            <h4 className="text-[11px] font-bold text-slate-800 uppercase">{module.title}</h4>
-          </div>
-
-          <div className="space-y-1">
-            {module.lessons.map((lesson) => (
-              <button 
-                key={lesson.id}
-                onClick={() => { setActiveLesson(lesson); setTestStarted(false); setTestResult(null); }}
-                className={`w-full group flex items-start gap-3 p-3 rounded-2xl transition-all ${activeLesson?.id === lesson.id && !testStarted ? 'bg-indigo-50 shadow-sm' : 'hover:bg-slate-50'}`}
-              >
-                <div className={`mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center border-2 ${completedLessons.includes(Number(lesson.id)) ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-200'}`}>
-                  {completedLessons.includes(Number(lesson.id)) ? <Check size={10} strokeWidth={4} /> : <div className="w-1 h-1 bg-slate-300 rounded-full" />}
+            <div className="flex flex-col xl:flex-row gap-8 items-stretch h-auto xl:h-[750px]"> 
+              <div className="flex flex-col flex-[2.5] gap-4">
+                <div className="flex-1 bg-white rounded-[2.5rem] overflow-hidden shadow-2xl border-[6px] md:border-[10px] border-white relative aspect-video xl:aspect-auto">
+                    {testStarted && currentQuiz ? (
+                        <QuizView 
+                          quiz={currentQuiz} selectedAnswers={selectedAnswers} setSelectedAnswers={setSelectedAnswers} 
+                          handleFinishTest={handleFinishTest} testResult={testResult} setTestStarted={setTestStarted} completing={completing} 
+                        />
+                    ) : (
+                        <>
+                          {activeLesson?.video_url ? (
+                            <iframe 
+                              key={`video-${activeLesson?.id}`}
+                              src={`https://www.youtube.com/embed/${activeLesson.video_url.split('v=')[1]}?rel=0&modestbranding=1`} 
+                              className="w-full h-full bg-slate-900" 
+                              allowFullScreen 
+                            />
+                          ) : activeLesson?.file_url ? (
+                            <iframe
+                              key={`pdf-${activeLesson?.id}`}
+                              src={`${activeLesson.file_url}#toolbar=0`}
+                              className="w-full h-full bg-white"
+                              title={activeLesson?.title}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-10 text-center">
+                              <FileText size={48} className="text-slate-300 mb-4" />
+                              <p className="text-slate-500 font-bold">В этом уроке нет видео или PDF-материалов</p>
+                            </div>
+                          )}
+                        </>
+                    )}
                 </div>
-                <span className={`text-[12px] font-bold text-left leading-tight ${activeLesson?.id === lesson.id && !testStarted ? 'text-indigo-900' : 'text-slate-500'}`}>{lesson.title}</span>
-              </button>
-            ))}
+                <div className="flex items-center justify-between px-4">
+                    <button onClick={() => navigateLesson('prev')} disabled={allLessonsFlat.findIndex(l => l.id === activeLesson?.id) <= 0} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 disabled:opacity-20 transition-all"><ChevronLeft size={18} /> Назад</button>
+                    <button onClick={() => navigateLesson('next')} disabled={!activeLesson || allLessonsFlat.findIndex(l => l.id === activeLesson?.id) >= allLessonsFlat.length - 1 || isLessonLocked(allLessonsFlat[allLessonsFlat.findIndex(l => l.id === activeLesson?.id) + 1]?.id)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 disabled:opacity-20 transition-all">Вперед <ChevronRight size={18} /></button>
+                </div>
+              </div>
 
-            {module.quiz && (
-              <button 
-                onClick={() => { setActiveLesson(module.lessons[0]); setTestStarted(true); setTestResult(null); }}
-                className={`w-full flex items-start gap-3 p-3 rounded-2xl border-2 border-dashed transition-all mt-3 ${testStarted && activeModule?.id === module.id ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-indigo-100 bg-indigo-50/30 hover:bg-indigo-50'}`}
-              >
-                <div className={`mt-0.5 shrink-0 w-5 h-5 rounded-lg flex items-center justify-center ${testStarted && activeModule?.id === module.id ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-600'}`}>
-                  <Award size={12} />
+              <div className="flex-1 bg-white rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/50 flex flex-col h-[600px] xl:h-full overflow-hidden border border-white/50">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6 px-2 shrink-0 text-left">Программа обучения</h3>
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-8 h-0 text-left">
+                  {modulesWithResults.map((module, mIdx) => (
+                    <div key={module.id} className="space-y-3">
+                      <div className="px-2"><p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em]">Модуль {mIdx + 1}</p><h4 className="text-[11px] font-bold text-slate-800 uppercase">{module.title}</h4></div>
+                      <div className="space-y-1">
+                        {module.lessons.map((lesson) => {
+                          const locked = isLessonLocked(lesson.id);
+                          const active = activeLesson?.id === lesson.id && !testStarted;
+                          return (
+                            <button key={lesson.id} disabled={locked} onClick={() => { setActiveLesson(lesson); setTestStarted(false); }} className={`w-full group flex items-start gap-3 p-3 rounded-2xl transition-all ${active ? 'bg-blue-50 shadow-sm' : 'hover:bg-slate-50 disabled:opacity-50'}`}>
+                              <div className={`mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center border-2 ${completedLessons.includes(Number(lesson.id)) ? 'bg-emerald-500 border-emerald-500 text-white' : locked ? 'bg-slate-100 border-slate-200 text-slate-400' : 'border-slate-200'}`}>
+                                {completedLessons.includes(Number(lesson.id)) ? <Check size={10} strokeWidth={4} /> : locked ? <Lock size={8} /> : <div className="w-1 h-1 bg-slate-300 rounded-full" />}
+                              </div>
+                              <span className={`text-left text-[12px] font-bold leading-tight ${active ? 'text-blue-900' : 'text-slate-500'}`}>{lesson.title}</span>
+                            </button>
+                          );
+                        })}
+                        {module.quiz && (() => {
+                          const res = course.quiz_results?.find(r => Number(r.quiz_id) === Number(module.quiz.id));
+                          const taken = !!res;
+                          const current = testStarted && Number(currentQuiz?.id) === Number(module.quiz.id);
+                          return (
+                            <button disabled={taken} onClick={() => handlePrepareTest('module', module)} className={`w-full flex items-start gap-3 p-3 rounded-2xl border-2 border-dashed transition-all mt-3 ${current ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : taken ? 'border-emerald-100 bg-emerald-50 cursor-default' : 'border-blue-100 bg-blue-50/30 hover:bg-blue-50'}`}>
+                              <div className={`mt-0.5 shrink-0 w-5 h-5 rounded-lg flex items-center justify-center ${taken ? 'bg-emerald-500 text-white' : current ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-600'}`}>
+                                {taken ? <Check size={12} /> : <Award size={12} />}
+                              </div>
+                              <div><p className={`text-[10px] font-black uppercase tracking-tight ${current ? 'text-white' : taken ? 'text-emerald-700' : 'text-blue-600'}`}>{taken ? 'Тест пройден' : 'Тест модуля'}</p>{res && <p className="text-[9px] font-bold opacity-70 text-left">Результат: {res.score}%</p>}</div>
+                            </button>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  ))}
+                  {course?.quiz && (() => {
+                    const res = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz.id));
+                    const taken = !!res;
+                    return (
+                      <div className="mt-10 pt-6 border-t border-slate-100">
+                        <p className="text-[9px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3 px-2">Финальный этап</p>
+                        <button disabled={!isExamAccessible || taken} onClick={() => handlePrepareTest('exam')} className={`w-full flex items-start gap-3 p-4 rounded-2xl border-2 transition-all ${!isExamAccessible ? 'bg-slate-50 border-slate-100 opacity-60 grayscale' : taken ? 'bg-emerald-50 border-emerald-100' : 'bg-blue-600 border-blue-600 text-white shadow-lg'}`}>
+                          <div className={`mt-0.5 shrink-0 w-6 h-6 rounded-lg flex items-center justify-center ${taken ? 'bg-emerald-500 text-white' : isExamAccessible ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-400'}`}>
+                            {taken ? <Check size={14} strokeWidth={3} /> : <Rocket size={14} />}
+                          </div>
+                          <div><p className={`text-[10px] font-black uppercase tracking-tight ${!isExamAccessible || taken ? 'text-slate-600' : 'text-white'}`}>{taken ? 'Экзамен сдан' : 'Итоговый экзамен'}</p>{!isExamAccessible && <p className="text-[8px] font-bold text-slate-400 mt-1">Доступен при 100% курса</p>}{taken && <p className="text-[8px] font-bold text-emerald-600 uppercase mt-1 text-left">Результат: {res.score}%</p>}</div>
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
-                <div className="text-left">
-                  <p className={`text-[10px] font-black uppercase tracking-tight ${testStarted && activeModule?.id === module.id ? 'text-white' : 'text-indigo-600'}`}>Тест модуля</p>
-                  {module.quiz.user_result && <p className="text-[9px] font-bold opacity-70">Результат: {module.quiz.user_result.score}%</p>}
-                </div>
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
-      {/* ... (остальной код с экзаменом) */}
-    </div>
-    
-    <button 
-      onClick={handleCompleteLesson}
-      className="mt-6 w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-400 transition-all shadow-lg shadow-indigo-100 shrink-0"
-    >
-      {completedLessons.includes(Number(activeLesson?.id)) ? 'Урок завершен' : 'Завершить урок'}
-    </button>
-  </div>
-</div>
-
-            {/* НИЖНИЙ РЯД (ОПИСАНИЕ + ФАЙЛЫ) */}
-            {/* НИЖНИЙ РЯД (ОПИСАНИЕ + ФАЙЛЫ) */}
-<div className="grid lg:grid-cols-3 gap-8 pb-20 items-start">
-  
-  <div className="lg:col-span-2 space-y-6">
-    <div className="bg-white/70 backdrop-blur-sm p-10 rounded-[2.5rem] border border-white shadow-sm text-left">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6">Описание занятия</h3>
-        <div className="prose prose-slate max-w-none text-slate-600 text-sm leading-relaxed whitespace-pre-wrap text-left">
-          {/* Приоритет: описание текущего урока, если нет — общее описание курса */}
-          {activeLesson?.description || course?.description || "Описание для этого материала не предоставлено."}
-        </div>
-    </div>
-    
-    <div className="bg-indigo-900 p-8 rounded-[2.5rem] text-white flex items-center justify-between shadow-xl shadow-indigo-200">
-       <div className="text-left">
-          <h4 className="text-lg font-bold mb-1">Нужна помощь?</h4>
-          <p className="text-indigo-200 text-xs">Напишите куратору, если у вас возникли вопросы по материалу.</p>
-       </div>
-       <button className="bg-white text-indigo-900 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all shrink-0">
-          Открыть чат
-       </button>
-    </div>
-  </div>
-
-  <div className="space-y-6">
-    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-white">
-       <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6 flex items-center gap-2">
-         <Download size={16} /> Материалы
-       </h3>
-       <div className="space-y-4">
-          {/* Рендерим ресурсы курса из API */}
-          {course?.course_resources && course.course_resources.length > 0 ? (
-            course.course_resources.map((resource, i) => (
-              <a 
-                key={resource.id || i} 
-                href={resource.file_url || '#'} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-4 p-4 border border-slate-50 rounded-2xl hover:bg-slate-50 cursor-pointer transition-all group"
-              >
-                <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                  <FileText size={20} />
-                </div>
-                <div className="text-left overflow-hidden">
-                  <p className="text-xs font-bold text-slate-800 truncate">{resource.name || 'Документ'}</p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">{resource.size || 'Просмотреть'}</p>
-                </div>
-              </a>
-            ))
-          ) : (
-            <div className="py-8 text-center border-2 border-dashed border-slate-100 rounded-2xl">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Файлы отсутствуют</p>
+                <button onClick={handleCompleteLesson} disabled={completing || !activeLesson || completedLessons.includes(Number(activeLesson?.id))} className="mt-6 w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 disabled:bg-slate-100 disabled:text-slate-400 transition-all shadow-lg shrink-0">
+                  {completedLessons.includes(Number(activeLesson?.id)) ? 'Урок завершен' : 'Завершить урок'}
+                </button>
+              </div>
             </div>
-          )}
-       </div>
-    </div>
-  </div>
 
-</div>
+            <div className="grid lg:grid-cols-3 gap-8 pb-20 items-start">
+              <div className="lg:col-span-2 bg-white/70 backdrop-blur-sm p-10 rounded-[2.5rem] border border-white shadow-sm text-left">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6">Описание занятия</h3>
+                  <div className="prose prose-slate max-w-none text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{activeLesson?.description || course?.description || "Описание отсутствует."}</div>
+              </div>
+              <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-white text-left">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6 flex items-center gap-2"><Download size={16} /> Материалы</h3>
+                  <div className="space-y-4">
+                    {(course?.course_resources || activeLesson?.resources)?.length > 0 ? (
+                      (course?.course_resources || activeLesson?.resources).map((resource, i) => (
+                        <a key={resource.id || i} href={resource.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 border border-slate-50 rounded-2xl hover:bg-slate-50 transition-all group cursor-pointer">
+                          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all"><FileText size={20} /></div>
+                          <div className="overflow-hidden"><p className="text-xs font-bold text-slate-800 truncate">{resource.title || 'Документ'}</p><p className="text-[10px] text-slate-400 font-black uppercase">Открыть файл</p></div>
+                        </a>
+                      ))
+                    ) : (
+                      <p className="text-[10px] font-bold text-slate-400 uppercase px-2 italic">Дополнительных материалов нет</p>
+                    )}
+                  </div>
+              </div>
+            </div>
           </div>
         </main>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 20px; }
