@@ -10,4 +10,7 @@ class Module extends Model {
     public function lessons() {
         return $this->hasMany(Lesson::class)->orderBy('order');
     }
+    public function quiz() {
+        return $this->morphOne(Quiz::class, 'quizable');
+    }
 }

@@ -12,6 +12,9 @@ class Course extends Model {
     {
         return $this->belongsTo(User::class, 'author_id');
     }
+    public function quiz() {
+        return $this->morphOne(Quiz::class, 'quizable');
+    }
 public function category() {
         return $this->belongsTo(Category::class);
     }
