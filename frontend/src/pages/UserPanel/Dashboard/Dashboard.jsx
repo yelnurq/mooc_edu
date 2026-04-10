@@ -277,6 +277,24 @@ const StudentDashboard = () => {
           />
         </div>
       </div>
+      {/* КАРТОЧКА ТЕСТОВ (ДОБАВИТЬ СЮДА) */}
+      <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100/50">
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+            <span className="text-[9px] font-black text-purple-600 uppercase tracking-tighter">Выполнено тестов</span>
+          </div>
+          <span className="text-xs font-black text-purple-900">
+            {data.stats.completed_quizzes} / {data.stats.total_quizzes}
+          </span>
+        </div>
+        <div className="w-full h-1.5 bg-purple-100 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-purple-600 rounded-full transition-all duration-700" 
+            style={{ width: `${data.stats.total_quizzes > 0 ? (data.stats.completed_quizzes / data.stats.total_quizzes) * 100 : 0}%` }}
+          />
+        </div>
+      </div>
     </div>
 
     <button className="w-full py-5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-3 active:scale-95">

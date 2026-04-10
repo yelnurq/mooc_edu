@@ -86,7 +86,26 @@ $completedLessons = \DB::table('lesson_user')
                 'color' => $result->score >= 80 ? 'text-emerald-600' : 'text-blue-600'
             ];
         });
+$totalQuizzes = \App\Models\Quiz::where(function($query) use ($userCourseIds) {
+    // Тесты модулей
+    $query->where(function($q) use ($userCourseIds) {
+        $q->where('quizable_type', \App\Models\Module::class)
+          ->whereIn('quizable_id', function($sub) use ($userCourseIds) {
+              $sub->select('id')->from('modules')->whereIn('course_id', $userCourseIds);
+          });
+    })
+    // И финальные тесты самих курсов
+    ->orWhere(function($q) use ($userCourseIds) {
+        $q->where('quizable_type', \App\Models\Course::class)
+          ->whereIn('quizable_id', $userCourseIds);
+    });
+})->count();
 
+// 2. Считаем успешно сданные тесты (score >= 50)
+$completedQuizzes = \App\Models\QuizResult::where('user_id', $user->id)
+    ->where('score', '>=', 50)
+    ->distinct('quiz_id')
+    ->count();
     return response()->json([
         'user' => [
             'name' => $user->name,
@@ -102,6 +121,8 @@ $completedLessons = \DB::table('lesson_user')
             'certificates_count' => $completedCoursesCount,
             'total_lessons' => $totalLessons,
     'completed_lessons' => $completedLessons,
+    'total_quizzes' => $totalQuizzes,
+    'completed_quizzes' => $completedQuizzes,
             'hours' => $user->learning_hours ?? 0, // если ведешь учет времени
         ],
         'active_courses' => $activeCourses,
