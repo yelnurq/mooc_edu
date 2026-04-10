@@ -10,8 +10,7 @@ class DashboardController extends Controller
 {
     public function getStudentStats()
     {
-        $user = Auth::user();
-
+$user = \App\Models\User::with(['faculty', 'department'])->find(Auth::id());
         // 1. Загружаем курсы пользователя с данными из pivot таблицы (course_user)
         $userCourses = $user->courses()->get();
         
@@ -49,6 +48,7 @@ class DashboardController extends Controller
                     'name' => $result->quiz->title ?? 'Тест удален',
                     'score' => $result->score, 
                     'date' => $result->created_at->diffForHumans(),
+                    
                     'color' => $result->score >= 80 ? 'text-emerald-600' : 'text-blue-600'
                 ];
             });
@@ -57,6 +57,8 @@ class DashboardController extends Controller
             'user' => [
                 'name' => $user->name,
                 'role' => $user->role,
+                'faculty' => $user->faculty->title ?? 'Не указан',
+                'department' => $user->department->title ?? 'Не указана',
             ],
             'stats' => [
                 'total' => $totalCourses,
