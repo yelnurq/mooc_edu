@@ -223,6 +223,40 @@ const StudentDashboard = () => {
     )}
   </div>
 </section>
+{/* СЕКЦИЯ: ЗАВЕРШЕННЫЕ КУРСЫ */}
+<section className="text-left mt-12">
+  <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-5 flex items-center gap-2">
+    <Trophy size={14} className="text-emerald-500" /> Завершенные программы
+  </h2>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {data.completed_courses_list && data.completed_courses_list.length > 0 ? (
+      data.completed_courses_list.map((course) => (
+        <div key={course.id} className="bg-white p-5 rounded-[24px] border border-slate-200 flex items-center justify-between group hover:border-emerald-200 transition-all">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <Award size={20} />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-900 text-[13px] tracking-tight line-clamp-1">{course.title}</h3>
+              <p className="text-[9px] font-bold text-slate-400 uppercase">{course.instructor}</p>
+            </div>
+          </div>
+{/*           
+          <div className="text-right">
+             <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-tighter">
+                Выдан {course.completed_at}
+             </span>
+          </div> */}
+        </div>
+      ))
+    ) : (
+      <div className="col-span-2 p-8 bg-slate-50 rounded-[24px] border border-dashed border-slate-200 text-center">
+        <p className="text-[10px] font-black text-slate-400 uppercase">У вас пока нет завершенных курсов</p>
+      </div>
+    )}
+  </div>
+</section>
         </div>
 
  {/* SIDEBAR ANALYTICS */}

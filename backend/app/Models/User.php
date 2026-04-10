@@ -29,11 +29,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(QuizResult::class);
     }
-    public function courses()
-    {
-        return $this->belongsToMany(Course::class)->withPivot('status', 'progress');
-    }
-
+    public function courses() {
+    return $this->belongsToMany(Course::class)
+                ->withPivot('progress', 'status')
+                ->withTimestamps(); // ОБЯЗАТЕЛЬНО добавь это
+}
     public function completedLessons()
     {
         return $this->belongsToMany(Lesson::class, 'lesson_user')->withTimestamps();

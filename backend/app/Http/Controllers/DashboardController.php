@@ -100,19 +100,33 @@ $totalQuizzes = \App\Models\Quiz::where(function($query) use ($userCourseIds) {
           ->whereIn('quizable_id', $userCourseIds);
     });
 })->count();
-
+$completedCourses = $userCourses->where('pivot.progress', 100)
+    ->sortByDesc('pivot.updated_at')
+    ->values()
+    ->map(function($course) {
+        return [
+            'id' => $course->id,
+            'title' => $course->title,
+            'instructor' => $course->author_display_name,
+            // Добавляем проверку на null перед форматированием
+            'completed_at' => $course->pivot->updated_at 
+                ? $course->pivot->updated_at->format('d.m.Y') 
+                : 'Не указано'
+        ];
+    });
 // 2. Считаем успешно сданные тесты (score >= 50)
 $completedQuizzes = \App\Models\QuizResult::where('user_id', $user->id)
     ->where('score', '>=', 50)
     ->distinct('quiz_id')
     ->count();
+
     return response()->json([
         'user' => [
             'name' => $user->name,
             'role' => $user->role,
             'faculty' => $user->faculty->title ?? 'Не указан',
             'department' => $user->department->title ?? 'Не указана',
-            'specialization' => $user->specialization ?? 'Студент', // проверь если есть поле
+            'specialization' => $user->specialization ?? 'Студент',
         ],
         'stats' => [
             'total' => $totalCourses,
@@ -120,13 +134,18 @@ $completedQuizzes = \App\Models\QuizResult::where('user_id', $user->id)
             'avg_progress' => $avgProgress,
             'certificates_count' => $completedCoursesCount,
             'total_lessons' => $totalLessons,
-    'completed_lessons' => $completedLessons,
-    'total_quizzes' => $totalQuizzes,
-    'completed_quizzes' => $completedQuizzes,
-            'hours' => $user->learning_hours ?? 0, // если ведешь учет времени
+            'completed_lessons' => $completedLessons,
+            'total_quizzes' => $totalQuizzes,
+            'completed_quizzes' => $completedQuizzes,
+            // Добавим эти поля, чтобы React не ругался на undefined
+            'total_modules' => \App\Models\Module::whereIn('course_id', $userCourseIds)->count(),
+            'completed_modules' => $completedCoursesCount, // Или твоя логика по тестам модулей
+            'hours' => $user->learning_hours ?? 0,
         ],
         'active_courses' => $activeCourses,
         'recent_tests' => $recentTests,
+        // ВЫНОСИМ список завершенных курсов на верхний уровень, как и active_courses
+        'completed_courses_list' => $completedCourses, 
     ]);
 }
 }
