@@ -6,8 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class Certificate extends Model
 {
-    protected $guarded =[];
-protected $casts = [
-        'issued_at' => 'datetime',
-    ];
+    protected $guarded = [];
+    protected $casts = ['issued_at' => 'datetime'];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
+}

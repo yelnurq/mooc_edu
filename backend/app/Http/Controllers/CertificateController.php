@@ -10,6 +10,31 @@ use Illuminate\Support\Str;
 use App\Models\Certificate;
 class CertificateController extends Controller
 {
+
+public function verifyCertificate($number)
+{
+    // Ищем сертификат вместе с данными пользователя и курса
+    $certificate = Certificate::with(['user:id,name', 'course:id,title'])
+        ->where('certificate_number', $number)
+        ->first();
+
+    if (!$certificate) {
+        return response()->json([
+            'valid' => false,
+            'message' => 'Сертификат с таким номером не найден'
+        ], 404);
+    }
+
+    return response()->json([
+        'valid' => true,
+        'data' => [
+            'student_name' => $certificate->user->name,
+            'course_title' => $certificate->course->title,
+            'issued_at' => $certificate->issued_at->format('d.m.Y'),
+            'certificate_number' => $certificate->certificate_number
+        ]
+    ]);
+}
 public function downloadCertificate($id)
 {
     $user = auth()->user();

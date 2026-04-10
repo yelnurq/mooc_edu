@@ -22,6 +22,7 @@ import ApiLogsMonitor from './pages/AdminPanel/Logs/LogMonitor';
 import MyCourses from './pages/UserPanel/Courses/MyCourses/MyCourses';
 import Certificates from './pages/UserPanel/Courses/Certificates/Certificates';
 import QuizEditor from './pages/UserPanel/Courses/QuizEditor/Quiz';
+import CertificateVerify from './pages/UserPanel/Certificate/Verify';
 
 // Локальный компонент для защиты роутов
 const ProtectedRoute = () => {
@@ -41,6 +42,7 @@ function App() {
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/courses/:id" element={<CourseDetailPage />} />
             <Route path="/news" element={<div className="p-10">Раздел новостей</div>} />
+          <Route path="/verify" element={<CertificateVerify />} />
           </Route>
 
           {/* --- ЗАЩИЩЕННЫЕ РОУТЫ (Только для авторизованных) --- */}

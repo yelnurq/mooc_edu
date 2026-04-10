@@ -88,10 +88,10 @@ const MainLayout = () => {
             </Link>
 
             <nav className="hidden lg:flex items-center gap-8">
-              {['Курсы', 'О нас', 'Новости'].map((item, idx) => (
+              {['Курсы', 'О нас', 'Проверка сертификата'].map((item, idx) => (
                 <Link 
                   key={idx} 
-                  to={`/${item === 'Курсы' ? 'courses' : item === 'О нас' ? 'about' : 'news'}`}
+                  to={`/${item === 'Курсы' ? 'courses' : item === 'О нас' ? 'about' : 'verify'}`}
                   className="text-[11px] font-black text-slate-400 hover:text-slate-900 transition-all uppercase tracking-widest relative group"
                 >
                   {item}

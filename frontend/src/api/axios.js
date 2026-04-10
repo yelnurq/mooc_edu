@@ -15,7 +15,6 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// 2. ПЕРЕХВАТЧИК ОТВЕТОВ: Очистка и редирект при ошибке 401
 api.interceptors.response.use(
   (response) => {
     // Если всё прошло успешно, просто возвращаем данные

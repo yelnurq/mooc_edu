@@ -41,8 +41,8 @@ Route::middleware("logs")->group(function(){
     Route::middleware(["token"])->group(function(){
 
         Route::get("/student/dashboard-stats", [DashboardController::class, 'getStudentStats']);
-Route::get('/courses/{id}/certificate/download', [CertificateController::class, 'downloadCertificate']);
-
+        Route::get('/courses/{id}/certificate/download', [CertificateController::class, 'downloadCertificate']);
+        Route::get('/certificates/verify/{number}', [CertificateController::class, 'verifyCertificate']);
         Route::prefix('admin/ldap')->group(function () {
                 Route::get('/users', [LdapController::class, 'getAllLdapUsers']);
                 Route::post('/import-single', [LdapController::class, 'importSingleUser']);
