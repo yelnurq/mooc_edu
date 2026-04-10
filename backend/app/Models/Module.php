@@ -13,4 +13,7 @@ class Module extends Model {
     public function quiz() {
         return $this->morphOne(Quiz::class, 'quizable');
     }
+    public function course() {
+    return $this->belongsTo(Course::class);
+}
 }

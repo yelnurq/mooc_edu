@@ -140,30 +140,48 @@ const StudentDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-10">
           
-          {/* СЕКЦИЯ: ПОСЛЕДНИЕ ТЕСТЫ */}
-          <section className="text-left">
-            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-5 flex items-center gap-2">
-              <Target size={14} className="text-blue-600" /> Результаты последних тестов
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {data.recent_tests.length > 0 ? data.recent_tests.map((test) => (
-                <div key={test.id} className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col justify-between hover:border-blue-300 transition-all shadow-sm group">
-                  <p className="text-xs font-black text-slate-800 leading-tight mb-4 line-clamp-2">{test.name}</p>
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">{test.date}</p>
-                      <p className={`text-xl font-black tracking-tighter ${test.color}`}>{test.score}%</p>
-                    </div>
-                    <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                      <ChevronRight size={16} />
-                    </div>
-                  </div>
-                </div>
-              )) : (
-                <div className="col-span-3 p-8 bg-slate-100/50 rounded-2xl border border-dashed border-slate-200 text-center text-[10px] font-bold text-slate-400 uppercase">Тесты еще не пройдены</div>
-              )}
-            </div>
-          </section>
+        {/* СЕКЦИЯ: ПОСЛЕДНИЕ ТЕСТЫ */}
+<section className="text-left">
+  <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-5 flex items-center gap-2">
+    <Target size={14} className="text-blue-600" /> Результаты последних тестов
+  </h2>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {data.recent_tests.length > 0 ? data.recent_tests.map((test) => (
+      <div key={test.id} className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col justify-between hover:border-blue-300 transition-all shadow-sm group">
+        <div>
+          {/* Название курса и модуля */}
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-[8px] font-black text-blue-600 uppercase tracking-tighter truncate max-w-[100px]">
+              {test.course}
+            </span>
+            <ChevronRight size={8} className="text-slate-300" />
+            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter truncate">
+              {test.module}
+            </span>
+          </div>
+          
+          <p className="text-xs font-black text-slate-800 leading-tight mb-4 line-clamp-2">
+            {test.name}
+          </p>
+        </div>
+
+        <div className="flex justify-between items-end">
+          <div>
+            <p className="text-[9px] font-bold text-slate-300 uppercase mb-0.5">{test.date}</p>
+            <p className={`text-xl font-black tracking-tighter ${test.color}`}>{test.score}%</p>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all">
+            <ChevronRight size={16} />
+          </div>
+        </div>
+      </div>
+    )) : (
+      <div className="col-span-3 p-8 bg-slate-100/50 rounded-2xl border border-dashed border-slate-200 text-center text-[10px] font-bold text-slate-400 uppercase">
+        Тесты еще не пройдены
+      </div>
+    )}
+  </div>
+</section>
 
          {/* СЕКЦИЯ: АКТИВНЫЕ КУРСЫ */}
 <section className="text-left">
@@ -207,44 +225,65 @@ const StudentDashboard = () => {
 </section>
         </div>
 
-        {/* SIDEBAR ANALYTICS */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm text-left sticky top-10">
-            <div className="mb-8 pb-8 border-b border-slate-50">
-                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6">Общий прогресс</h4>
-                <div className="flex items-end gap-3 mb-4">
-                    <span className="text-5xl font-black text-slate-900 tracking-tighter">{data.stats.avg_progress}%</span>
-                    <span className="text-xs font-bold text-emerald-600 pb-2 flex items-center gap-1">
-                        <ArrowUpRight size={14} /> Live
-                    </span>
-                </div>
-                <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-4">
-                    <div 
-                        className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 shadow-[0_0_10px_rgba(37,99,235,0.2)] transition-all duration-1000" 
-                        style={{ width: `${data.stats.avg_progress}%` }} 
-                    />
-                </div>
-                <p className="text-[11px] font-bold text-slate-400 leading-tight uppercase tracking-tighter">
-                    Ты успешно завершил {data.stats.completed} курсов из {data.stats.total}. Продолжай в том же духе!
-                </p>
-            </div>
-
-            <div className="space-y-4 mb-10 text-[10px] font-black uppercase tracking-widest">
-                <div className="flex justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span className="text-slate-500">Завершено</span>
-                    <span className="text-slate-900">{data.stats.completed} Курсов</span>
-                </div>
-                <div className="flex justify-between p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
-                    <span className="text-blue-600">В процессе</span>
-                    <span className="text-blue-900">{data.active_courses.length} Модуля</span>
-                </div>
-            </div>
-
-            <button className="w-full py-5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-3 active:scale-95">
-              <FileText size={16} /> Выгрузить транскрипт
-            </button>
-          </div>
+ {/* SIDEBAR ANALYTICS */}
+<div className="lg:col-span-4 space-y-6">
+  <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm text-left sticky top-10">
+    <div className="mb-8 pb-8 border-b border-slate-50">
+        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6">Общий прогресс</h4>
+        <div className="flex items-end gap-3 mb-4">
+            <span className="text-5xl font-black text-slate-900 tracking-tighter">{data.stats.avg_progress}%</span>
+            <span className="text-xs font-bold text-emerald-600 pb-2 flex items-center gap-1">
+                <ArrowUpRight size={14} /> Live
+            </span>
         </div>
+        <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-4">
+            <div 
+                className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 shadow-[0_0_10px_rgba(37,99,235,0.2)] transition-all duration-1000" 
+                style={{ width: `${data.stats.avg_progress}%` }} 
+            />
+        </div>
+        <p className="text-[11px] font-bold text-slate-400 leading-tight uppercase tracking-tighter">
+            Ты завершил {data.stats.completed_modules} из {data.stats.total_modules} модулей во всех курсах.
+        </p>
+    </div>
+
+    {/* СТАТИСТИКА ПО КУРСАМ И МОДУЛЯМ */}
+    <div className="space-y-4 mb-10 text-[10px] font-black uppercase tracking-widest">
+        {/* КУРСЫ */}
+        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="flex justify-between mb-1">
+                <span className="text-slate-500">Курсы</span>
+                <span className="text-slate-900">{data.stats.completed} / {data.stats.total}</span>
+            </div>
+            <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
+                <div 
+                    className="h-full bg-slate-400" 
+                    style={{ width: `${(data.stats.completed / data.stats.total) * 100}%` }}
+                />
+            </div>
+        </div>
+<div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            <span className="text-[9px] font-black text-emerald-600 uppercase tracking-tighter">Пройдено лекций</span>
+          </div>
+          <span className="text-xs font-black text-emerald-900">{data.stats.completed_lessons} / {data.stats.total_lessons}</span>
+        </div>
+        <div className="w-full h-1.5 bg-emerald-100 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-emerald-500 rounded-full transition-all duration-700" 
+            style={{ width: `${data.stats.total_lessons > 0 ? (data.stats.completed_lessons / data.stats.total_lessons) * 100 : 0}%` }}
+          />
+        </div>
+      </div>
+    </div>
+
+    <button className="w-full py-5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-3 active:scale-95">
+      <FileText size={16} /> Выгрузить транскрипт
+    </button>
+  </div>
+</div>
       </div>
     </main>
   );
