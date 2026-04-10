@@ -139,7 +139,6 @@ $completedQuizzes = \App\Models\QuizResult::where('user_id', $user->id)
             'completed_quizzes' => $completedQuizzes,
             // Добавим эти поля, чтобы React не ругался на undefined
             'total_modules' => \App\Models\Module::whereIn('course_id', $userCourseIds)->count(),
-            'completed_modules' => $completedCoursesCount, // Или твоя логика по тестам модулей
             'hours' => $user->learning_hours ?? 0,
         ],
         'active_courses' => $activeCourses,
