@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApiLogController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\AuthController;
@@ -37,6 +38,9 @@ Route::middleware("logs")->group(function(){
     Route::post('/modules/{id}/lessons', [CourseController::class, 'addLesson']); // Добавить урок (PDF/Видео)
 
     Route::middleware(["token"])->group(function(){
+
+        Route::get("/student/dashboard-stats", [DashboardController::class, 'getStudentStats']);
+
         Route::prefix('admin/ldap')->group(function () {
                 Route::get('/users', [LdapController::class, 'getAllLdapUsers']);
                 Route::post('/import-single', [LdapController::class, 'importSingleUser']);
