@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApiLogController;
+use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\ModuleController;
@@ -40,6 +41,7 @@ Route::middleware("logs")->group(function(){
     Route::middleware(["token"])->group(function(){
 
         Route::get("/student/dashboard-stats", [DashboardController::class, 'getStudentStats']);
+Route::get('/courses/{id}/certificate/download', [CertificateController::class, 'downloadCertificate']);
 
         Route::prefix('admin/ldap')->group(function () {
                 Route::get('/users', [LdapController::class, 'getAllLdapUsers']);

@@ -262,7 +262,34 @@ const CourseAppPage = () => {
     setPendingQuiz({ type, module });
     setShowQuizIntro(true);
   };
+const downloadCertificate = async () => {
+  setCompleting(true);
+  try {
+    // Делаем запрос к созданному выше API
+    const response = await api.get(`/courses/${course.id}/certificate/download`, {
+      responseType: 'blob', // Важно: указываем, что ждем файл
+    });
 
+    // Создаем временную ссылку для браузера
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    link.href = url;
+    link.setAttribute('download', `Certificate-${course.title}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    
+    // Чистим за собой
+    link.parentNode.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Ошибка при получении сертификата:", err);
+    // Здесь можно вывести уведомление пользователю
+  } finally {
+    setCompleting(false);
+  }
+};
   const handleStartTest = () => {
     if (pendingQuiz.type === 'module') setActiveLesson(pendingQuiz.module.lessons[0]);
     else setActiveLesson(null);
@@ -457,23 +484,30 @@ const CourseAppPage = () => {
     <ChevronLeft size={16} /> Назад
   </button>
 
-{/* Кнопка ДЕЙСТВИЯ / СТАТУС ЭКЗАМЕНА / ЗАВЕРШЕНИЕ */}
+{/* Кнопка ДЕЙСТВИЯ / СТАТУС ЭКЗАМЕНА / СКАЧАТЬ СЕРТИФИКАТ */}
 {(() => {
   const isLastLesson = allLessonsFlat.findIndex(l => l.id === activeLesson?.id) === allLessonsFlat.length - 1;
   const isLastLessonDone = completedLessons.includes(Number(activeLesson?.id));
-  // Проверяем, сдан ли уже экзамен курса
   const examResult = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz?.id));
 
-  // 1. Если все уроки пройдены И экзамен уже сдан
-  if (isLastLesson && isLastLessonDone && examResult) {
-    return (
-      <div className="flex-[2] py-5 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] border border-slate-200">
-        Курс полностью завершен <Award className="text-amber-500" size={16} />
-      </div>
-    );
-  }
+// 1. КУРС ЗАВЕРШЕН — ПОКАЗЫВАЕМ КНОПКУ СЕРТИФИКАТА
+if (isLastLesson && isLastLessonDone && examResult && examResult.passed) {
+  return (
+    <button 
+      onClick={downloadCertificate} // Теперь вызываем твою функцию
+      disabled={completing}         // Блокируем кнопку во время загрузки
+      className="flex-[2] py-5 bg-amber-500 text-white rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] hover:bg-amber-600 transition-all shadow-xl shadow-amber-200 disabled:opacity-50"
+    >
+      {completing ? (
+        <RefreshCw className="animate-spin" size={16} />
+      ) : (
+        <>Скачать сертификат <Download size={16} /></>
+      )}
+    </button>
+  );
+}
 
-  // 2. Если последний урок пройден, но экзамен еще НЕ сдан
+  // 2. ПОСЛЕДНИЙ УРОК ПРОЙДЕН — ПЕРЕХОД К ЭКЗАМЕНУ
   if (isLastLesson && isLastLessonDone && !examResult) {
     return (
       <button 
@@ -485,7 +519,7 @@ const CourseAppPage = () => {
     );
   }
 
-  // 3. Стандартная логика для всех остальных уроков
+  // 3. СТАНДАРТНАЯ ЛОГИКА (БЕЗ ИЗМЕНЕНИЙ)
   return (
     <button 
       onClick={() => {
