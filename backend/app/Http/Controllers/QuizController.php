@@ -120,30 +120,27 @@ public function submit(Request $request, Quiz $quiz)
     $userAnswers = $validated['answers'];
     $correctCount = 0;
 
-    // Подгружаем вопросы вместе с опциями
     $questions = $quiz->questions()->with('options')->get();
 
     foreach ($questions as $question) {
-    $submittedOptionId = $userAnswers[$question->id] ?? null;
-    
-    $correctOption = $question->options->where('is_correct', true)->first();
+        $submittedOptionId = $userAnswers[$question->id] ?? null;
+        $correctOption = $question->options->where('is_correct', true)->first();
 
-    // Если $correctOption null, то $correctOption?->id тоже станет null
-    if ($submittedOptionId == $correctOption?->id) {
-        $correctCount++;
+        if ($submittedOptionId == $correctOption?->id) {
+            $correctCount++;
+        }
     }
-}
 
     $total = $questions->count();
     $score = $total > 0 ? round(($correctCount / $total) * 100) : 0;
+    
+    // Порог прохождения (например, 80%)
     $passed = $score >= 80;
     $user = $this->getAuthenticatedUser($request);
 
+    // 1. Сохраняем результат теста
     $result = \App\Models\QuizResult::updateOrCreate(
-        [
-            'user_id' => $user->id, 
-            'quiz_id' => $quiz->id
-        ],
+        ['user_id' => $user->id, 'quiz_id' => $quiz->id],
         [
             'score' => $score,
             'correct_answers' => $correctCount,
@@ -152,12 +149,40 @@ public function submit(Request $request, Quiz $quiz)
         ]
     );
 
+    // --- ЛОГИКА ВЫДАЧИ СЕРТИФИКАТА ---
+    $certificateCreated = false;
+
+    // Проверяем, что тест пройден и он относится именно к КУРСУ
+    if ($passed && $quiz->quizable_type === \App\Models\Course::class) {
+        $courseId = $quiz->quizable_id;
+
+        // 2. Обновляем прогресс курса до 100% в сводной таблице
+        $user->courses()->updateExistingPivot($courseId, [
+            'progress' => 100
+        ]);
+
+        // 3. Создаем запись о сертификате (защита от дублей через firstOrCreate)
+        $certificate = \App\Models\Certificates::firstOrCreate(
+            [
+                'user_id' => $user->id,
+                'course_id' => $courseId
+            ],
+            [
+                'certificate_number' => 'CERT-' . strtoupper(bin2hex(random_bytes(4))),
+                'issued_at' => now()
+            ]
+        );
+        
+        $certificateCreated = $certificate->wasRecentlyCreated;
+    }
+
     return response()->json([
         'passed' => $passed,
         'score' => $score,
         'correct_count' => $correctCount,
         'total_count' => $total,
-        'result_id' => $result->id
+        'result_id' => $result->id,
+        'certificate_issued' => $certificateCreated // Сообщаем фронтенду, выдан ли сертификат сейчас
     ]);
 }
 }
