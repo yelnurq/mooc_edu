@@ -72,14 +72,13 @@ const StudentDashboard = () => {
     );
   }
 
-  // Данные для круговой диаграммы лекций
   const completedLectures = data.stats.completed_lessons || 0;
   const totalLectures = data.stats.total_lessons || 0;
   const remainingLectures = Math.max(0, totalLectures - completedLectures);
   
   const lecturePieData = [
-    { name: 'Пройдено', value: completedLectures, color: '#2563eb' }, // blue-600
-    { name: 'Осталось', value: remainingLectures, color: '#f1f5f9' }, // slate-100
+    { name: 'Пройдено', value: completedLectures, color: '#2563eb' },
+    { name: 'Осталось', value: remainingLectures, color: '#f1f5f9' },
   ];
 
   return (
@@ -192,13 +191,40 @@ const StudentDashboard = () => {
               )}
             </div>
           </section>
+
+          {/* СЕКЦИЯ: ЗАВЕРШЕННЫЕ КУРСЫ */}
+          <section className="text-left">
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-5 flex items-center gap-2">
+              <Trophy size={14} className="text-emerald-500" /> Завершенные программы
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {data.completed_courses_list?.length > 0 ? data.completed_courses_list.map((course) => (
+                <div key={course.id} className="bg-white p-5 rounded-[24px] border border-slate-200 flex items-center justify-between group hover:border-emerald-500 transition-all shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                      <Award size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-900 text-[13px] tracking-tight line-clamp-1">{course.title}</h3>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase">{course.instructor || 'Курс пройден'}</p>
+                    </div>
+                  </div>
+                  <div className="bg-emerald-50 px-3 py-1 rounded-lg">
+                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-tighter">100%</span>
+                  </div>
+                </div>
+              )) : (
+                <div className="col-span-2 p-8 bg-slate-50 rounded-[24px] border border-dashed border-slate-200 text-center">
+                  <p className="text-[10px] font-black text-slate-400 uppercase">У вас пока нет завершенных курсов</p>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
 
         {/* SIDEBAR ANALYTICS */}
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm text-left sticky top-10">
-            
-            {/* КРУГОВАЯ ДИАГРАММА ЛЕКЦИЙ */}
             <div className="mb-8">
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6">Прогресс лекций</h4>
               <div className="h-[220px] w-full relative">
@@ -223,7 +249,6 @@ const StudentDashboard = () => {
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                {/* Центр диаграммы */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                    <span className="text-4xl font-black text-slate-900 tracking-tighter">
                     {totalLectures > 0 ? Math.round((completedLectures / totalLectures) * 100) : 0}%
@@ -231,8 +256,6 @@ const StudentDashboard = () => {
                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Пройдено</span>
                 </div>
               </div>
-              
-              {/* Легенда диаграммы */}
               <div className="flex flex-col gap-3 mt-6">
                 <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
                    <div className="flex items-center gap-2">
@@ -270,9 +293,6 @@ const StudentDashboard = () => {
                 </p>
             </div>
 
-            <button className="w-full py-5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-200 flex items-center justify-center gap-3 active:scale-95">
-              <FileText size={16} /> Выгрузить транскрипт
-            </button>
           </div>
         </div>
       </div>
