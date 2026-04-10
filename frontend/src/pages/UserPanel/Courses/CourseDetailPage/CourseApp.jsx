@@ -457,37 +457,67 @@ const CourseAppPage = () => {
     <ChevronLeft size={16} /> Назад
   </button>
 
-  {/* Кнопка ДЕЙСТВИЯ */}
-  <button 
-    onClick={() => {
-      if (!completedLessons.includes(Number(activeLesson?.id))) {
-        handleCompleteLesson();
-      } else {
-        navigateLesson('next');
+{/* Кнопка ДЕЙСТВИЯ / СТАТУС ЭКЗАМЕНА / ЗАВЕРШЕНИЕ */}
+{(() => {
+  const isLastLesson = allLessonsFlat.findIndex(l => l.id === activeLesson?.id) === allLessonsFlat.length - 1;
+  const isLastLessonDone = completedLessons.includes(Number(activeLesson?.id));
+  // Проверяем, сдан ли уже экзамен курса
+  const examResult = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz?.id));
+
+  // 1. Если все уроки пройдены И экзамен уже сдан
+  if (isLastLesson && isLastLessonDone && examResult) {
+    return (
+      <div className="flex-[2] py-5 bg-slate-100 text-slate-500 rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] border border-slate-200">
+        Курс полностью завершен <Award className="text-amber-500" size={16} />
+      </div>
+    );
+  }
+
+  // 2. Если последний урок пройден, но экзамен еще НЕ сдан
+  if (isLastLesson && isLastLessonDone && !examResult) {
+    return (
+      <button 
+        onClick={() => handlePrepareTest('exam')}
+        className="flex-[2] py-5 bg-emerald-600 text-white rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200"
+      >
+        Перейти к экзамену <Rocket size={16} />
+      </button>
+    );
+  }
+
+  // 3. Стандартная логика для всех остальных уроков
+  return (
+    <button 
+      onClick={() => {
+        if (!completedLessons.includes(Number(activeLesson?.id))) {
+          handleCompleteLesson();
+        } else {
+          navigateLesson('next');
+        }
+      }} 
+      disabled={
+        completing || 
+        (!canComplete && !completedLessons.includes(Number(activeLesson?.id)))
       }
-    }} 
-    disabled={
-      completing || 
-      (!canComplete && !completedLessons.includes(Number(activeLesson?.id))) ||
-      (completedLessons.includes(Number(activeLesson?.id)) && allLessonsFlat.findIndex(l => l.id === activeLesson?.id) >= allLessonsFlat.length - 1)
-    }
-    className={`flex-[2] py-5 rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] transition-all shadow-xl
-      ${completedLessons.includes(Number(activeLesson?.id)) 
-        ? 'bg-slate-900 text-white hover:bg-black shadow-slate-200' 
-        : canComplete 
-          ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200' 
-          : 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-70 shadow-none'}`}
-  >
-    {completing ? (
-      <RefreshCw className="animate-spin" size={16} />
-    ) : completedLessons.includes(Number(activeLesson?.id)) ? (
-      <>Следующий урок <ChevronRight size={16} /></>
-    ) : canComplete ? (
-      <>Подтвердить прохождение <Check size={16} /></>
-    ) : (
-      <>Материал изучается <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-pulse" /></>
-    )}
-  </button>
+      className={`flex-[2] py-5 rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] transition-all shadow-xl
+        ${completedLessons.includes(Number(activeLesson?.id)) 
+          ? 'bg-slate-900 text-white hover:bg-black shadow-slate-200' 
+          : canComplete 
+            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200' 
+            : 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-70 shadow-none'}`}
+    >
+      {completing ? (
+        <RefreshCw className="animate-spin" size={16} />
+      ) : completedLessons.includes(Number(activeLesson?.id)) ? (
+        <>Следующий урок <ChevronRight size={16} /></>
+      ) : canComplete ? (
+        <>Подтвердить прохождение <Check size={16} /></>
+      ) : (
+        <>Материал изучается <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-pulse" /></>
+      )}
+    </button>
+  );
+})()}
 </div>
               </div>
             </div>
