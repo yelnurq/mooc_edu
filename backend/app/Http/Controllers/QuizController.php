@@ -113,6 +113,7 @@ public function structure(Course $course)
 
 public function submit(Request $request, Quiz $quiz)
 {
+    // 1. Валидация
     $validated = $request->validate([
         'answers' => 'required|array',
     ]);
@@ -120,6 +121,7 @@ public function submit(Request $request, Quiz $quiz)
     $userAnswers = $validated['answers'];
     $correctCount = 0;
 
+    // Подгружаем вопросы
     $questions = $quiz->questions()->with('options')->get();
 
     foreach ($questions as $question) {
@@ -134,55 +136,56 @@ public function submit(Request $request, Quiz $quiz)
     $total = $questions->count();
     $score = $total > 0 ? round(($correctCount / $total) * 100) : 0;
     
-    // Порог прохождения (например, 80%)
     $passed = $score >= 80;
     $user = $this->getAuthenticatedUser($request);
 
-    // 1. Сохраняем результат теста
-    $result = \App\Models\QuizResult::updateOrCreate(
-        ['user_id' => $user->id, 'quiz_id' => $quiz->id],
-        [
-            'score' => $score,
-            'correct_answers' => $correctCount,
-            'total_questions' => $total,
-            'passed' => $passed,
-        ]
-    );
-
-    // --- ЛОГИКА ВЫДАЧИ СЕРТИФИКАТА ---
-    $certificateCreated = false;
-
-    // Проверяем, что тест пройден и он относится именно к КУРСУ
-    if ($passed && $quiz->quizable_type === \App\Models\Course::class) {
-        $courseId = $quiz->quizable_id;
-
-        // 2. Обновляем прогресс курса до 100% в сводной таблице
-        $user->courses()->updateExistingPivot($courseId, [
-            'progress' => 100
-        ]);
-
-        // 3. Создаем запись о сертификате (защита от дублей через firstOrCreate)
-        $certificate = \App\Models\Certificates::firstOrCreate(
+    // Используем транзакцию, чтобы данные сохранялись корректно
+    return \DB::transaction(function () use ($user, $quiz, $score, $correctCount, $total, $passed) {
+        
+        // Сохраняем результат теста
+        $result = \App\Models\QuizResult::updateOrCreate(
+            ['user_id' => $user->id, 'quiz_id' => $quiz->id],
             [
-                'user_id' => $user->id,
-                'course_id' => $courseId
-            ],
-            [
-                'certificate_number' => 'CERT-' . strtoupper(bin2hex(random_bytes(4))),
-                'issued_at' => now()
+                'score' => $score,
+                'correct_answers' => $correctCount,
+                'total_questions' => $total,
+                'passed' => $passed,
             ]
         );
-        
-        $certificateCreated = $certificate->wasRecentlyCreated;
-    }
 
-    return response()->json([
-        'passed' => $passed,
-        'score' => $score,
-        'correct_count' => $correctCount,
-        'total_count' => $total,
-        'result_id' => $result->id,
-        'certificate_issued' => $certificateCreated // Сообщаем фронтенду, выдан ли сертификат сейчас
-    ]);
+        $certificateCreated = false;
+
+        // Выдаем сертификат только если пройдено (passed) и это тест КУРСА
+        if ($passed && $quiz->quizable_type === 'App\Models\Course') {
+            $courseId = $quiz->quizable_id;
+
+            // Обновляем прогресс
+            $user->courses()->updateExistingPivot($courseId, ['progress' => 100]);
+
+            // Исправлено название модели: Certificate вместо Certificates
+            // Убедитесь, что модель называется именно так
+            $certificate = \App\Models\Certificate::firstOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'course_id' => $courseId
+                ],
+                [
+                    'certificate_number' => 'CERT-' . strtoupper(bin2hex(random_bytes(4))),
+                    'issued_at' => now()
+                ]
+            );
+            
+            $certificateCreated = $certificate->wasRecentlyCreated;
+        }
+
+        return response()->json([
+            'passed' => $passed,
+            'score' => $score,
+            'correct_count' => $correctCount,
+            'total_count' => $total,
+            'result_id' => $result->id,
+            'certificate_issued' => $certificateCreated
+        ]);
+    });
 }
 }
