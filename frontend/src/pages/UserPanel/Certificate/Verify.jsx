@@ -1,137 +1,131 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, CheckCircle, AlertCircle, Award, Calendar, User, ArrowLeft, BookOpen, ShieldCheck } from 'lucide-react';
+import { Search, CheckCircle, AlertCircle, Award, Calendar, User, ArrowLeft, ShieldCheck, BookOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../api/axios';
 
+// --- КОМПОНЕНТ АНИМАЦИИ КНИГИ ---
 const BookAnimation = ({ isLoading, isError, hasResult }) => {
   return (
-    <div className="relative w-[450px] h-[600px] flex items-center justify-center" style={{ perspective: '2000px' }}>
-      {/* Тень под книгой */}
-      <div className="absolute bottom-10 w-[80%] h-10 bg-black/20 blur-3xl rounded-[100%]" />
-
+    <div className="relative w-[500px] h-[600px] flex items-center justify-center" style={{ perspective: '2500px' }}>
+      {/* Тень */}
       <motion.div 
         animate={{ 
-          rotateY: hasResult ? -160 : 0,
-          x: hasResult ? 150 : 0,
-          scale: isLoading ? 1.05 : 1 
+          width: (isLoading || hasResult) ? '120%' : '80%',
+          opacity: (isLoading || hasResult) ? 0.4 : 0.2
         }}
-        transition={{ type: 'spring', stiffness: 50, damping: 15 }}
-        className="relative w-80 h-[480px] bg-slate-900 rounded-r-2xl shadow-[20px_20px_50px_rgba(0,0,0,0.3)] origin-left preserve-3d border-y border-r border-slate-800"
+        className="absolute bottom-10 h-12 bg-black/40 blur-3xl rounded-[100%] transition-all duration-700" 
+      />
+
+      {/* ГЛАВНЫЙ КОНТЕЙНЕР КНИГИ */}
+      <motion.div 
+        animate={{ 
+          x: (isLoading || hasResult) ? 150 : 0, // Сдвигаем книгу вправо, когда она открыта
+        }}
+        transition={{ type: 'spring', stiffness: 40, damping: 12 }}
+        style={{ transformStyle: 'preserve-3d' }}
+        className="relative w-80 h-[520px] origin-left"
       >
-        {/* Лицевая обложка */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 rounded-r-2xl border-l-[12px] border-black/30 flex flex-col items-center justify-center overflow-hidden" style={{ backfaceVisibility: 'hidden', zIndex: 10 }}>
-            {/* Текстура обложки */}
-            <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/leather.png')]" />
-            <div className="relative z-10 flex flex-col items-center">
-                <div className="mb-6 p-4 rounded-full bg-white/5 border border-white/10">
-                    <Award className="text-blue-200/40" size={100} />
-                </div>
-                <div className="w-20 h-1 bg-blue-400/30 rounded-full mb-4" />
-                <p className="text-blue-100/30 font-black text-[10px] uppercase tracking-[0.5em]">Digital Archive</p>
+        {/* КОРЕШОК (Spine) */}
+        <div className="absolute left-0 top-0 w-[24px] h-full bg-slate-950 rounded-l-sm transform -translate-x-[12px] rotate-y-90" style={{ transformStyle: 'preserve-3d', zIndex: 50 }} />
+
+        {/* ПЕРЕДНЯЯ ОБЛОЖКА (Теперь она анимируется отдельно) */}
+        <motion.div 
+          animate={{ rotateY: (isLoading || hasResult) ? -180 : 0 }}
+          transition={{ type: 'spring', stiffness: 40, damping: 12 }}
+          style={{ 
+            transformStyle: 'preserve-3d', 
+            transformOrigin: 'left center',
+            zIndex: (isLoading || hasResult) ? 10 : 100 // Уходит вниз, когда открыта
+          }}
+          className="absolute inset-0 cursor-pointer"
+        >
+          {/* Лицевая сторона обложки */}
+          <div 
+            className="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 rounded-r-2xl border-l-[10px] border-black/40 shadow-2xl flex flex-col items-center justify-center overflow-hidden" 
+            style={{ backfaceVisibility: 'hidden' }}
+          >
+            <div className="absolute inset-0 opacity-15 bg-[url('https://www.transparenttextures.com/patterns/leather.png')]" />
+            <div className="relative z-10 flex flex-col items-center text-center p-6">
+              <div className="mb-8 p-6 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm shadow-inner">
+                <Award className="text-blue-200/50" size={100} />
+              </div>
+              <p className="text-blue-100/40 font-black text-xs uppercase tracking-[0.6em]">Digital Archive</p>
             </div>
-        </div>
+            <div className="absolute inset-4 border border-blue-400/10 rounded-xl pointer-events-none" />
+          </div>
 
-        {/* Внутренняя часть обложки (когда открыта) */}
-        <div className="absolute inset-0 bg-slate-100 rounded-l-2xl shadow-inner rotate-y-180" style={{ backfaceVisibility: 'hidden' }}>
-             <div className="p-10 opacity-20">
-                <div className="w-full h-full border-2 border-slate-300 rounded-xl flex items-center justify-center">
-                    <ShieldCheck size={120} className="text-slate-400" />
-                </div>
-             </div>
-        </div>
+          {/* Внутренняя сторона обложки (видна после открытия) */}
+          <div 
+            className="absolute inset-0 bg-slate-200 rounded-l-2xl shadow-inner border-r-4 border-slate-300" 
+            style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+          >
+            <div className="absolute inset-0 opacity-30 bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')]" />
+            <div className="p-12 h-full flex items-center justify-center">
+               <ShieldCheck size={140} className="text-slate-400/20" />
+            </div>
+          </div>
+        </motion.div>
 
-        {/* Анимированные страницы при загрузке */}
-        <AnimatePresence>
-          {isLoading && [1, 2, 3, 4, 5].map((i) => (
-            <motion.div
-              key={i}
-              initial={{ rotateY: 0 }}
-              animate={{ rotateY: -180 }}
-              transition={{ 
-                repeat: Infinity, 
-                duration: 0.8, 
-                delay: i * 0.1,
-                ease: "easeInOut" 
-              }}
-              className="absolute inset-0 bg-gradient-to-l from-white to-slate-50 origin-left rounded-r-md border border-slate-200 shadow-sm"
-              style={{ backfaceVisibility: 'hidden', zIndex: 5 - i }}
-            />
-          ))}
-        </AnimatePresence>
+   
+        {/* ЗАДНЯЯ ОБЛОЖКА (Основание книги) */}
+        <div 
+          className="absolute inset-0 bg-slate-900 rounded-r-2xl border-l-[10px] border-black/40 shadow-sm"
+          style={{ transform: 'translateZ(-1px)', zIndex: 1 }}
+        />
       </motion.div>
 
-      {/* Лист с результатом (лежит "внутри" книги) */}
+      {/* СЕРТИФИКАТ (Выезжает, когда книга полностью открыта) */}
       <AnimatePresence>
         {hasResult && (
-            <motion.div 
-                initial={{ opacity: 0, x: 0 }}
-                animate={{ opacity: 1, x: 160 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-                className="absolute w-[340px] h-[440px] bg-white shadow-2xl rounded-sm p-8 flex flex-col justify-between border-y border-r border-slate-100"
-            >
-                {/* Водяной знак на бумаге */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-                    <Award size={250} />
+          <motion.div 
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 170 }}
+            transition={{ delay: 0.8, duration: 0.8, type: 'spring' }}
+            className="absolute w-[380px] h-[480px] bg-white shadow-[40px_40px_70px_rgba(0,0,0,0.2)] rounded-sm p-10 flex flex-col justify-between border border-slate-100 z-[60]"
+          >
+            {/* ... содержимое сертификата остается прежним ... */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]">
+                <Award size={300} />
+            </div>
+            <div className="relative z-10 h-full flex flex-col justify-between">
+              <div className="flex justify-between items-start">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Official Document</span>
+                  <div className="h-1 w-12 bg-blue-600 rounded-full" />
                 </div>
-                
-                <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-10">
-                        <div className="px-3 py-1 bg-emerald-50 rounded text-emerald-600 text-[9px] font-black uppercase tracking-tighter border border-emerald-100">
-                            Authentic
-                        </div>
-                        <ShieldCheck className="text-blue-600" size={24} />
-                    </div>
-
-                    <div className="space-y-6">
-                        <div className="border-l-2 border-blue-600 pl-4">
-                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Student / Holder</p>
-                            <p className="text-2xl font-black text-slate-900 tracking-tight leading-none uppercase">{hasResult.student_name}</p>
-                        </div>
-                        <div>
-                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Certified Course</p>
-                            <p className="text-lg font-bold text-slate-700 leading-tight italic">«{hasResult.course_title}»</p>
-                        </div>
-                    </div>
+                <CheckCircle className="text-emerald-500" size={28} />
+              </div>
+              <div className="space-y-8">
+                <div>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Student Name</label>
+                  <p className="text-3xl font-black text-slate-900 uppercase leading-none">{hasResult.student_name}</p>
                 </div>
-
-                <div className="relative z-10 pt-6 border-t border-slate-100">
-                    <div className="flex justify-between items-end">
-                        <div>
-                            <p className="text-[8px] font-bold text-slate-400 uppercase mb-1">Issue Date</p>
-                            <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
-                                <Calendar size={12} /> {hasResult.issued_at}
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-[8px] font-bold text-slate-400 uppercase mb-1">Verify ID</p>
-                            <p className="text-[10px] font-mono font-bold bg-slate-100 px-2 py-1 rounded italic uppercase">
-                                {hasResult.certificate_number}
-                            </p>
-                        </div>
-                    </div>
+                <div>
+                  <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-2 block">Certification</label>
+                  <p className="text-lg font-bold text-slate-700 italic border-l-4 border-blue-600 pl-4">«{hasResult.course_title}»</p>
                 </div>
-            </motion.div>
+              </div>
+              <div className="pt-8 border-t border-slate-100 flex justify-between items-end">
+                <div>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase mb-1">Issue Date</p>
+                  <p className="text-xs font-black text-slate-900">{hasResult.issued_at}</p>
+                </div>
+                <div className="text-right font-mono text-[10px] font-bold bg-slate-100 px-3 py-1 rounded">
+                   {hasResult.certificate_number}
+                </div>
+              </div>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Ожидание ввода */}
-      {!isLoading && !hasResult && !isError && (
-        <motion.div
-          animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
-          transition={{ repeat: Infinity, duration: 3 }}
-          className="absolute z-20 flex flex-col items-center gap-4"
-        >
-          <div className="w-20 h-20 bg-white rounded-full shadow-2xl flex items-center justify-center text-blue-600">
-            <Search size={40} />
-          </div>
-          <p className="text-blue-900 font-black text-[10px] uppercase tracking-[0.4em] bg-blue-50 px-4 py-2 rounded-full">System Ready</p>
-        </motion.div>
-      )}
+      
+ 
     </div>
   );
 };
 
+// --- ОСНОВНАЯ СТРАНИЦА ---
 const CertificateVerify = () => {
   const [certNumber, setCertNumber] = useState('');
   const [result, setResult] = useState(null);
@@ -149,86 +143,95 @@ const CertificateVerify = () => {
 
     try {
       const response = await api.get(`/certificates/verify/${certNumber.trim()}`);
+      // Искусственная задержка для красоты анимации
       setTimeout(() => {
         setResult(response.data.data);
         setLoading(false);
-      }, 2000); 
+      }, 2500); 
     } catch (err) {
       setTimeout(() => {
-        setError(err.response?.data?.message || 'Certificate not found in records');
+        setError(err.response?.data?.message || 'Certificate ID not recognized in our database');
         setLoading(false);
-      }, 1200);
+      }, 1500);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] flex flex-col items-center justify-center p-6 lg:p-12 font-sans overflow-hidden">
-      {/* Сетка на фоне */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')]" />
+      {/* Фоновый декор */}
+      <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
+      <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-200/20 blur-[120px] rounded-full" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-slate-300/30 blur-[120px] rounded-full" />
 
       <button 
         onClick={() => navigate(-1)}
-        className="fixed top-8 left-8 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-all z-50 group"
+        className="fixed top-10 left-10 flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-blue-600 transition-all z-50 group"
       >
-        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Назад к порталу
+        <ArrowLeft size={18} className="group-hover:-translate-x-2 transition-transform" /> Вернуться назад
       </button>
 
-      <div className="max-w-[1400px] w-full flex flex-col lg:flex-row items-center justify-between gap-20 relative z-10">
+      <div className="max-w-[1500px] w-full flex flex-col lg:flex-row items-center justify-between gap-12 relative z-10">
         
-        {/* ЛЕВАЯ ЧАСТЬ: ИНТЕРФЕЙС */}
-        <div className="w-full lg:max-w-md shrink-0">
-          <motion.div 
-            initial={{ opacity: 0, x: -30 }} 
-            animate={{ opacity: 1, x: 0 }}
-            className="text-left mb-12"
-          >
-            <div className="inline-block px-4 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-[0.3em] rounded-full mb-8">
-              Verification Office
+        {/* ФОРМА (Слева) */}
+        <motion.div 
+          initial={{ opacity: 0, x: -50 }} 
+          animate={{ opacity: 1, x: 0 }}
+          className="w-full lg:max-w-lg shrink-0"
+        >
+          <div className="mb-14">
+            <div className="flex items-center gap-3 mb-6">
+               <div className="h-[2px] w-12 bg-blue-600" />
+               <span className="text-blue-600 font-black text-[10px] uppercase tracking-[0.4em]">Secured Gateway</span>
             </div>
-            <h1 className="text-6xl font-black text-slate-900 tracking-tighter mb-8 leading-[0.85]">
-              Проверка <br /> <span className="text-blue-600 italic">документа.</span>
+            <h1 className="text-7xl font-black text-slate-900 tracking-tighter mb-8 leading-[0.8]">
+              Валидация <br /> <span className="text-blue-600">статуса.</span>
             </h1>
-            <p className="text-slate-500 font-medium text-base leading-relaxed max-w-sm">
-              Глобальная система верификации образовательных достижений. Введите уникальный ключ доступа ниже.
+            <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-sm">
+              Введите серийный номер документа для мгновенного подтверждения его подлинности через реестр.
             </p>
-          </motion.div>
+          </div>
 
-          <form onSubmit={handleVerify} className="space-y-4">
+          <form onSubmit={handleVerify} className="space-y-6">
             <div className="relative group">
-              <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
-                <ShieldCheck className="text-slate-300 group-focus-within:text-blue-600 transition-colors" size={24} />
+              <div className="absolute inset-y-0 left-8 flex items-center pointer-events-none">
+                <BookOpen className="text-slate-300 group-focus-within:text-blue-600 transition-colors" size={28} />
               </div>
               <input
                 type="text"
                 value={certNumber}
                 onChange={(e) => setCertNumber(e.target.value.toUpperCase())}
-                placeholder="ID: CERT-2026-XXXX"
-                className="w-full pl-16 pr-6 py-8 bg-white border-2 border-slate-200 rounded-3xl shadow-sm focus:ring-0 focus:border-blue-600 transition-all font-bold text-sm tracking-widest uppercase outline-none"
+                placeholder="HOMEP: CERT-XXXX..."
+                className="w-full pl-20 pr-8 py-9 bg-white border-2 border-slate-200 rounded-[2rem] shadow-sm focus:ring-0 focus:border-blue-600 transition-all font-black text-base tracking-widest uppercase outline-none placeholder:text-slate-300"
               />
             </div>
             <button
               type="submit"
               disabled={loading || !certNumber}
-              className="w-full py-6 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-blue-600 transition-all shadow-2xl disabled:opacity-30 active:scale-[0.98]"
+              className="w-full py-7 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-blue-600 transition-all shadow-[0_20px_40px_-10px_rgba(0,0,0,0.2)] disabled:opacity-30 active:scale-[0.97] flex items-center justify-center gap-4"
             >
-              {loading ? "Синхронизация..." : "Запустить валидацию"}
+              {loading ? (
+                 <div className="w-5 h-5 border-3 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : "Проверить в архиве"}
             </button>
           </form>
 
           <AnimatePresence>
             {error && (
               <motion.div 
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                className="mt-8 flex items-center gap-4 text-red-600 bg-red-50 p-6 rounded-2xl border border-red-100"
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                className="mt-10 flex items-start gap-5 text-red-600 bg-red-50 p-8 rounded-3xl border border-red-100 shadow-sm"
               >
-                <AlertCircle size={24} />
-                <p className="text-xs font-black uppercase tracking-tighter">{error}</p>
+                <div className="p-2 bg-red-100 rounded-lg"><AlertCircle size={24} /></div>
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest mb-1">Проверка отклонена</p>
+                    <p className="text-sm font-bold opacity-80">{error}</p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
 
-        {/* ПРАВАЯ ЧАСТЬ: ВИЗУАЛИЗАЦИЯ */}
+        {/* ВИЗУАЛИЗАЦИЯ (Справа) */}
         <div className="w-full flex-1 flex justify-center lg:justify-end items-center">
              <BookAnimation isLoading={loading} isError={!!error} hasResult={result} />
         </div>
