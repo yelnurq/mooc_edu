@@ -1,14 +1,13 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { 
   Search, Clock, AlertCircle, BookOpen, CheckCircle2,
-  TrendingUp, Database, X, GraduationCap, 
+  TrendingUp, Database, X, GraduationCap,  Layers, PlayCircle,
   ArrowUpRight, Award, PlusCircle, PieChart, Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../../api/axios';
 import { Link } from 'react-router-dom';
 
-// --- ВСПОМОГАТЕЛЬНЫЕ КОМПОНЕНТЫ ---
 
 const ProgressCircle = ({ progress }) => {
   const radius = 18;
@@ -54,11 +53,11 @@ const StatCard = ({ icon: Icon, label, value, colorClass, description, onClick, 
     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-relaxed">{description}</p>
   </button>
 );
+
 const MyCourseCard = ({ course }) => {
   const progress = course.pivot?.progress || 0;
   const isCompleted = progress === 100;
 
-  // Логика поиска баллов
   const examResult = useMemo(() => {
     if (course.pivot?.exam_score !== undefined && course.pivot?.exam_score !== null) {
       return { score: course.pivot.exam_score };
@@ -79,50 +78,64 @@ const MyCourseCard = ({ course }) => {
         isCompleted ? 'border-emerald-200 hover:shadow-emerald-100' : 'border-slate-200 hover:border-blue-400 hover:shadow-lg'
       }`}
     >
-      <div className="p-6 text-left">
-        <div className="flex justify-between items-start mb-6">
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
-            isCompleted ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400 group-hover:bg-slate-900 group-hover:text-white'
-          }`}>
-            {isCompleted ? <Award size={24} /> : <BookOpen size={24} />}
+      {/* ИЗОБРАЖЕНИЕ КУРСА */}
+      <div className="relative h-32 w-full overflow-hidden bg-slate-100">
+        {course.image ? (
+          <img 
+            src={course.image} 
+            alt={course.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+            <BookOpen className="text-slate-300" size={32} />
           </div>
-          
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-2">
-              {isCompleted && examResult && (
-                <span className="text-[9px] font-black px-2.5 py-1 rounded uppercase tracking-wider bg-slate-900 text-white shadow-sm border border-slate-800">
+        )}
+        
+        {/* Оверлей для статуса поверх картинки */}
+        <div className="absolute top-3 left-3 flex gap-2">
+            {isCompleted && examResult && (
+                <span className="text-[9px] font-black px-2 py-1 rounded bg-slate-900/80 backdrop-blur-md text-white uppercase tracking-wider border border-white/10 shadow-xl">
                   Балл: {examResult.score}%
                 </span>
-              )}
-              <span className={`text-[9px] font-black px-2.5 py-1 rounded uppercase tracking-wider ${
-                isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-600'
-              }`}>
+            )}
+            <span className={`text-[9px] font-black px-2 py-1 rounded uppercase tracking-wider backdrop-blur-md border border-white/10 shadow-xl ${
+                isCompleted ? 'bg-emerald-500/80 text-white' : 'bg-blue-600/80 text-white'
+            }`}>
                 {isCompleted ? 'Завершен' : 'В работе'}
-              </span>
-            </div>
-            <Link 
-              to={`/app/courses/${course.id}`} 
-              className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-            >
-              <ArrowUpRight size={16} />
-            </Link>
-          </div>
+            </span>
         </div>
+      </div>
 
-        <div className="space-y-1 mb-6">
+      <div className="p-6 text-left">
+        <div className="space-y-1 mb-4">
           <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight leading-snug group-hover:text-blue-600 transition-colors line-clamp-2 h-10">
             {course.title}
           </h3>
           
-          {/* ДОБАВЛЕННЫЙ БЛОК АВТОРА */}
           <div className="flex items-center gap-1.5">
              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-               {course.author_display_name || 'Инструктор курса'}
+               {course.author_display_name || 'Инструктор'}
              </p>
              <span className="text-slate-300 text-[10px]">•</span>
              <p className="text-[10px] font-bold text-blue-600/70 uppercase tracking-widest">
                {course.category || 'Общая'}
              </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 mb-6 pt-2">
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <Layers size={14} className="text-slate-400" />
+            <span className="text-[10px] font-black uppercase tracking-tight">
+              {course.modules_count || 0} мод.
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 text-slate-500">
+            <PlayCircle size={14} className="text-slate-400" />
+            <span className="text-[10px] font-black uppercase tracking-tight">
+              {course.lessons_count || 0} лекц.
+            </span>
           </div>
         </div>
 
@@ -213,15 +226,12 @@ const MyCourses = () => {
       
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-slate-200 pb-8 mb-8">
-        <div className="text-left space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 uppercase">Моё обучение</h1>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
-            <GraduationCap size={14} className="text-blue-600" />
-            <span>Индивидуальная траектория</span>
-            <span className="text-slate-300">|</span>
-            <span className="text-blue-800">{stats.total} курсов</span>
-          </div>
-        </div>
+      <div className="text-left">
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight ">Моё обучение</h1>
+        <p className="text-[13px] text-slate-500 font-medium mt-1">
+          Отслеживайте прогресс по дисциплинам, контролируйте результаты экзаменов <br/> и завершайте учебные модули в едином пространстве.
+        </p>
+      </div>
 
         <div className="flex items-center gap-4">
           <Link to="/courses" className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-xl hover:bg-slate-50 transition-all shadow-sm">
@@ -354,6 +364,14 @@ const MyCourses = () => {
           </div>
         )}
       </AnimatePresence>
+{!loading && (
+      <div className="text-left mt-16 pt-8 border-t border-slate-200">
+        <p className="text-xs font-medium text-slate-500 leading-relaxed uppercase tracking-wide max-w-4xl">
+          Ваш текущий план развития выполнен на <span className="text-slate-900 font-bold">{stats.avgProgress}%</span>. 
+          Это отличный темп — продолжайте активное изучение материалов для скорейшего достижения целевых показателей и подтверждения квалификации.
+        </p>
+      </div>
+    )}
     </main>
   );
 };
