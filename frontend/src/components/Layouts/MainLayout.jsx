@@ -88,7 +88,7 @@ const MainLayout = () => {
             </Link>
 
             <nav className="hidden lg:flex items-center gap-8">
-              {['Курсы', 'О нас', 'Проверка сертификата'].map((item, idx) => (
+              {['Курсы', 'Проверка сертификата'].map((item, idx) => (
                 <Link 
                   key={idx} 
                   to={`/${item === 'Курсы' ? 'courses' : item === 'О нас' ? 'about' : 'verify'}`}

@@ -12,6 +12,7 @@ use App\Http\Controllers\HelperController;
 use App\Http\Controllers\LdapController;
 use App\Http\Controllers\OptionController;
 use App\Http\Controllers\QuestionController;
+use App\Http\Controllers\StudentController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -37,12 +38,16 @@ Route::middleware("logs")->group(function(){
     Route::get('/courses/public/{id}', [CourseController::class, 'showPublic']);        // Получить всё дерево курса
     Route::post('/courses/{id}/modules', [CourseController::class, 'addModule']); // Добавить модуль
     Route::post('/modules/{id}/lessons', [CourseController::class, 'addLesson']); // Добавить урок (PDF/Видео)
+        Route::get('/certificates/verify/{number}', [CertificateController::class, 'verifyCertificate']);
 
     Route::middleware(["token"])->group(function(){
 
+        Route::get('/user/settings', [StudentController::class, 'settings']);
+        Route::put('/user/settings', [StudentController::class, 'updateSettings']);
+
         Route::get("/student/dashboard-stats", [DashboardController::class, 'getStudentStats']);
         Route::get('/courses/{id}/certificate/download', [CertificateController::class, 'downloadCertificate']);
-        Route::get('/certificates/verify/{number}', [CertificateController::class, 'verifyCertificate']);
+        
         Route::prefix('admin/ldap')->group(function () {
                 Route::get('/users', [LdapController::class, 'getAllLdapUsers']);
                 Route::post('/import-single', [LdapController::class, 'importSingleUser']);

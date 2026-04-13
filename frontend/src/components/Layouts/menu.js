@@ -24,30 +24,14 @@ export const sidebarMenuItems = [
     icon: <BookOpen size={20} />, 
     label: 'Мои курсы' 
   },
-  { 
-    id: 'catalog', 
-    path: '/app/catalog', 
-    icon: <Search size={20} />, 
-    label: 'Каталог' 
-  },
-  { 
-    id: 'messages', 
-    path: '/app/messages', 
-    icon: <MessageCircle size={20} />, 
-    label: 'Чат с куратором' 
-  },
+ 
   { 
     id: 'certificates', 
     path: '/app/certificates', 
     icon: <Award size={20} />, 
     label: 'Сертификаты' 
   },
-  { 
-    id: 'support', 
-    path: '/app/support', 
-    icon: <HelpCircle size={20} />, 
-    label: 'Помощь' 
-  },
+
   { 
     id: 'settings', 
     path: '/app/settings', 

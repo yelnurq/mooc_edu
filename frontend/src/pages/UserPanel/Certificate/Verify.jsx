@@ -119,6 +119,7 @@ const BookAnimation = ({ isLoading, isError, errorMsg, hasResult }) => {
             initial={{ opacity: 0, x: 80 }}
             animate={{ opacity: 1, x: 260 }}
             exit={{ opacity: 0, x: 80 }}
+            style={{left:-71}}
             className={`absolute w-[340px] md:w-[400px] h-[460px] md:h-[520px] rounded-sm p-10 flex flex-col justify-between border z-[70] shadow-2xl ${
               isError ? 'bg-red-50 border-red-100' : 'bg-white border-slate-100'
             }`}
