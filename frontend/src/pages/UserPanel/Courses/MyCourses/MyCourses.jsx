@@ -1,20 +1,45 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { 
   Search, Clock, AlertCircle, BookOpen, CheckCircle2,
-  TrendingUp, ArrowRight, Database, X, GraduationCap, 
-  ArrowUpRight, LayoutGrid, Filter,
-  Calendar
+  TrendingUp, Database, X, GraduationCap, 
+  ArrowUpRight, Award, PlusCircle, PieChart, Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../../api/axios';
-import { CourseCard } from '../../../../components/Course/CourseCard/CourseCard';
 import { Link } from 'react-router-dom';
+
+// --- ВСПОМОГАТЕЛЬНЫЕ КОМПОНЕНТЫ ---
+
+const ProgressCircle = ({ progress }) => {
+  const radius = 18;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center w-12 h-12">
+      <svg className="w-full h-full transform -rotate-90">
+        <circle cx="24" cy="24" r={radius} stroke="currentColor" strokeWidth="3" fill="transparent" className="text-slate-100" />
+        <motion.circle
+          cx="24" cy="24" r={radius} stroke="currentColor" strokeWidth="3" fill="transparent"
+          strokeDasharray={circumference}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset }}
+          transition={{ duration: 1.5, ease: "easeInOut" }}
+          className="text-blue-600"
+        />
+      </svg>
+      <span className="absolute text-[9px] font-black text-slate-900">{progress}%</span>
+    </div>
+  );
+};
 
 const StatCard = ({ icon: Icon, label, value, colorClass, description, onClick, isPrimary }) => (
   <button 
     onClick={onClick}
     disabled={!onClick}
-    className={`w-full bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden transition-all text-left group ${onClick ? 'hover:border-blue-400 hover:shadow-md cursor-pointer' : ''} ${isPrimary ? 'ring-1 ring-blue-600/10' : ''}`}
+    className={`w-full bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden transition-all text-left group 
+      ${onClick ? 'hover:border-blue-400 hover:shadow-md cursor-pointer' : ''} 
+      ${isPrimary ? 'ring-1 ring-blue-600/10' : ''}`}
   >
     <div className={`absolute top-0 left-0 w-1 h-full ${isPrimary ? 'bg-blue-600' : 'bg-slate-200'}`} />
     <div className="flex justify-between items-start mb-4">
@@ -29,30 +54,126 @@ const StatCard = ({ icon: Icon, label, value, colorClass, description, onClick, 
     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-relaxed">{description}</p>
   </button>
 );
+const MyCourseCard = ({ course }) => {
+  const progress = course.pivot?.progress || 0;
+  const isCompleted = progress === 100;
 
-const STATUS_OPTIONS = [
-  { id: 'Все', label: 'Весь план' },
-  { id: 'В процессе', label: 'В работе' },
-  { id: 'Завершено', label: 'Завершено' }
-];
+  // Логика поиска баллов
+  const examResult = useMemo(() => {
+    if (course.pivot?.exam_score !== undefined && course.pivot?.exam_score !== null) {
+      return { score: course.pivot.exam_score };
+    }
+    if (course.quiz && course.quiz_results) {
+      return course.quiz_results.find(res => Number(res.quiz_id) === Number(course.quiz.id));
+    }
+    return null;
+  }, [course]);
+
+  return (
+    <motion.div 
+      layout 
+      initial={{ opacity: 0, y: 10 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, scale: 0.95 }}
+      className={`group bg-white rounded-2xl border transition-all flex flex-col justify-between overflow-hidden shadow-sm ${
+        isCompleted ? 'border-emerald-200 hover:shadow-emerald-100' : 'border-slate-200 hover:border-blue-400 hover:shadow-lg'
+      }`}
+    >
+      <div className="p-6 text-left">
+        <div className="flex justify-between items-start mb-6">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+            isCompleted ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400 group-hover:bg-slate-900 group-hover:text-white'
+          }`}>
+            {isCompleted ? <Award size={24} /> : <BookOpen size={24} />}
+          </div>
+          
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2">
+              {isCompleted && examResult && (
+                <span className="text-[9px] font-black px-2.5 py-1 rounded uppercase tracking-wider bg-slate-900 text-white shadow-sm border border-slate-800">
+                  Балл: {examResult.score}%
+                </span>
+              )}
+              <span className={`text-[9px] font-black px-2.5 py-1 rounded uppercase tracking-wider ${
+                isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-600'
+              }`}>
+                {isCompleted ? 'Завершен' : 'В работе'}
+              </span>
+            </div>
+            <Link 
+              to={`/app/courses/${course.id}`} 
+              className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+            >
+              <ArrowUpRight size={16} />
+            </Link>
+          </div>
+        </div>
+
+        <div className="space-y-1 mb-6">
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight leading-snug group-hover:text-blue-600 transition-colors line-clamp-2 h-10">
+            {course.title}
+          </h3>
+          
+          {/* ДОБАВЛЕННЫЙ БЛОК АВТОРА */}
+          <div className="flex items-center gap-1.5">
+             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+               {course.author_display_name || 'Инструктор курса'}
+             </p>
+             <span className="text-slate-300 text-[10px]">•</span>
+             <p className="text-[10px] font-bold text-blue-600/70 uppercase tracking-widest">
+               {course.category || 'Общая'}
+             </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-[0.1em]">
+            <span className={isCompleted ? 'text-emerald-600' : 'text-slate-400'}>
+              {isCompleted ? 'Материал освоен' : 'Ваш прогресс'}
+            </span>
+            <span className="text-slate-900">{progress}%</span>
+          </div>
+          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className={`h-full rounded-full ${isCompleted ? 'bg-emerald-500' : 'bg-blue-600'}`}
+            />
+          </div>
+        </div>
+      </div>
+
+      <Link 
+        to={`/app/courses/${course.id}`}
+        className={`w-full py-4 text-center text-[10px] font-black uppercase tracking-[0.2em] transition-all border-t ${
+          isCompleted 
+            ? 'bg-emerald-50/50 text-emerald-700 border-emerald-100 hover:bg-emerald-50' 
+            : 'bg-slate-50/50 text-slate-600 border-slate-100 hover:bg-blue-600 hover:text-white'
+        }`}
+      >
+        {isCompleted ? 'Повторить материал' : 'Продолжить обучение'}
+      </Link>
+    </motion.div>
+  );
+};
+
+// --- ОСНОВНОЙ КОМПОНЕНТ ---
 
 const MyCourses = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('Все');
   const [showPendingModal, setShowPendingModal] = useState(false);
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const response = await api.get('/my-courses');
-      setCourses(response.data);
+      setCourses(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-      setError("Ошибка синхронизации данных");
-      console.error(err);
+      console.error("Sync Error:", err);
     } finally {
       setLoading(false);
     }
@@ -81,199 +202,153 @@ const MyCourses = () => {
     return { filteredCourses: filtered, stats: { total, completed, avgProgress }, pending };
   }, [courses, searchQuery, selectedStatus]);
 
-  return (
-    <main className="max-w-[1400px] mx-auto px-6 py-10 bg-[#f8fafc] min-h-screen font-sans">
-      <div className="space-y-8">
-        
-        {/* HEADER SECTION */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="text-left">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Моё обучение</h1>
-            <p className="text-sm text-slate-500 font-medium mt-1">
-              Персональный трек развития и мониторинг прогресса по учебным дисциплинам.
-            </p>
-          </div>
+  const STATUS_OPTIONS = [
+    { id: 'Все', label: 'Весь план' },
+    { id: 'В процессе', label: 'В работе' },
+    { id: 'Завершено', label: 'Завершено' }
+  ];
 
+  return (
+    <main className="max-w-[1400px] mx-auto px-6 py-10 bg-[#f8fafc] min-h-screen font-sans text-slate-900">
+      
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-slate-200 pb-8 mb-8">
+        <div className="text-left space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 uppercase">Моё обучение</h1>
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+            <GraduationCap size={14} className="text-blue-600" />
+            <span>Индивидуальная траектория</span>
+            <span className="text-slate-300">|</span>
+            <span className="text-blue-800">{stats.total} курсов</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <Link to="/courses" className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 rounded-xl hover:bg-slate-50 transition-all shadow-sm">
+            <PlusCircle size={14} /> Каталог
+          </Link>
           <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
             {STATUS_OPTIONS.map((opt) => (
               <button
                 key={opt.id}
                 onClick={() => setSelectedStatus(opt.id)}
-                className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all ${selectedStatus === opt.id ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                  selectedStatus === opt.id ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'
+                }`}
               >
                 {opt.label}
               </button>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* STATS GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* SIDEBAR */}
+        <div className="lg:col-span-1 space-y-6 text-left">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+            <input 
+              type="text" 
+              placeholder="ПОИСК ПО НАЗВАНИЮ..." 
+              className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3.5 text-[11px] font-bold uppercase outline-none focus:border-blue-500 shadow-sm transition-all placeholder:text-slate-300"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+            <div className="flex items-center justify-between">
+               <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Прогресс</p>
+                  <p className="text-xl font-black text-slate-900 tracking-tight">Общий итог</p>
+               </div>
+               <ProgressCircle progress={stats.avgProgress} />
+            </div>
+            
+            <div className="space-y-3 pt-4 border-t border-slate-50">
+               <div className="flex justify-between items-center text-[10px] font-bold uppercase text-slate-400">
+                  <span>Завершено</span>
+                  <span className="text-emerald-600">{stats.completed} / {stats.total}</span>
+               </div>
+               <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-1000" 
+                    style={{ width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%` }} 
+                  />
+               </div>
+            </div>
+          </div>
+
           <StatCard 
-            label="Всего курсов" 
-            value={stats.total} 
-            icon={BookOpen} 
-            colorClass="bg-blue-100 text-blue-600" 
-            description="Активные программы" 
-            isPrimary={true} 
-          />
-          <StatCard 
-            label="Общий прогресс" 
-            value={`${stats.avgProgress}%`} 
-            icon={TrendingUp} 
-            colorClass="bg-indigo-100 text-indigo-600" 
-            description="Средний показатель" 
-          />
-          <StatCard 
-            label="Завершено" 
-            value={stats.completed} 
-            icon={CheckCircle2} 
-            colorClass="bg-emerald-100 text-emerald-600" 
-            description="Курсы со 100% прогрессом" 
-          />
-          <StatCard 
-            label="В ожидании" 
+            label="На проверке" 
             value={pending.length} 
             icon={Clock} 
-            colorClass="bg-amber-100 text-amber-600" 
-            description={pending.length > 0 ? "Нажмите для просмотра" : "Нет активных заявок"} 
+            colorClass="bg-amber-50 text-amber-600" 
+            description="Заявки на модерации" 
             onClick={pending.length > 0 ? () => setShowPendingModal(true) : null}
           />
         </div>
 
-        {/* SEARCH BAR */}
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-          <input 
-            type="text" 
-            placeholder="Поиск по названию курса..." 
-            className="w-full bg-white border border-slate-200 rounded-xl pl-12 pr-4 py-4 text-sm font-medium outline-none focus:border-blue-500 shadow-sm text-left transition-all"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-
-        {/* CONTENT AREA */}
-        <div className="min-h-[400px]">
-          {error ? (
-            <div className="bg-white p-20 rounded-2xl border border-slate-200 text-center shadow-sm">
-               <AlertCircle size={40} className="mx-auto text-rose-500 mb-4" />
-               <p className="font-bold text-slate-800">{error}</p>
-               <button onClick={fetchCourses} className="mt-4 text-[11px] font-black uppercase text-blue-600 hover:underline tracking-widest">Переподключиться</button>
+        {/* MAIN GRID */}
+        <div className="lg:col-span-3 text-left">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-white rounded-2xl border border-slate-100 animate-pulse" />)}
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          ) : filteredCourses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <AnimatePresence mode='popLayout'>
-                {filteredCourses.map((course) => {
-                  const progress = course.pivot?.progress || 0;
-                  return (
-                    <motion.div 
-                      layout 
-                      initial={{ opacity: 0, y: 10 }} 
-                      animate={{ opacity: 1, y: 0 }} 
-                      exit={{ opacity: 0, scale: 0.95 }} 
-                      key={course.id}
-                      className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all"
-                    >
-                      <div className="p-6 space-y-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex flex-col gap-1 text-left">
-                 
-                            <h3 className="text-sm font-bold text-slate-800 leading-snug group-hover:text-blue-600 transition-colors">
-                              {course.title}
-                            </h3>
-                          </div>
-                          <Link to={`/app/courses/${course.id}`} className="p-2 bg-slate-50 text-slate-400 rounded-lg hover:bg-blue-600 hover:text-white transition-all">
-                            <ArrowUpRight size={18} />
-                          </Link>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                            <span>Прогресс обучения</span>
-                            <span className={progress === 100 ? 'text-emerald-500' : 'text-slate-900'}>{progress}%</span>
-                          </div>
-                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <motion.div 
-                              initial={{ width: 0 }}
-                              animate={{ width: `${progress}%` }}
-                              transition={{ duration: 1, ease: "easeOut" }}
-                              className={`h-full rounded-full ${progress === 100 ? 'bg-emerald-500' : 'bg-blue-600'}`}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-slate-50">
-                           <CourseCard course={course} isMyCourse={true} hideProgress={true} />
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                {filteredCourses.map((course) => (
+                  <MyCourseCard key={course.id} course={course} />
+                ))}
               </AnimatePresence>
             </div>
-          )}
-
-          {filteredCourses.length === 0 && !loading && !error && (
-            <div className="p-32 bg-white rounded-2xl border border-dashed border-slate-200 text-center">
-              <Database size={48} className="mx-auto text-slate-200 mb-6" />
-              <h3 className="text-lg font-bold text-slate-900">Курсы не найдены</h3>
-              <p className="text-sm text-slate-400 mt-1">Попробуйте изменить параметры фильтрации или поиска</p>
-              <button onClick={() => {setSelectedStatus('Все'); setSearchQuery('');}} className="mt-8 px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg">
-                Сбросить поиск
-              </button>
+          ) : (
+            <div className="bg-white border border-dashed border-slate-200 rounded-3xl p-20 text-center flex flex-col items-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 text-slate-200">
+                 <PieChart size={32} />
+              </div>
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 mb-2">Пусто</h3>
+              <p className="text-[11px] font-medium text-slate-400 max-w-[240px] leading-relaxed mb-8 uppercase">
+                Ни одного курса не найдено. Попробуйте изменить фильтры или загляните в каталог.
+              </p>
+              <Link to="/app/courses" className="px-8 py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-blue-600 transition-all shadow-lg">
+                В каталог
+              </Link>
             </div>
           )}
         </div>
       </div>
 
-      {/* PENDING MODAL (KPI STYLE) */}
+      {/* MODAL */}
       <AnimatePresence>
         {showPendingModal && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative overflow-hidden flex flex-col max-h-[80vh] border border-slate-200"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative overflow-hidden border border-slate-200"
             >
               <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500" />
-              
-              <div className="p-8 border-b border-slate-100 bg-white flex justify-between items-center">
-                <div className="text-left">
-                  <span className="px-2 py-0.5 text-[9px] font-bold uppercase rounded bg-amber-50 text-amber-600 border border-amber-100">
-                    На модерации
-                  </span>
+              <div className="p-8 flex justify-between items-center border-b border-slate-50 text-left">
+                <div>
+                  <span className="text-[9px] font-black px-2 py-0.5 bg-amber-50 text-amber-600 rounded uppercase tracking-widest">Статус</span>
                   <h3 className="text-xl font-bold text-slate-900 tracking-tight mt-1">Ожидают подтверждения</h3>
                 </div>
-                <button onClick={() => setShowPendingModal(false)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 transition-colors">
-                  <X size={20} />
-                </button>
+                <button onClick={() => setShowPendingModal(false)} className="text-slate-400 hover:text-slate-900"><X size={20} /></button>
               </div>
-
-              <div className="p-6 overflow-y-auto bg-slate-50/30 flex-1 space-y-3">
-                {pending.map((course) => (
-                  <div key={course.id} className="bg-white border border-slate-200 p-4 rounded-xl flex items-center gap-4 text-left shadow-sm group">
-                    <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                      <Clock size={18} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-slate-800 leading-tight">{course.title}</p>
-                      <div className="flex items-center gap-1.5 mt-1 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                        <Calendar size={10} /> Статус: Проверка данных
-                      </div>
-                    </div>
+              <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto bg-slate-50/30 text-left">
+                {pending.map(c => (
+                  <div key={c.id} className="bg-white border border-slate-200 p-4 rounded-xl flex items-center gap-4 shadow-sm">
+                    <div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><Clock size={18} /></div>
+                    <p className="text-sm font-bold text-slate-800">{c.title}</p>
                   </div>
                 ))}
               </div>
-
-              <div className="p-6 bg-white border-t border-slate-100">
-                <button 
-                  onClick={() => setShowPendingModal(false)}
-                  className="w-full py-4 bg-slate-900 text-white text-[11px] font-bold uppercase tracking-[0.2em] rounded-xl hover:bg-blue-600 transition-all shadow-md"
-                >
-                  Понятно
-                </button>
+              <div className="p-6">
+                <button onClick={() => setShowPendingModal(false)} className="w-full py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-600 transition-all">Понятно</button>
               </div>
             </motion.div>
           </div>

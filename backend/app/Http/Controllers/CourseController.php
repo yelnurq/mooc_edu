@@ -160,28 +160,33 @@ public function myCourses()
 
     $courses = $user->courses()
         ->with([
-            'category', 
+            'category',
+            'quiz', // Исправлено: просто загружаем связь
             'modules' => function($query) {
                 $query->select('id', 'course_id')->withCount('lessons');
             }
         ])
         ->get()
         ->map(function ($course) use ($user) {
-            // 1. Считаем общее кол-во уроков
             $totalLessons = $course->modules->sum('lessons_count');
-            
-            // 2. Рассчитываем количество пройденных уроков
-            // Предположим, у тебя есть связь lessons() у пользователя через таблицу pivot
-            // Если нет, можно просто высчитывать из процента: ($totalLessons * progress) / 100
             $progressPercent = $course->pivot->progress ?? 0;
             $completedLessonsCount = floor(($totalLessons * $progressPercent) / 100);
 
-            // 3. Пытаемся определить текущий модуль (примерная логика)
-            // Если модулей 10, а прогресс 30%, то пользователь примерно на 3-м модуле
             $modulesCount = $course->modules->count();
             $currentModule = $progressPercent > 0 
                 ? ceil(($modulesCount * $progressPercent) / 100) 
                 : 1;
+
+            // --- ПОЛУЧЕНИЕ БАЛЛА ---
+            $examScore = null;
+            
+            // Теперь $course->quiz сработает, так как мы определили morphOne
+            if ($course->quiz) {
+                $examScore = \Illuminate\Support\Facades\DB::table('quiz_results')
+                    ->where('user_id', $user->id)
+                    ->where('quiz_id', $course->quiz->id)
+                    ->value('score'); 
+            }
 
             return [
                 'id' => $course->id,
@@ -192,8 +197,9 @@ public function myCourses()
                 'modules_count' => $modulesCount,
                 'status' => $course->pivot->status ?? 'pending',
                 'category' => $course->category->name ?? 'Разработка', 
+                'author_display_name' => $course->author_display_name, // Добавь это
+                'quiz' => $course->quiz ? ['id' => $course->quiz->id] : null,
                 
-                // Данные для "Продолжить обучение"
                 'last_lesson_title' => $course->pivot->last_lesson_title ?? 'Основы Laravel', 
                 
                 'pivot' => [
@@ -201,7 +207,12 @@ public function myCourses()
                     'completed_lessons' => $completedLessonsCount,
                     'current_module' => $currentModule > $modulesCount ? $modulesCount : $currentModule,
                     'last_accessed' => $course->pivot->updated_at,
+                    'exam_score' => $examScore, 
                 ],
+                
+                'quiz_results' => $examScore !== null ? [
+                    ['quiz_id' => $course->quiz->id, 'score' => (int)$examScore]
+                ] : []
             ];
         });
 
