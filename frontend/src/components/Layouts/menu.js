@@ -5,12 +5,16 @@ import {
   BookOpen, 
   MessageCircle, 
   Award, 
+  Users,          // Для форума
+  Sparkles,      // Для ИИ
   User,
   HelpCircle, 
-  Settings 
+  MessageSquare, // Для чата с куратором
+  Settings, 
+  Verified
 } from 'lucide-react';
 
-// Элементы бокового меню
+
 export const sidebarMenuItems = [
   { 
     id: 'dashboard', 
@@ -24,14 +28,38 @@ export const sidebarMenuItems = [
     icon: <BookOpen size={20} />, 
     label: 'Мои курсы' 
   },
- 
   { 
     id: 'certificates', 
     path: '/app/certificates', 
     icon: <Award size={20} />, 
     label: 'Сертификаты' 
   },
-
+  { 
+    id: 'verify', 
+    path: '/app/certificates/verify', 
+    icon: <Verified size={20} />, 
+    label: 'Проверка сертификата' 
+  },
+  // --- НОВЫЕ РАЗДЕЛЫ ---
+  { 
+    id: 'mentor-chat', 
+    path: '/app/mentor-chat', 
+    icon: <MessageSquare size={20} />, 
+    label: 'Куратор' 
+  },
+  { 
+    id: 'ai-tutor', 
+    path: '/app/ai-tutor', 
+    icon: <Sparkles size={20} className="text-blue-500" />, // Можно подсветить синим
+    label: 'AI Помощник' 
+  },
+  { 
+    id: 'forum', 
+    path: '/app/forum', 
+    icon: <Users size={20} />, 
+    label: 'Сообщество' 
+  },
+  // ----------------------
   { 
     id: 'settings', 
     path: '/app/settings', 
