@@ -158,7 +158,7 @@ const AppLayout = () => {
         )}
 
    {/* Контейнер Outlet */}
-<div className={`flex-1 flex flex-col ${!isCourseLearningPage ? 'p-8 w-full' : 'h-screen w-full overflow-hidden'}`}>
+<div className={`${!isCourseLearningPage ? 'p-6 overflow-x-hidden' : 'h-screen w-full overflow-hidden'}`}>
   <Outlet /> 
 </div>
       </main>

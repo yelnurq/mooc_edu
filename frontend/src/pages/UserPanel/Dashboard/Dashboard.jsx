@@ -87,7 +87,7 @@ const StudentDashboard = () => {
   );
 
   return (
-    <main className="max-w-[1440px] mx-auto px-8 py-10 bg-[#f8fafc] min-h-screen font-sans text-slate-900">
+    <main className="max-w-[1400px] mx-auto px-6 py-10 bg-[#f8fafc] min-h-screen font-sans text-slate-900">
       
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-slate-200 pb-8 mb-8">
