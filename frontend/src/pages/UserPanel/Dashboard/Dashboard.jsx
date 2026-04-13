@@ -340,6 +340,7 @@ const StudentDashboard = () => {
 </tbody>
             </table>
           </div>
+          
         </div>
 
         <div className="space-y-4">
@@ -358,6 +359,72 @@ const StudentDashboard = () => {
           </button>
         </div>
       </div>
+      {/* ТАБЛИЦА ЭКЗАМЕНОВ */}
+<div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mt-8">
+  <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+    <div className="flex items-center gap-2">
+      <Award size={18} className="text-blue-600" />
+      <h3 className="font-bold text-sm text-slate-800 uppercase tracking-tight text-left">Результаты экзаменов</h3>
+    </div>
+  </div>
+  <div className="overflow-x-auto">
+    <table className="w-full border-collapse">
+      <thead>
+        <tr className="bg-slate-50/30 text-[10px] uppercase tracking-[0.15em] text-slate-400 border-b border-slate-100">
+          <th className="px-6 py-4 font-bold text-left">Дисциплина / Экзамен</th>
+          <th className="px-6 py-4 font-bold text-center">Верных ответов</th>
+          <th className="px-6 py-4 font-bold text-center">Баллы (Процент)</th>
+          <th className="px-6 py-4 font-bold text-right">Дата сдачи</th>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-slate-50">
+        {loading ? (
+          <tr><td colSpan="4" className="px-6 py-10 text-center"><Loader2 className="animate-spin inline text-blue-500" /></td></tr>
+        ) : data?.exams?.length > 0 ? (
+          data.exams.map((exam) => (
+            <tr key={exam.id} className="hover:bg-slate-50/50 transition-colors">
+              <td className="px-6 py-4">
+                <div className="flex flex-col text-left">
+                  <span className="text-sm font-bold text-slate-800">{exam.course_title}</span>
+                  <span className="text-[10px] text-blue-500 font-bold uppercase mt-0.5">{exam.quiz_title}</span>
+                </div>
+              </td>
+              <td className="px-6 py-4 text-center">
+                <span className="text-xs font-medium text-slate-600">
+                  {exam.correct} <span className="text-slate-300">/</span> {exam.total}
+                </span>
+              </td>
+              <td className="px-6 py-4 text-center">
+                <div className="flex flex-col items-center gap-1">
+                  <span className={`text-sm font-black ${exam.passed ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {exam.score}%
+                  </span>
+                  <div className="w-20 h-1 bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full ${exam.passed ? 'bg-emerald-500' : 'bg-red-500'}`} 
+                      style={{ width: `${exam.score}%` }} 
+                    />
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4 text-right">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">
+                  {exam.date}
+                </span>
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan="4" className="px-6 py-12 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Экзамены еще не сданы
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
     </main>
   );
 };

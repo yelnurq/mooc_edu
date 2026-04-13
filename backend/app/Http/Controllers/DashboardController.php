@@ -60,35 +60,28 @@ $completedLessons = \DB::table('lesson_user')
 
     // --- ПОСЛЕДНИЕ ТЕСТЫ ---
     $recentTests = \App\Models\QuizResult::where('user_id', $user->id)
-        ->with(['quiz.quizable'])
-        ->latest()
-        ->take(3)
-        ->get()
-        ->map(function ($result) {
-            $quiz = $result->quiz;
-            $parent = $quiz->quizable;
-            
-            $courseTitle = 'Общий';
-            $moduleTitle = 'Тест';
+    ->whereHas('quiz', function($query) {
+        // Фильтруем только тесты, привязанные к модулям
+        $query->where('quizable_type', \App\Models\Module::class);
+    })
+    ->with(['quiz.quizable.course']) // Загружаем цепочку: Тест -> Модуль -> Курс
+    ->latest()
+    ->take(3)
+    ->get()
+    ->map(function ($result) {
+        $quiz = $result->quiz;
+        $module = $quiz->quizable; // Это точно будет Module благодаря фильтру выше
 
-            if ($parent instanceof \App\Models\Course) {
-                $courseTitle = $parent->title;
-                $moduleTitle = 'Экзамен курса';
-            } elseif ($parent instanceof \App\Models\Module) {
-                $moduleTitle = $parent->title;
-                $courseTitle = $parent->course->title ?? 'Курс';
-            }
-
-            return [
-                'id' => $result->id,
-                'name' => $quiz->title,
-                'course' => $courseTitle,
-                'module' => $moduleTitle,
-                'score' => $result->score,
-                'date' => $result->created_at->diffForHumans(),
-                'color' => $result->score >= 80 ? 'text-emerald-600' : 'text-blue-600'
-            ];
-        });
+        return [
+            'id' => $result->id,
+            'name' => $quiz->title,
+            'course' => $module->course->title ?? 'Курс',
+            'module' => $module->title,
+            'score' => $result->score,
+            'date' => $result->created_at->diffForHumans(),
+            'color' => $result->score >= 80 ? 'text-emerald-600' : 'text-blue-600'
+        ];
+    });
 $totalQuizzes = \App\Models\Quiz::where(function($query) use ($userCourseIds) {
     // Тесты модулей
     $query->where(function($q) use ($userCourseIds) {
@@ -152,8 +145,26 @@ for ($i = 6; $i >= 0; $i--) {
         'quizzes' => $quizzesCount,
     ];
 }
+$exams = \App\Models\QuizResult::where('user_id', $user->id)
+    ->whereHas('quiz', function($query) {
+        $query->where('quizable_type', \App\Models\Course::class);
+    })
+    ->with(['quiz.quizable'])
+    ->latest()
+    ->get()
+    ->map(function ($result) {
+        return [
+            'id' => $result->id,
+            'quiz_title' => $result->quiz->title,
+            'course_title' => $result->quiz->quizable->title ?? 'Курс',
+            'score' => $result->score,
+            'correct' => $result->correct_answers,
+            'total' => $result->total_questions,
+            'date' => $result->created_at->format('d.m.Y'),
+            'passed' => $result->passed
+        ];
+    });
 
-// Вставьте 'chart_data' => $chartData в итоговый JSON ответ
     return response()->json([
         'user' => [
             'name' => $user->name,
@@ -177,6 +188,7 @@ for ($i = 6; $i >= 0; $i--) {
         'active_courses' => $activeCourses,
         'recent_tests' => $recentTests,
         'chart_data' => $chartData,
+        'exams' => $exams,
         'completed_courses_list' => $completedCourses, 
     ]);
 }
