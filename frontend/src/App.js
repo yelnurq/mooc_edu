@@ -23,6 +23,7 @@ import MyCourses from './pages/UserPanel/Courses/MyCourses/MyCourses';
 import Certificates from './pages/UserPanel/Courses/Certificates/Certificates';
 import QuizEditor from './pages/UserPanel/Courses/QuizEditor/Quiz';
 import CertificateVerify from './pages/UserPanel/Certificate/Verify';
+import CertificateAppVerify from './pages/UserPanel/Certificate/VerifyApp';
 
 // Локальный компонент для защиты роутов
 const ProtectedRoute = () => {
@@ -50,6 +51,7 @@ function App() {
             <Route element={<AppLayout />}>
               <Route path="/app/courses/:id" element={<CourseAppPage />} />
               <Route path="/app/certificates" element={<Certificates />} />
+              <Route path="/app/certificate/verify" element={<CertificateAppVerify />} />
               <Route path="/app/dashboard" element={<Dashboard />} />
               <Route path="/app/my-courses" element={<MyCourses />} />
               <Route path="/app/settings" element={<SettingsPage />} />

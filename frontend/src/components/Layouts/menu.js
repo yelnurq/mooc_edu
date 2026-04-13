@@ -36,7 +36,7 @@ export const sidebarMenuItems = [
   },
   { 
     id: 'verify', 
-    path: '/app/certificates/verify', 
+    path: '/app/certificate/verify', 
     icon: <Verified size={20} />, 
     label: 'Проверка сертификата' 
   },
