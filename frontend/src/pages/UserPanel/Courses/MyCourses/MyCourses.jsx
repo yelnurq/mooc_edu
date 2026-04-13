@@ -222,7 +222,7 @@ const MyCourses = () => {
   ];
 
   return (
-    <main className="max-w-[1400px] mx-auto px-6 py-10 bg-[#f8fafc] min-h-screen font-sans text-slate-900">
+    <main className="max-w-[1400px] mx-auto px-6 py-10 bg-[#f8fafc] font-sans text-slate-900">
       
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-slate-200 pb-8 mb-8">
@@ -366,9 +366,10 @@ const MyCourses = () => {
       </AnimatePresence>
 {!loading && (
       <div className="text-left mt-16 pt-8 border-t border-slate-200">
-        <p className="text-xs font-medium text-slate-500 leading-relaxed uppercase tracking-wide max-w-4xl">
+        <p className="text-xs font-medium text-slate-500 leading-relaxed uppercase tracking-wide">
           Ваш текущий план развития выполнен на <span className="text-slate-900 font-bold">{stats.avgProgress}%</span>. 
           Это отличный темп — продолжайте активное изучение материалов для скорейшего достижения целевых показателей и подтверждения квалификации.
+
         </p>
       </div>
     )}

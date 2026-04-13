@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Certificate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -69,4 +70,6 @@ class StudentController extends Controller
 
         return response()->json(['message' => 'Настройки успешно сохранены']);
     }
+
+
 }

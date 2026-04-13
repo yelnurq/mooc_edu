@@ -264,14 +264,12 @@ public function show(Request $request, $id)
     }
 
     // 2. Загружаем курс со всеми связями
- $course = \App\Models\Course::with([
-    'resources',
-    // Загружаем вопросы и опции для теста курса
-    'quiz.questions.options', 
-    'modules.lessons',
-    // Загружаем вопросы и опции для тестов модулей
-    'modules.quiz.questions.options'
-])->find($id);
+    $course = \App\Models\Course::with([
+        'resources',
+        'quiz.questions.options', 
+        'modules.lessons',
+        'modules.quiz.questions.options'
+    ])->find($id);
 
     if (!$course) {
         return response()->json(['message' => 'Курс не найден'], 404);
@@ -287,26 +285,36 @@ public function show(Request $request, $id)
         ], 403);
     }
 
-    // --- НОВОЕ: Загружаем результаты тестов пользователя для этого курса ---
-    // Собираем все ID квизов этого курса
+    // --- ОБНОВЛЕНО: Загружаем результаты тестов вместе с номером сертификата ---
     $quizIds = collect([$course->quiz?->id])
-    ->merge($course->modules->pluck('quiz.id'))
-    ->filter()
-    ->unique()
-    ->toArray();
+        ->merge($course->modules->pluck('quiz.id'))
+        ->filter()
+        ->unique()
+        ->toArray();
 
-// Получаем попытки
-$quizResults = \Illuminate\Support\Facades\DB::table('quiz_results')
-    ->where('user_id', $user->id)
-    ->whereIn('quiz_id', $quizIds)
-    ->select('quiz_id', 'score', 'passed')
-    ->get()
-    ->map(function($item) {
-        $item->quiz_id = (int)$item->quiz_id;
-        $item->passed = (bool)$item->passed;
-        $item->score = (int)$item->score;
-        return $item;
-    });
+    // Делаем Join с таблицей certificates, чтобы забрать номер, если он есть
+    $quizResults = \Illuminate\Support\Facades\DB::table('quiz_results')
+        ->leftJoin('certificates', function($join) use ($id) {
+            $join->on('quiz_results.user_id', '=', 'certificates.user_id')
+                 ->where('certificates.course_id', '=', $id);
+        })
+        ->where('quiz_results.user_id', $user->id)
+        ->whereIn('quiz_results.quiz_id', $quizIds)
+        ->select(
+            'quiz_results.quiz_id', 
+            'quiz_results.score', 
+            'quiz_results.passed',
+            'certificates.certificate_number' // Достаем номер сертификата
+        )
+        ->get()
+        ->map(function($item) {
+            $item->quiz_id = (int)$item->quiz_id;
+            $item->passed = (bool)$item->passed;
+            $item->score = (int)$item->score;
+            // certificate_number будет либо строкой, либо null
+            return $item;
+        });
+
     // 4. Сбор ID пройденных уроков
     $courseLessonIds = $course->modules->flatMap(function($module) {
         return $module->lessons->pluck('id');
@@ -344,8 +352,6 @@ $quizResults = \Illuminate\Support\Facades\DB::table('quiz_results')
     // 7. Добавляем мета-данные
     $course->is_enrolled = true;
     $course->completed_lessons_ids = $completedLessonsIds;
-    
-    // Добавляем результаты тестов в основной объект курса
     $course->quiz_results = $quizResults; 
 
     return response()->json($course);

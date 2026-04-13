@@ -196,8 +196,6 @@ const CourseAppPage = () => {
 
     // Страховочный таймер для видео
     if (activeLesson.video_url && !isAlreadyDone) {
-      // Можно установить среднее время (например, через 1-2 минуты считать урок изученным)
-      // Или если у тебя в API есть длительность видео в секундах: activeLesson.duration
       const safetyTimer = setTimeout(() => {
         setCanComplete(true);
       }, 60000); // 60 секунд как пример
@@ -263,29 +261,43 @@ const CourseAppPage = () => {
     setShowQuizIntro(true);
   };
 const downloadCertificate = async () => {
+  // 1. Находим результат финального экзамена, чтобы получить номер сертификата (certNumber)
+  const examResult = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz?.id));
+  
+  // Берем certificate_number из результата теста (убедитесь, что бэкенд его возвращает в quiz_results)
+  // Если в результатах теста его нет, можно попробовать взять из другого места или передать uuid
+  const certNumber = examResult?.certificate_number;
+
+  if (!certNumber) {
+    console.error("Номер сертификата не найден");
+    alert("Ошибка: Номер сертификата не найден. Попробуйте обновить страницу.");
+    return;
+  }
+
   setCompleting(true);
   try {
-    // Делаем запрос к созданному выше API
-    const response = await api.get(`/courses/${course.id}/certificate/download`, {
-      responseType: 'blob', // Важно: указываем, что ждем файл
+    // 2. Делаем запрос по НОВОМУ адресу: /certificates/{number}/download
+    const response = await api.get(`/certificates/${certNumber}/download`, {
+      responseType: 'blob', // Обязательно для PDF
     });
 
-    // Создаем временную ссылку для браузера
+    // 3. Создаем ссылку и скачиваем
     const blob = new Blob([response.data], { type: 'application/pdf' });
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     
     link.href = url;
-    link.setAttribute('download', `Certificate-${course.title}.pdf`);
+    // Используем номер в названии файла
+    link.setAttribute('download', `Certificate-${certNumber}.pdf`);
     document.body.appendChild(link);
     link.click();
     
-    // Чистим за собой
+    // Чистим память
     link.parentNode.removeChild(link);
     window.URL.revokeObjectURL(url);
   } catch (err) {
-    console.error("Ошибка при получении сертификата:", err);
-    // Здесь можно вывести уведомление пользователю
+    console.error("Ошибка при скачивании сертификата:", err);
+    alert("Не удалось скачать сертификат. Пожалуйста, обратитесь в поддержку.");
   } finally {
     setCompleting(false);
   }

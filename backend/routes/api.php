@@ -44,9 +44,10 @@ Route::middleware("logs")->group(function(){
 
         Route::get('/user/settings', [StudentController::class, 'settings']);
         Route::put('/user/settings', [StudentController::class, 'updateSettings']);
-
+        Route::get('/my-certificates', [CertificateController::class, 'certificates']);
         Route::get("/student/dashboard-stats", [DashboardController::class, 'getStudentStats']);
-        Route::get('/courses/{id}/certificate/download', [CertificateController::class, 'downloadCertificate']);
+        Route::get('/certificates/{number}/download', [CertificateController::class, 'downloadCertificate'])
+        ->name('certificates.download');
         
         Route::prefix('admin/ldap')->group(function () {
                 Route::get('/users', [LdapController::class, 'getAllLdapUsers']);
