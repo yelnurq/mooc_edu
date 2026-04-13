@@ -220,28 +220,33 @@ useEffect(() => {
   };
   fetchCourseData();
 }, [id]);
+useEffect(() => {
+  if (activeLesson) {
+    const isAlreadyDone = completedLessons.includes(Number(activeLesson.id));
+    setCanComplete(isAlreadyDone);
+    setWatchProgress(0);
 
-  // 2. Логика разблокировки кнопки "Завершить" (Таймеры и прогресс)
-  useEffect(() => {
-    if (activeLesson) {
-      const isAlreadyDone = completedLessons.includes(Number(activeLesson.id));
-      setCanComplete(isAlreadyDone);
-      setWatchProgress(0);
+    if (!isAlreadyDone) {
+      // 1. Проверка на PDF (остается без изменений)
+      if (!activeLesson.video_url && activeLesson.file_url) {
+        const timer = setTimeout(() => setCanComplete(true), 30000);
+        return () => clearTimeout(timer);
+      }
+      
+      // 2. Если URL видео пустой, состоит из пробелов или слишком короткий (битый)
+      const isVideoUrlValid = activeLesson.video_url && activeLesson.video_url.trim().length > 3;
+      
+      if (!isVideoUrlValid) {
+        setCanComplete(true);
+      }
 
-      if (!isAlreadyDone) {
-        // Если видео — ждем прогресса (handleVideoProgress), если PDF — таймер
-        if (!activeLesson.video_url && activeLesson.file_url) {
-          const timer = setTimeout(() => setCanComplete(true), 30000);
-          return () => clearTimeout(timer);
-        }
-        // Если материалов вообще нет — разрешаем сразу
-        if (!activeLesson.video_url && !activeLesson.file_url) {
-          setCanComplete(true);
-        }
+      // 3. Если материалов вообще нет
+      if (!isVideoUrlValid && !activeLesson.file_url) {
+        setCanComplete(true);
       }
     }
-  }, [activeLesson, completedLessons]);
-
+  }
+}, [activeLesson, completedLessons]);
 // 1. Плоский список уроков
 // Используем ?. и || [] во всех вычислениях
 const allLessonsFlat = useMemo(() => 
@@ -293,6 +298,7 @@ const currentQuiz = useMemo(() => {
   return null;
 }, [testStarted, activeLesson, modulesWithResults, course]);
   // Хендлеры
+
   const handleVideoProgress = (state) => {
     const progress = Math.round(state.played * 100);
     setWatchProgress(progress);
@@ -438,13 +444,21 @@ const currentQuiz = useMemo(() => {
                           {activeLesson?.video_url ? (
                             <div className="absolute inset-0 bg-black overflow-hidden rounded-[1rem]"> 
                               <ReactPlayer
-                                key={activeLesson.id}
-                                url={activeLesson.video_url.includes('http') ? activeLesson.video_url : `https://www.youtube.com/watch?v=${activeLesson.video_url}`}
-                                width="100%" height="100%" controls playing={false}
-                                onProgress={handleVideoProgress}
-                                onEnded={() => setCanComplete(true)}
-                                style={{ position: 'absolute', top: 0, left: 0 }}
-                              />
+  key={activeLesson.id}
+  url={activeLesson.video_url.includes('http') ? activeLesson.video_url : `https://www.youtube.com/watch?v=${activeLesson.video_url}`}
+  width="100%" 
+  height="100%" 
+  controls 
+  playing={false}
+  onProgress={handleVideoProgress}
+  onEnded={() => setCanComplete(true)}
+  // ОБРАБОТКА ОШИБКИ ЗАГРУЗКИ
+  onError={(e) => {
+    console.warn("Видео не загрузилось, открываем доступ автоматически:", e);
+    setCanComplete(true);
+  }}
+  style={{ position: 'absolute', top: 0, left: 0 }}
+/>
                             </div>
                           ) : activeLesson?.file_url ? (
                             <iframe key={`pdf-${activeLesson?.id}`} src={`${activeLesson.file_url}#toolbar=0`} className="w-full h-full bg-white border-none" title={activeLesson?.title} />
