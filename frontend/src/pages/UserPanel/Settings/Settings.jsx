@@ -17,13 +17,9 @@ const Settings = () => {
     transactions: []
   });
 
- const [formData, setFormData] = useState({
-  email: '', 
-  mobile: '', 
-  current_password: '', 
-  new_password: '',
-  confirm_password: '', // Добавлено
-});
+  const [formData, setFormData] = useState({
+    email: '', mobile: '', current_password: '', new_password: '',
+  });
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -47,16 +43,6 @@ const Settings = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (activeTab === 'security') {
-    if (formData.new_password !== formData.confirm_password) {
-      alert("Пароли не совпадают!");
-      return;
-    }
-    if (formData.new_password.length < 8) {
-      alert("Новый пароль слишком короткий!");
-      return;
-    }
-  }
     setLoading(true);
     const isPasswordChange = activeTab === 'security' && formData.new_password;
 
@@ -210,46 +196,34 @@ const Settings = () => {
                 )}
 
                 {activeTab === 'security' && (
-  <motion.form 
-    key="security"
-    initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
-    transition={{ duration: 0.2 }}
-    onSubmit={handleSave} 
-    className="space-y-6 w-full flex-1 flex flex-col text-left"
-  >
-    <div className="p-6 bg-indigo-50 rounded-xl border border-indigo-100 flex gap-4 items-center w-full">
-      <div className="p-2 bg-indigo-500 text-white rounded-lg flex-shrink-0"><Shield size={18} /></div>
-      <p className="text-xs font-bold text-indigo-700 leading-relaxed">Безопасность превыше всего. После смены пароля все активные сессии будут завершены.</p>
-    </div>
+                  <motion.form 
+                    key="security"
+                    initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.2 }}
+                    onSubmit={handleSave} 
+                    className="space-y-6 w-full flex-1 flex flex-col text-left"
+                  >
+                    <div className="p-6 bg-indigo-50 rounded-xl border border-indigo-100 flex gap-4 items-center w-full">
+                      <div className="p-2 bg-indigo-500 text-white rounded-lg flex-shrink-0"><Shield size={18} /></div>
+                      <p className="text-xs font-bold text-indigo-700 leading-relaxed">После смены пароля все активные сессии будут завершены.</p>
+                    </div>
 
-    <div className="space-y-5 flex-1 w-full">
-      <div className="space-y-2">
-        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Текущий пароль</label>
-        <input type="password" required value={formData.current_password} onChange={(e) => setFormData({...formData, current_password: e.target.value})} className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:border-indigo-500 outline-none transition-all" placeholder="••••••••" />
-      </div>
+                    <div className="space-y-5 flex-1 w-full">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Текущий пароль</label>
+                        <input type="password" value={formData.current_password} onChange={(e) => setFormData({...formData, current_password: e.target.value})} className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:border-indigo-500 outline-none transition-all" placeholder="••••••••" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Новый пароль</label>
+                        <input type="password" value={formData.new_password} onChange={(e) => setFormData({...formData, new_password: e.target.value})} className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:border-indigo-500 outline-none transition-all" placeholder="Минимум 8 символов" />
+                      </div>
+                    </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Новый пароль</label>
-          <input type="password" required value={formData.new_password} onChange={(e) => setFormData({...formData, new_password: e.target.value})} className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:border-indigo-500 outline-none transition-all" placeholder="Минимум 8 символов" />
-        </div>
-       
-      </div>
-      
-      {formData.confirm_password && formData.new_password !== formData.confirm_password && (
-        <p className="text-[10px] font-bold text-red-500 uppercase tracking-tight ml-1 italic">Пароли не совпадают</p>
-      )}
-    </div>
-
-    <button 
-      type="submit" 
-      disabled={loading || (formData.new_password !== formData.confirm_password)} 
-      className="w-full py-5 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-xl hover:bg-indigo-600 transition-all mt-auto shadow-lg shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      {loading ? 'Обновление защиты...' : 'Обновить пароль и выйти'}
-    </button>
-  </motion.form>
-)}
+                    <button type="submit" disabled={loading} className="w-full py-5 bg-slate-900 text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-xl hover:bg-indigo-600 transition-all mt-auto shadow-lg shadow-indigo-200">
+                      {loading ? 'Обновление защиты...' : 'Обновить пароль и выйти'}
+                    </button>
+                  </motion.form>
+                )}
 
                 {activeTab === 'history' && (
                   <motion.div 
