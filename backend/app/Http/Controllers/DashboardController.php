@@ -22,27 +22,29 @@ public function getStudentStats()
     $avgProgress = $totalCourses > 0 
         ? round($userCourses->avg('pivot.progress'), 1) 
         : 0;
-// 2. Активные курсы
-// 2. Активные курсы
-$activeCourses = $userCourses
-    // Фильтруем коллекцию через callback, чтобы залезть в pivot
+// 2. Последние дисциплины (Активные + Недавно завершенные)
+$latestDisciplines = $userCourses
     ->filter(function($course) {
-        return $course->pivot->status === 'approved' && $course->pivot->progress < 100;
+        // Берем только одобренные курсы
+        return $course->pivot->status === 'approved';
     })
-    // Сортируем по дате обновления в pivot таблице
-    ->sortByDesc('pivot.updated_at')
-    ->take(5)
+    ->sortByDesc('pivot.updated_at') // Самые свежие действия сверху
+    ->take(4) // Берем топ-4 для сетки
     ->values()
     ->map(function($course) {
         return [
             'id' => $course->id,
             'title' => $course->title,
-            'category' => $course->category, 
-            'progress' => $course->pivot->progress,
+            'progress' => (int)$course->pivot->progress,
             'instructor' => $course->author_display_name,
-            'status' => $course->pivot->status // Берем статус из pivot
+            'completed_at' => $course->pivot->progress == 100 && $course->pivot->updated_at 
+                ? $course->pivot->updated_at->format('d.m.Y') 
+                : null
         ];
     });
+
+// В return response()->json[...] замените 'active_courses' на:
+// 'active_courses' => $latestDisciplines,
 $totalLessons = \App\Models\Lesson::whereHas('module', function ($query) use ($userCourseIds) {
     $query->whereIn('course_id', $userCourseIds);
 })->count();
@@ -185,7 +187,7 @@ $exams = \App\Models\QuizResult::where('user_id', $user->id)
             'total_modules' => $totalModules,
             'hours' => $user->learning_hours ?? 0,
         ],
-        'active_courses' => $activeCourses,
+        'active_courses' => $latestDisciplines,
         'recent_tests' => $recentTests,
         'chart_data' => $chartData,
         'exams' => $exams,

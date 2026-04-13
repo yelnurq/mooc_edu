@@ -66,28 +66,56 @@ const StatCard = ({ icon: Icon, label, value, colorClass, description, isPrimary
   </div>
 );
 
-const CourseCard = ({ course }) => (
-  <Link to={`/app/courses/${course.id}`} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-blue-400 transition-all group flex flex-col justify-between">
-    <div>
-      <div className="flex justify-between items-start mb-4">
-        <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-colors">
-          <BookOpen size={18} />
-        </div>
-        <span className="text-[9px] font-black px-2 py-1 bg-blue-50 text-blue-600 rounded uppercase tracking-wider">
-          {course.progress}% пройденo
-        </span>
-      </div>
-      <h4 className="font-bold text-slate-900 text-xs mb-1 uppercase tracking-tight group-hover:text-blue-600 transition-colors line-clamp-2 h-8">
-        {course.title}
-      </h4>
-      <p className="text-[10px] font-bold text-slate-400 uppercase mb-4">{course.instructor || 'Инструктор'}</p>
-    </div>
-    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-      <div className="h-full bg-slate-900 group-hover:bg-blue-600 transition-all duration-700" style={{ width: `${course.progress}%` }} />
-    </div>
-  </Link>
-);
+const CourseCard = ({ course }) => {
+  const isCompleted = course.progress === 100;
 
+  return (
+    <Link 
+      to={`/app/courses/${course.id}`} 
+      className={`bg-white p-5 rounded-xl border transition-all group flex flex-col justify-between h-full ${
+        isCompleted ? 'border-emerald-200 bg-emerald-50/10' : 'border-slate-200 hover:border-blue-400'
+      } shadow-sm`}
+    >
+      <div>
+        <div className="flex justify-between items-start mb-4">
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+            isCompleted ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-50 text-slate-400 group-hover:bg-slate-900 group-hover:text-white'
+          }`}>
+            {isCompleted ? <Award size={18} /> : <BookOpen size={18} />}
+          </div>
+          
+          <span className={`text-[9px] font-black px-2 py-1 rounded uppercase tracking-wider ${
+            isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-600'
+          }`}>
+            {isCompleted ? 'Завершен' : `${course.progress}%`}
+          </span>
+        </div>
+
+        <h4 className="font-bold text-slate-900 text-xs mb-1 uppercase tracking-tight group-hover:text-blue-600 transition-colors line-clamp-2 h-8">
+          {course.title}
+        </h4>
+        <p className="text-[10px] font-bold text-slate-400 uppercase mb-4">
+          {isCompleted ? `Завершено: ${course.completed_at || '—'}` : (course.instructor || 'Инструктор')}
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-tighter">
+          <span className={isCompleted ? 'text-emerald-600' : 'text-slate-400'}>
+            {isCompleted ? 'Курс пройден успешно' : 'Прогресс обучения'}
+          </span>
+          {!isCompleted && <span className="text-slate-900">{course.progress}%</span>}
+        </div>
+        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div 
+            className={`h-full transition-all duration-700 ${isCompleted ? 'bg-emerald-500' : 'bg-blue-600'}`} 
+            style={{ width: `${course.progress}%` }} 
+          />
+        </div>
+      </div>
+    </Link>
+  );
+};
 const StudentDashboard = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -254,8 +282,9 @@ const StudentDashboard = () => {
         <div className="flex items-center justify-between mb-4 px-1">
           <div className="flex items-center gap-2">
             <ClipboardCheck size={18} className="text-slate-900" />
-            <h3 className="font-bold text-sm text-slate-800 uppercase tracking-tight text-left">Мои Дисциплины</h3>
-          </div>
+<h3 className="font-bold text-sm text-slate-800 uppercase tracking-tight text-left">
+  Текущие и завершенные дисциплины
+</h3>          </div>
           <Link to="/app/my-courses" className="text-[10px] font-bold text-blue-600 uppercase flex items-center gap-1 hover:underline">
             Все курсы <ChevronRight size={14} />
           </Link>
@@ -354,9 +383,12 @@ const StudentDashboard = () => {
                 <StatCard icon={Award} label="Сертификаты" value={data?.stats?.certificates_count} colorClass="bg-emerald-50 text-emerald-600" description="Получено за все время" hideUnit />
             </>
           )}
-          <button className="w-full py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-3">
-            <BarChart3 size={16} /> Полный отчет
-          </button>
+          <Link 
+            to="/app/certificates" 
+            className="w-full py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-3"
+          >
+            <BarChart3 size={16} /> Посмотреть сертификаты
+          </Link>
         </div>
       </div>
       {/* ТАБЛИЦА ЭКЗАМЕНОВ */}
