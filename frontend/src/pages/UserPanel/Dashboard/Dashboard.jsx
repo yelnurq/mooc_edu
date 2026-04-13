@@ -3,7 +3,7 @@ import {
   Target, Zap, Award, User, BookOpen, 
   Clock, BarChart3, Loader2, ClipboardCheck, 
   ChevronRight, ArrowUpRight, GraduationCap,
-  Layout, Star
+  Star
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
@@ -20,7 +20,33 @@ const formatDate = (dateString) => {
   }).format(new Date(dateString));
 };
 
-// --- КОМПОНЕНТЫ КАРТОЧЕК ---
+// --- ВСПОМОГАТЕЛЬНЫЕ КОМПОНЕНТЫ (SKELETONS) ---
+const StatSkeleton = () => (
+  <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm animate-pulse">
+    <div className="flex justify-between items-start mb-4">
+      <div className="space-y-3">
+        <div className="h-2 w-16 bg-slate-100 rounded" />
+        <div className="h-6 w-24 bg-slate-100 rounded" />
+      </div>
+      <div className="w-10 h-10 bg-slate-50 rounded-lg" />
+    </div>
+    <div className="h-2 w-32 bg-slate-100 rounded" />
+  </div>
+);
+
+const CourseSkeleton = () => (
+  <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm animate-pulse">
+    <div className="flex justify-between mb-4">
+      <div className="w-10 h-10 bg-slate-50 rounded-lg" />
+      <div className="w-16 h-4 bg-slate-50 rounded" />
+    </div>
+    <div className="h-3 w-full bg-slate-50 rounded mb-2" />
+    <div className="h-3 w-2/3 bg-slate-50 rounded mb-4" />
+    <div className="h-1.5 w-full bg-slate-50 rounded-full" />
+  </div>
+);
+
+// --- ОСНОВНЫЕ КОМПОНЕНТЫ ---
 const StatCard = ({ icon: Icon, label, value, colorClass, description, isPrimary, unitText }) => (
   <div className={`bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden transition-all hover:shadow-md ${isPrimary ? 'ring-1 ring-blue-600/10' : ''}`}>
     <div className={`absolute top-0 left-0 w-1 h-full ${isPrimary ? 'bg-blue-600' : 'bg-slate-200'}`} />
@@ -80,14 +106,8 @@ const StudentDashboard = () => {
 
   useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
 
-  if (loading || !data) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
-      <Loader2 className="w-8 h-8 animate-spin text-slate-900" />
-    </div>
-  );
-
   return (
-    <main className="max-w-[1400px] mx-auto px-6 py-10 bg-[#f8fafc] min-h-screen font-sans text-slate-900">
+    <main className="w-full max-w-[1400px] mx-auto px-6 py-10 bg-[#f8fafc] min-h-screen font-sans text-slate-900">
       
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-end gap-6 border-b border-slate-200 pb-8 mb-8">
@@ -96,12 +116,14 @@ const StudentDashboard = () => {
             <User size={32} />
           </div>
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 uppercase">{data.user.name}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 uppercase">
+                {loading ? "Загрузка..." : data?.user?.name}
+            </h1>
             <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-slate-500 font-bold text-left">
               <GraduationCap size={14} className="text-blue-600" />
-              <span>{data.user.faculty}</span>
+              <span>{loading ? "Факультет" : data?.user?.faculty}</span>
               <span className="text-slate-300">|</span>
-              <span className='text-blue-800'>{data.user.specialization || 'Студент'}</span>
+              <span className='text-blue-800'>{loading ? "Студент" : (data?.user?.specialization || 'Студент')}</span>
             </div>
           </div>
         </div>
@@ -113,61 +135,118 @@ const StudentDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* LEFT COLUMN: STATS */}
         <div className="lg:col-span-1 space-y-6">
-          <StatCard 
-            icon={Star} 
-            label="Общий прогресс" 
-            value={data.stats.avg_progress} 
-            unitText="%" 
-            isPrimary={true} 
-            colorClass="bg-blue-50 text-blue-600" 
-            description="Средний показатель по всем дисциплинам" 
-          />
-          <StatCard 
-            icon={Zap} 
-            label="Пройдено лекций" 
-            value={`${data.stats.completed_lessons}/${data.stats.total_lessons}`} 
-            colorClass="bg-amber-50 text-amber-600" 
-            description="Завершенные учебные материалы" 
-          />
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-left">
-            <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-              <span>Выполнено модулей</span>
-              <span>{Math.round((data.stats.completed_lessons / data.stats.total_lessons) * 100) || 0}%</span>
-            </div>
-            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-600 transition-all duration-1000" style={{ width: `${(data.stats.completed_lessons / data.stats.total_lessons) * 100}%` }} />
-            </div>
-          </div>
+          {loading ? (
+            <>
+              <StatSkeleton />
+              <StatSkeleton />
+              <div className="bg-white p-6 rounded-xl border border-slate-200 animate-pulse h-20" />
+            </>
+          ) : (
+            <>
+              <StatCard 
+                icon={Star} 
+                label="Общий прогресс" 
+                value={data?.stats?.avg_progress} 
+                unitText="%" 
+                isPrimary={true} 
+                colorClass="bg-blue-50 text-blue-600" 
+                description="Средний показатель по всем дисциплинам" 
+              />
+              <StatCard 
+                icon={Zap} 
+                label="Пройдено лекций" 
+                value={`${data?.stats?.completed_lessons}/${data?.stats?.total_lessons}`} 
+                colorClass="bg-amber-50 text-amber-600" 
+                description="Завершенные учебные материалы" 
+              />
+              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm text-left">
+                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+                  <span>Выполнено модулей</span>
+                  <span>{Math.round((data?.stats?.completed_lessons / data?.stats?.total_lessons) * 100) || 0}%</span>
+                </div>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-600 transition-all duration-1000" style={{ width: `${(data?.stats?.completed_lessons / data?.stats?.total_lessons) * 100}%` }} />
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* CENTER: CHART */}
-        <div className="lg:col-span-2 bg-white p-8 rounded-xl border border-slate-200 shadow-sm flex flex-col">
-          <div className="flex justify-between items-center mb-8 text-left">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-slate-900 rounded-lg text-white"><BarChart3 size={18} /></div>
-              <div>
-                <h3 className="font-bold text-sm text-slate-800 uppercase tracking-tight leading-none text-left">Активность обучения</h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 text-left">Статистика просмотров и тестов</p>
-              </div>
-            </div>
-          </div>
-          <div className="flex-1 min-h-[220px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.chart_data || []}>
-                <defs>
-                  <linearGradient id="colorProg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1}/><stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} />
-                <Tooltip />
-                <Area type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={3} fillOpacity={1} fill="url(#colorProg)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+     {/* CENTER: CHART */}
+<div className="lg:col-span-2 bg-white p-8 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+  <div className="flex justify-between items-center mb-8 text-left">
+    <div className="flex items-center gap-3">
+      <div className="p-2 bg-slate-900 rounded-lg text-white"><BarChart3 size={18} /></div>
+      <div>
+        <h3 className="font-bold text-sm text-slate-800 uppercase tracking-tight leading-none text-left">Активность за неделю</h3>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 text-left">Пройденные лекции и тесты</p>
+      </div>
+    </div>
+    <div className="flex gap-4">
+        <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+            <span className="text-[9px] font-bold text-slate-500 uppercase">Лекции</span>
         </div>
+        <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+            <span className="text-[9px] font-bold text-slate-500 uppercase">Тесты</span>
+        </div>
+    </div>
+  </div>
+  
+  <div className="flex-1 min-h-[220px] w-full">
+    {loading ? (
+        <div className="w-full h-full bg-slate-50 rounded-lg animate-pulse" />
+    ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data?.chart_data || []}>
+            <defs>
+              <linearGradient id="colorLessons" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#2563eb" stopOpacity={0.1}/>
+                <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
+              </linearGradient>
+              <linearGradient id="colorQuizzes" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.1}/>
+                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+            <XAxis 
+                dataKey="day" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} 
+            />
+            <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#94a3b8'}} />
+            <Tooltip 
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                labelStyle={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '4px' }}
+            />
+            {/* Линия Лекций */}
+            <Area 
+                name="Лекции"
+                type="monotone" 
+                dataKey="lessons" 
+                stroke="#2563eb" 
+                strokeWidth={3} 
+                fillOpacity={1} 
+                fill="url(#colorLessons)" 
+            />
+            {/* Линия Тестов */}
+            <Area 
+                name="Тесты"
+                type="monotone" 
+                dataKey="quizzes" 
+                stroke="#f59e0b" 
+                strokeWidth={3} 
+                fillOpacity={1} 
+                fill="url(#colorQuizzes)" 
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+    )}
+  </div>
+</div>
       </div>
 
       {/* ACTIVE COURSES GRID */}
@@ -182,13 +261,17 @@ const StudentDashboard = () => {
           </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
-          {data.active_courses.slice(0, 4).map((course) => (
-            <CourseCard key={course.id} course={course} />
-          ))}
+          {loading ? (
+             [1,2,3,4].map(i => <CourseSkeleton key={i} />)
+          ) : (
+            data?.active_courses?.slice(0, 4).map((course) => (
+                <CourseCard key={course.id} course={course} />
+            ))
+          )}
         </div>
       </div>
 
-      {/* BOTTOM STATS & RESULTS */}
+      {/* BOTTOM SECTION */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8 text-left">
         <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
@@ -203,33 +286,73 @@ const StudentDashboard = () => {
                   <th className="px-6 py-4 font-bold text-right">Статус</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
-                {data.recent_tests.map((test) => (
-                  <tr key={test.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{test.name}</span>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{test.course}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[11px] font-bold rounded border border-blue-100">{test.score}%</span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${test.score >= 50 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                        {test.score >= 50 ? 'Сдано' : 'Не сдано'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+             <tbody className="divide-y divide-slate-50">
+  {loading ? (
+    <tr>
+      <td colSpan="3" className="px-6 py-10 text-center">
+        <Loader2 className="animate-spin inline text-blue-500" />
+      </td>
+    </tr>
+  ) : data?.recent_tests?.length > 0 ? (
+    data.recent_tests.map((test) => (
+      <tr key={test.id} className="hover:bg-slate-50/50 transition-colors group">
+        <td className="px-6 py-4">
+          <div className="flex flex-col">
+            <span className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+              {test.name}
+            </span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">
+              {test.course}
+            </span>
+          </div>
+        </td>
+        <td className="px-6 py-4 text-center">
+          <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-[11px] font-bold rounded border border-blue-100">
+            {test.score}%
+          </span>
+        </td>
+        <td className="px-6 py-4 text-right">
+          <span
+            className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${
+              test.score >= 50 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
+            }`}
+          >
+            {test.score >= 50 ? "Сдано" : "Не сдано"}
+          </span>
+        </td>
+      </tr>
+    ))
+  ) : (
+    /* СОСТОЯНИЕ, ЕСЛИ ТЕСТОВ НЕТ */
+    <tr>
+      <td colSpan="3" className="px-6 py-12 text-center">
+        <div className="flex flex-col items-center gap-2">
+          <div className="p-3 bg-slate-50 rounded-full text-slate-300">
+            <ClipboardCheck size={24} />
+          </div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            Вы еще не проходили тесты
+          </p>
+        </div>
+      </td>
+    </tr>
+  )}
+</tbody>
             </table>
           </div>
         </div>
 
         <div className="space-y-4">
-          <StatCard icon={Award} label="Сертификаты" value={data.stats.certificates_count} colorClass="bg-emerald-50 text-emerald-600" description="Получено за все время" hideUnit />
-          <StatCard icon={Clock} label="Часы обучения" value={data.stats.hours} unitText="ч" colorClass="bg-purple-50 text-purple-600" description="Общее время в системе" />
+          {loading ? (
+            <>
+                <div className="h-28 bg-white border border-slate-100 rounded-xl animate-pulse" />
+                <div className="h-28 bg-white border border-slate-100 rounded-xl animate-pulse" />
+            </>
+          ) : (
+            <>
+                <StatCard icon={Award} label="Сертификаты" value={data?.stats?.certificates_count} colorClass="bg-emerald-50 text-emerald-600" description="Получено за все время" hideUnit />
+            </>
+          )}
           <button className="w-full py-4 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-blue-600 transition-all flex items-center justify-center gap-3">
             <BarChart3 size={16} /> Полный отчет
           </button>

@@ -127,7 +127,33 @@ $approvedCourseIds = $user->courses()
     ->pluck('courses.id'); // Явно указываем таблицу, чтобы не было конфликтов имен
    
     $totalModules = \App\Models\Module::whereIn('course_id', $approvedCourseIds)->count();
-    
+    // --- ГЕНЕРАЦИЯ ГРАФИКА АКТИВНОСТИ (7 ДНЕЙ) ---
+$chartData = [];
+for ($i = 6; $i >= 0; $i--) {
+    $date = \Carbon\Carbon::now()->subDays($i);
+    $dateString = $date->toDateString(); // YYYY-MM-DD
+    $dayName = $date->locale('ru')->minDayName; // Пн, Вт...
+
+    // Считаем пройденные лекции за этот день
+    $lessonsCount = \DB::table('lesson_user')
+        ->where('user_id', $user->id)
+        ->whereDate('created_at', $dateString)
+        ->count();
+
+    // Считаем пройденные тесты за этот день
+    $quizzesCount = \App\Models\QuizResult::where('user_id', $user->id)
+        ->whereDate('created_at', $dateString)
+        ->count();
+
+    $chartData[] = [
+        'day' => $dayName,
+        'fullDate' => $date->format('d.m'),
+        'lessons' => $lessonsCount,
+        'quizzes' => $quizzesCount,
+    ];
+}
+
+// Вставьте 'chart_data' => $chartData в итоговый JSON ответ
     return response()->json([
         'user' => [
             'name' => $user->name,
@@ -150,6 +176,7 @@ $approvedCourseIds = $user->courses()
         ],
         'active_courses' => $activeCourses,
         'recent_tests' => $recentTests,
+        'chart_data' => $chartData,
         'completed_courses_list' => $completedCourses, 
     ]);
 }

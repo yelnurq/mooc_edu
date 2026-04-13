@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { 
   FileText, CheckCircle, Check, Award, Info, RefreshCw, Lock,
   Rocket, Book, PenTool, User, MessageSquare, AlertTriangle, 
-  Download, ChevronLeft, ChevronRight,Home, PlayCircle, AlertCircle
+  Download, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../../../../api/axios';
@@ -161,149 +161,88 @@ const QuizIntroModal = ({ onStart, onCancel, title }) => (
 
 const CourseAppPage = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-
-  // Состояния данных
   const [course, setCourse] = useState(null);
   const [completedLessons, setCompletedLessons] = useState([]);
   const [activeLesson, setActiveLesson] = useState(null);
-  
-  // Состояния UI и загрузки
   const [loading, setLoading] = useState(true);
-  const [accessDenied, setAccessDenied] = useState(false);
   const [completing, setCompleting] = useState(false);
-  
-  // Состояния тестов
   const [testStarted, setTestStarted] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [showQuizIntro, setShowQuizIntro] = useState(false);
   const [pendingQuiz, setPendingQuiz] = useState(null);
-  
-  // Состояния прогресса урока
   const [canComplete, setCanComplete] = useState(false);
   const [watchProgress, setWatchProgress] = useState(0);
 
-  const [isPending, setIsPending] = useState(false); // Новое состояние
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      try {
+        const response = await api.get(`/courses/${id}`);
+        const data = response.data;
+        setCourse(data);
+        setCompletedLessons((data.completed_lessons_ids || []).map(id => Number(id)));
+        const allLessons = data.modules?.flatMap(m => m.lessons) || [];
+        setActiveLesson(allLessons[0]);
+      } catch (err) { console.error(err); } finally { setLoading(false); }
+    };
+    fetchCourseData();
+  }, [id]);
 
-useEffect(() => {
-  const fetchCourseData = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get(`/courses/${id}`);
-      const data = response.data;
-
-      // 1. Проверка на статус ожидания (pending)
-      if (data.status === 'pending' || data.enrollment?.status === 'pending') {
-        setIsPending(true);
-        return;
-      }
-
-      // 2. Проверка на блокировку доступа (как было раньше)
-      if (data.is_locked) {
-        setAccessDenied(true);
-        return;
-      }
-
-      setCourse(data);
-      setCompletedLessons((data.completed_lessons_ids || []).map(id => Number(id)));
-      const allLessons = data.modules?.flatMap(m => m.lessons) || [];
-      setActiveLesson(allLessons[0]);
-    } catch (err) {
-      console.error("Ошибка:", err);
-      if (err.response?.status === 404 || err.response?.status === 403) {
-        setAccessDenied(true);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchCourseData();
-}, [id]);
-useEffect(() => {
+ useEffect(() => {
   if (activeLesson) {
     const isAlreadyDone = completedLessons.includes(Number(activeLesson.id));
     setCanComplete(isAlreadyDone);
     setWatchProgress(0);
 
-    if (!isAlreadyDone) {
-      // 1. Проверка на PDF (остается без изменений)
-      if (!activeLesson.video_url && activeLesson.file_url) {
-        const timer = setTimeout(() => setCanComplete(true), 30000);
-        return () => clearTimeout(timer);
-      }
-      
-      // 2. Если URL видео пустой, состоит из пробелов или слишком короткий (битый)
-      const isVideoUrlValid = activeLesson.video_url && activeLesson.video_url.trim().length > 3;
-      
-      if (!isVideoUrlValid) {
+    // Страховочный таймер для видео
+    if (activeLesson.video_url && !isAlreadyDone) {
+      // Можно установить среднее время (например, через 1-2 минуты считать урок изученным)
+      // Или если у тебя в API есть длительность видео в секундах: activeLesson.duration
+      const safetyTimer = setTimeout(() => {
         setCanComplete(true);
-      }
+      }, 60000); // 60 секунд как пример
 
-      // 3. Если материалов вообще нет
-      if (!isVideoUrlValid && !activeLesson.file_url) {
-        setCanComplete(true);
-      }
+      return () => clearTimeout(safetyTimer);
+    }
+
+    // Логика для PDF (у тебя уже была)
+    if (!activeLesson.video_url && activeLesson.file_url && !isAlreadyDone) {
+      const timer = setTimeout(() => setCanComplete(true), 30000);
+      return () => clearTimeout(timer);
     }
   }
 }, [activeLesson, completedLessons]);
-// 1. Плоский список уроков
-// Используем ?. и || [] во всех вычислениях
-const allLessonsFlat = useMemo(() => 
-  course?.modules?.flatMap(m => m.lessons) || [], 
-[course]);
-
-
-// 2. Прогресс
-const progressPercentage = useMemo(() => 
-  !allLessonsFlat.length ? 0 : Math.round((completedLessons.length / allLessonsFlat.length) * 100), 
-[completedLessons, allLessonsFlat]);
-
-const isExamAccessible = useMemo(() => progressPercentage === 100, [progressPercentage]);
-
-
-const modulesWithResults = useMemo(() => {
-  // ЕСЛИ КУРСА НЕТ ИЛИ ОН NULL, ВОЗВРАЩАЕМ ПУСТОЙ МАССИВ
-  if (!course || !course.modules || !course.quiz_results) return [];
-  
-  return course.modules.map(module => {
-    // Безопасный поиск
-    const result = course.quiz_results?.find(r => Number(r.quiz_id) === Number(module.quiz?.id));
-    return { 
-      ...module, 
-      quiz: module.quiz ? { ...module.quiz, user_result: result || null } : null 
-    };
-  });
-}, [course]);
-
-// 4. Активный модуль
-const activeModule = useMemo(() => 
-  modulesWithResults.find(m => m.lessons.some(l => Number(l.id) === Number(activeLesson?.id))), 
-[modulesWithResults, activeLesson]);
-
-
-const currentQuiz = useMemo(() => {
-  // Если данных еще нет, возвращаем null и не идем дальше
-  if (!testStarted || !course || !course.quiz_results) return null;
-  
-  if (activeLesson) {
-    const activeModule = modulesWithResults.find(m => m.lessons.some(l => Number(l.id) === Number(activeLesson?.id)));
-    return activeModule?.quiz;
-  }
-  
-  if (course.quiz) {
-    const res = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz.id));
-    return { ...course.quiz, user_result: res || null };
-  }
-  return null;
-}, [testStarted, activeLesson, modulesWithResults, course]);
-  // Хендлеры
-
   const handleVideoProgress = (state) => {
     const progress = Math.round(state.played * 100);
     setWatchProgress(progress);
-    if (progress >= 85 && !canComplete) setCanComplete(true);
+    if (progress >= 85 && !canComplete) {
+      setCanComplete(true);
+    }
   };
+
+  const allLessonsFlat = useMemo(() => course?.modules?.flatMap(m => m.lessons) || [], [course]);
+  const progressPercentage = useMemo(() => !allLessonsFlat.length ? 0 : Math.round((completedLessons.length / allLessonsFlat.length) * 100), [completedLessons, allLessonsFlat]);
+  const isExamAccessible = useMemo(() => progressPercentage === 100, [progressPercentage]);
+
+  const modulesWithResults = useMemo(() => {
+    if (!course?.modules) return [];
+    return course.modules.map(module => {
+      const result = course.quiz_results?.find(r => Number(r.quiz_id) === Number(module.quiz?.id));
+      return { ...module, quiz: module.quiz ? { ...module.quiz, user_result: result || null } : null };
+    });
+  }, [course]);
+
+  const activeModule = useMemo(() => modulesWithResults.find(m => m.lessons.some(l => Number(l.id) === Number(activeLesson?.id))), [modulesWithResults, activeLesson]);
+
+  const currentQuiz = useMemo(() => {
+    if (!testStarted) return null;
+    if (activeLesson && activeModule?.quiz) return activeModule.quiz;
+    if (!activeLesson && course?.quiz) {
+        const res = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz.id));
+        return { ...course.quiz, user_result: res || null };
+    }
+    return null;
+  }, [testStarted, activeLesson, activeModule, course]);
 
   const isLessonLocked = (lessonId) => {
     const index = allLessonsFlat.findIndex(l => l.id === lessonId);
@@ -319,27 +258,38 @@ const currentQuiz = useMemo(() => {
     } catch (err) { console.error(err); } finally { setCompleting(false); }
   };
 
-  const downloadCertificate = async () => {
-    setCompleting(true);
-    try {
-      const response = await api.get(`/courses/${course.id}/certificate/download`, { responseType: 'blob' });
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `Certificate-${course.title}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (err) { console.error("Ошибка загрузки сертификата:", err); } finally { setCompleting(false); }
-  };
-
   const handlePrepareTest = (type, module = null) => {
     setPendingQuiz({ type, module });
     setShowQuizIntro(true);
   };
+const downloadCertificate = async () => {
+  setCompleting(true);
+  try {
+    // Делаем запрос к созданному выше API
+    const response = await api.get(`/courses/${course.id}/certificate/download`, {
+      responseType: 'blob', // Важно: указываем, что ждем файл
+    });
 
+    // Создаем временную ссылку для браузера
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    link.href = url;
+    link.setAttribute('download', `Certificate-${course.title}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    
+    // Чистим за собой
+    link.parentNode.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Ошибка при получении сертификата:", err);
+    // Здесь можно вывести уведомление пользователю
+  } finally {
+    setCompleting(false);
+  }
+};
   const handleStartTest = () => {
     if (pendingQuiz.type === 'module') setActiveLesson(pendingQuiz.module.lessons[0]);
     else setActiveLesson(null);
@@ -375,21 +325,7 @@ const currentQuiz = useMemo(() => {
     }
   };
 
-  // 3. Условие: Доступ запрещен
-  if (accessDenied) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#F0F2F9] p-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-md w-full bg-white rounded-[2.5rem] p-10 shadow-2xl text-center border border-white">
-          <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-8"><AlertCircle size={40} /></div>
-          <h2 className="text-2xl font-black text-slate-900 mb-4 uppercase tracking-tight">Доступ ограничен</h2>
-          <p className="text-slate-500 font-medium leading-relaxed mb-10">Похоже, вы не привязаны к этому курсу. Пожалуйста, убедитесь в наличии доступа в личном кабинете.</p>
-          <button onClick={() => navigate('/app/my-courses')} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-blue-600 transition-all flex items-center justify-center gap-3"><Home size={16} /> На главную</button>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 font-black text-slate-400 tracking-widest uppercase animate-pulse">Загрузка курса...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 font-black text-slate-400 tracking-widest uppercase">Загрузка...</div>;
 
   return (
     <div className="h-screen w-full flex bg-[#F0F2F9] overflow-hidden font-sans">
@@ -401,17 +337,14 @@ const currentQuiz = useMemo(() => {
         />
       )}
 
-      <div className="flex-1 flex flex-col overflow-hidden text-left">
-        {/* HEADER */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-[80px] px-10 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between shrink-0 z-10">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4">
                 <span className="bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest">
                   {testStarted && !activeLesson ? 'ФИНАЛ' : `Урок ${activeLesson ? allLessonsFlat.findIndex(l=>l.id===activeLesson.id)+1 : '1'}`}
                 </span>
-                <h1 className="text-lg font-bold text-slate-900 truncate max-w-[300px]">
-                  {testStarted ? (activeLesson ? 'Тест модуля' : 'Итоговый экзамен') : activeLesson?.title}
-                </h1>
+                <h1 className="text-lg font-bold text-slate-900">{testStarted ? (activeLesson ? 'Тест модуля' : 'Итоговый экзамен') : activeLesson?.title}</h1>
             </div>
             <div className="hidden md:flex items-center gap-3 ml-6 border-l pl-6 border-slate-200">
                 <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -420,54 +353,67 @@ const currentQuiz = useMemo(() => {
                 <span className="text-[10px] font-black text-slate-400">{progressPercentage}%</span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-             <div className="text-right"><p className="text-[10px] text-slate-400 font-bold uppercase leading-none">Студент</p><p className="text-xs font-bold text-slate-900">Вы обучаетесь</p></div>
-             <div className="w-10 h-10 rounded-full bg-blue-100 border-2 border-white shadow-sm flex items-center justify-center text-blue-600 font-bold text-xs">ID</div>
+          <div className="flex items-center gap-3 text-right">
+             <div><p className="text-[10px] text-slate-400 font-bold uppercase leading-none">Преподаватель</p><p className="text-xs font-bold text-slate-900">Алексей Ширяев</p></div>
+             <div className="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm overflow-hidden"><img src={`https://ui-avatars.com/api/?name=Alexey&background=6366f1&color=fff`} alt="ava" /></div>
           </div>
         </header>
 
         <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           <div className="max-w-[1500px] mx-auto space-y-8">
             <div className="flex flex-col xl:flex-row gap-8 items-stretch xl:h-[700px]"> 
-              
-              {/* VIDEO / CONTENT AREA */}
               <div className="flex flex-col flex-[2.5] gap-4">
                 <div className="flex-1 bg-white rounded-[1.5rem] overflow-hidden shadow-2xl border-[6px] md:border-[10px] border-white relative min-h-[400px]">
                     {testStarted && currentQuiz ? (
-                        <div className="absolute inset-0 z-[50] bg-white">
-                        {/* QuizView должен быть реализован отдельно */}
-                        {/* <QuizView ... /> */}
-                        <div className="p-10">Загрузка теста...</div> 
+                       <div className="fixed inset-0 z-[100] bg-white">
+                        <QuizView 
+                          quiz={currentQuiz} 
+                          selectedAnswers={selectedAnswers} 
+                          setSelectedAnswers={setSelectedAnswers} 
+                          handleFinishTest={handleFinishTest} 
+                          testResult={testResult} 
+                          setTestStarted={setTestStarted} 
+                          completing={completing} 
+                        />
                       </div>
                     ) : (
                         <div className="w-full h-full">
-                          {activeLesson?.video_url ? (
-                            <div className="absolute inset-0 bg-black overflow-hidden rounded-[1rem]"> 
-                              <ReactPlayer
+{activeLesson?.video_url ? (
+  <div className="absolute inset-0 bg-black overflow-hidden rounded-[1rem]"> 
+    {/* Контейнер должен быть absolute inset-0, чтобы заполнил всё пространство родителя */}
+<ReactPlayer
   key={activeLesson.id}
-  url={activeLesson.video_url.includes('http') ? activeLesson.video_url : `https://www.youtube.com/watch?v=${activeLesson.video_url}`}
-  width="100%" 
-  height="100%" 
+  // Используйте url, но убедитесь, что ссылка корректная
+  src={activeLesson.video_url.includes('http') 
+    ? activeLesson.video_url 
+    : `https://www.youtube.com/watch?v=${activeLesson.video_url}`}
+  width="100%"
+  height="100%"
   controls 
   playing={false}
-  onProgress={handleVideoProgress}
+  onProgress={handleVideoProgress} // Теперь прогресс будет считаться точно
   onEnded={() => setCanComplete(true)}
-  // ОБРАБОТКА ОШИБКИ ЗАГРУЗКИ
-  onError={(e) => {
-    console.warn("Видео не загрузилось, открываем доступ автоматически:", e);
-    setCanComplete(true);
+  config={{
+    youtube: {
+      playerVars: { 
+        modestbranding: 1, 
+        rel: 0, 
+        origin: window.location.origin 
+      }
+    }
   }}
   style={{ position: 'absolute', top: 0, left: 0 }}
 />
-                            </div>
-                          ) : activeLesson?.file_url ? (
-                            <iframe key={`pdf-${activeLesson?.id}`} src={`${activeLesson.file_url}#toolbar=0`} className="w-full h-full bg-white border-none" title={activeLesson?.title} />
-                          ) : (
-                            <div className="w-full h-full bg-slate-50 flex flex-col items-center justify-center p-10 text-center">
-                              <PlayCircle size={48} className="text-slate-200 mb-4" />
-                              <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Материалов для этого урока нет</p>
-                            </div>
-                          )}
+
+  </div>
+                        ) : activeLesson?.file_url ? (
+                          <iframe key={`pdf-${activeLesson?.id}`} src={`${activeLesson.file_url}#toolbar=0`} className="w-full h-full bg-white border-none" title={activeLesson?.title} />
+                        ) : (
+                          <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-10 text-center">
+                            <FileText size={48} className="text-slate-300 mb-4 opacity-50" />
+                            <p className="text-slate-500 font-bold">Материалов нет</p>
+                          </div>
+                        )}
                         </div>
                     )}
                 </div>
@@ -477,10 +423,9 @@ const currentQuiz = useMemo(() => {
                 </div>
               </div>
 
-              {/* SIDEBAR: PROGRAM */}
-              <div className="flex-1 bg-white rounded-[1.5rem] p-6 shadow-xl shadow-slate-200/50 flex flex-col h-[600px] xl:h-full overflow-hidden border border-white/50">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6 px-2 shrink-0">Программа обучения</h3>
-                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-8 h-0">
+              <div className="flex-1 bg-white rounded-[1.5rem] p-6 shadow-xl shadow-slate-200/50 flex flex-col h-[600px] xl:h-full overflow-hidden border border-white/50 ">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6 px-2 shrink-0 text-left">Программа обучения</h3>
+                <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-8 h-0 text-left">
                   {modulesWithResults.map((module, mIdx) => (
                     <div key={module.id} className="space-y-3">
                       <div className="px-2"><p className="text-[9px] font-black text-blue-400 uppercase tracking-[0.2em]">Модуль {mIdx + 1}</p><h4 className="text-[11px] font-bold text-slate-800 uppercase">{module.title}</h4></div>
@@ -488,18 +433,17 @@ const currentQuiz = useMemo(() => {
                         {module.lessons.map((lesson) => {
                           const locked = isLessonLocked(lesson.id);
                           const active = activeLesson?.id === lesson.id && !testStarted;
-                          const done = completedLessons.includes(Number(lesson.id));
                           return (
-                            <button key={lesson.id} disabled={locked} onClick={() => { setActiveLesson(lesson); setTestStarted(false); }} className={`w-full group flex items-start gap-3 p-3 rounded-2xl transition-all ${active ? 'bg-blue-50' : 'hover:bg-slate-50 disabled:opacity-50'}`}>
-                              <div className={`mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center border-2 ${done ? 'bg-emerald-500 border-emerald-500 text-white' : locked ? 'bg-slate-100 border-slate-200 text-slate-400' : 'border-slate-200'}`}>
-                                {done ? <Check size={10} strokeWidth={4} /> : locked ? <Lock size={8} /> : <div className="w-1 h-1 bg-slate-300 rounded-full" />}
+                            <button key={lesson.id} disabled={locked} onClick={() => { setActiveLesson(lesson); setTestStarted(false); }} className={`w-full group flex items-start gap-3 p-3 rounded-2xl transition-all ${active ? 'bg-blue-50 shadow-sm' : 'hover:bg-slate-50 disabled:opacity-50'}`}>
+                              <div className={`mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center border-2 ${completedLessons.includes(Number(lesson.id)) ? 'bg-emerald-500 border-emerald-500 text-white' : locked ? 'bg-slate-100 border-slate-200 text-slate-400' : 'border-slate-200'}`}>
+                                {completedLessons.includes(Number(lesson.id)) ? <Check size={10} strokeWidth={4} /> : locked ? <Lock size={8} /> : <div className="w-1 h-1 bg-slate-300 rounded-full" />}
                               </div>
                               <span className={`text-left text-[12px] font-bold leading-tight ${active ? 'text-blue-900' : 'text-slate-500'}`}>{lesson.title}</span>
                             </button>
                           );
                         })}
                         {module.quiz && (() => {
-                          const res = module.quiz.user_result;
+                          const res = course.quiz_results?.find(r => Number(r.quiz_id) === Number(module.quiz.id));
                           const taken = !!res;
                           const current = testStarted && Number(currentQuiz?.id) === Number(module.quiz.id);
                           return (
@@ -507,15 +451,13 @@ const currentQuiz = useMemo(() => {
                               <div className={`mt-0.5 shrink-0 w-5 h-5 rounded-lg flex items-center justify-center ${taken ? 'bg-emerald-500 text-white' : current ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-600'}`}>
                                 {taken ? <Check size={12} /> : <Award size={12} />}
                               </div>
-                              <div className="text-left"><p className={`text-[10px] font-black uppercase tracking-tight ${current ? 'text-white' : taken ? 'text-emerald-700' : 'text-blue-600'}`}>{taken ? 'Тест пройден' : 'Тест модуля'}</p>{taken && <p className="text-[9px] font-bold opacity-70">Результат: {res.score}%</p>}</div>
+                              <div><p className={`text-[10px] font-black uppercase tracking-tight ${current ? 'text-white' : taken ? 'text-emerald-700' : 'text-blue-600'}`}>{taken ? 'Тест пройден' : 'Тест модуля'}</p>{res && <p className="text-[9px] font-bold opacity-70 text-left">Результат: {res.score}%</p>}</div>
                             </button>
                           );
                         })()}
                       </div>
                     </div>
                   ))}
-                  
-                  {/* FINAL EXAM SECTION */}
                   {course?.quiz && (() => {
                     const res = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz.id));
                     const taken = !!res;
@@ -526,65 +468,111 @@ const currentQuiz = useMemo(() => {
                           <div className={`mt-0.5 shrink-0 w-6 h-6 rounded-lg flex items-center justify-center ${taken ? 'bg-emerald-500 text-white' : isExamAccessible ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-400'}`}>
                             {taken ? <Check size={14} strokeWidth={3} /> : <Rocket size={14} />}
                           </div>
-                          <div className="text-left"><p className={`text-[10px] font-black uppercase tracking-tight ${!isExamAccessible || taken ? 'text-slate-600' : 'text-white'}`}>{taken ? 'Экзамен сдан' : 'Итоговый экзамен'}</p>{!isExamAccessible && <p className="text-[8px] font-bold text-slate-400 mt-1">Доступен при 100% курса</p>}{taken && <p className="text-[8px] font-bold text-emerald-600 uppercase mt-1">Результат: {res.score}%</p>}</div>
+                          <div><p className={`text-[10px] font-black uppercase tracking-tight ${!isExamAccessible || taken ? 'text-slate-600' : 'text-white'}`}>{taken ? 'Экзамен сдан' : 'Итоговый экзамен'}</p>{!isExamAccessible && <p className="text-[8px] font-bold text-slate-400 mt-1">Доступен при 100% курса</p>}{taken && <p className="text-[8px] font-bold text-emerald-600 uppercase mt-1 text-left">Результат: {res.score}%</p>}</div>
                         </button>
                       </div>
                     );
                   })()}
                 </div>
+       <div className="mt-6 flex gap-3 shrink-0">
+  {/* Кнопка НАЗАД */}
+  <button 
+    onClick={() => navigateLesson('prev')} 
+    disabled={allLessonsFlat.findIndex(l => l.id === activeLesson?.id) <= 0}
+    className="flex-1 py-5 bg-white border border-slate-200 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 hover:text-slate-900 hover:border-slate-300 disabled:opacity-20 transition-all shadow-sm"
+  >
+    <ChevronLeft size={16} /> Назад
+  </button>
 
-                {/* ACTION BAR */}
-                <div className="mt-6 flex gap-3 shrink-0">
-                  <button onClick={() => navigateLesson('prev')} disabled={allLessonsFlat.findIndex(l => l.id === activeLesson?.id) <= 0} className="flex-1 py-5 bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 hover:text-slate-900 transition-all shadow-sm"><ChevronLeft size={16} /></button>
-                  {(() => {
-                    const isLastLesson = allLessonsFlat.findIndex(l => l.id === activeLesson?.id) === allLessonsFlat.length - 1;
-                    const isLastLessonDone = completedLessons.includes(Number(activeLesson?.id));
-                    const examResult = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz?.id));
+{/* Кнопка ДЕЙСТВИЯ / СТАТУС ЭКЗАМЕНА / СКАЧАТЬ СЕРТИФИКАТ */}
+{(() => {
+  const isLastLesson = allLessonsFlat.findIndex(l => l.id === activeLesson?.id) === allLessonsFlat.length - 1;
+  const isLastLessonDone = completedLessons.includes(Number(activeLesson?.id));
+  const examResult = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz?.id));
 
-                    if (isLastLesson && isLastLessonDone && examResult?.passed) {
-                      return (
-                        <button onClick={downloadCertificate} disabled={completing} className="flex-[4] py-5 bg-amber-500 text-white rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] hover:bg-amber-600 transition-all shadow-xl shadow-amber-200">
-                          {completing ? <RefreshCw className="animate-spin" size={16} /> : <>Сертификат <Download size={16} /></>}
-                        </button>
-                      );
-                    }
-                    if (isLastLesson && isLastLessonDone && !examResult) {
-                      return (
-                        <button onClick={() => handlePrepareTest('exam')} className="flex-[4] py-5 bg-emerald-600 text-white rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200">Экзамен <Rocket size={16} /></button>
-                      );
-                    }
-                    return (
-                      <button 
-                        onClick={() => completedLessons.includes(Number(activeLesson?.id)) ? navigateLesson('next') : handleCompleteLesson()} 
-                        disabled={completing || (!canComplete && !completedLessons.includes(Number(activeLesson?.id)))}
-                        className={`flex-[4] py-5 rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] transition-all shadow-xl ${completedLessons.includes(Number(activeLesson?.id)) ? 'bg-slate-900 text-white' : canComplete ? 'bg-blue-600 text-white shadow-blue-200' : 'bg-slate-100 text-slate-300'}`}
-                      >
-                        {completing ? <RefreshCw className="animate-spin" size={16} /> : completedLessons.includes(Number(activeLesson?.id)) ? <>Далее <ChevronRight size={16} /></> : canComplete ? <>Завершить <Check size={16} /></> : <>Изучение...</>}
-                      </button>
-                    );
-                  })()}
-                </div>
+// 1. КУРС ЗАВЕРШЕН — ПОКАЗЫВАЕМ КНОПКУ СЕРТИФИКАТА
+if (isLastLesson && isLastLessonDone && examResult && examResult.passed) {
+  return (
+    <button 
+      onClick={downloadCertificate} // Теперь вызываем твою функцию
+      disabled={completing}         // Блокируем кнопку во время загрузки
+      className="flex-[2] py-5 bg-amber-500 text-white rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] hover:bg-amber-600 transition-all shadow-xl shadow-amber-200 disabled:opacity-50"
+    >
+      {completing ? (
+        <RefreshCw className="animate-spin" size={16} />
+      ) : (
+        <>Скачать сертификат <Download size={16} /></>
+      )}
+    </button>
+  );
+}
+
+  // 2. ПОСЛЕДНИЙ УРОК ПРОЙДЕН — ПЕРЕХОД К ЭКЗАМЕНУ
+  if (isLastLesson && isLastLessonDone && !examResult) {
+    return (
+      <button 
+        onClick={() => handlePrepareTest('exam')}
+        className="flex-[2] py-5 bg-emerald-600 text-white rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200"
+      >
+        Перейти к экзамену <Rocket size={16} />
+      </button>
+    );
+  }
+
+  // 3. СТАНДАРТНАЯ ЛОГИКА (БЕЗ ИЗМЕНЕНИЙ)
+  return (
+    <button 
+      onClick={() => {
+        if (!completedLessons.includes(Number(activeLesson?.id))) {
+          handleCompleteLesson();
+        } else {
+          navigateLesson('next');
+        }
+      }} 
+      disabled={
+        completing || 
+        (!canComplete && !completedLessons.includes(Number(activeLesson?.id)))
+      }
+      className={`flex-[2] py-5 rounded-2xl flex items-center justify-center gap-2 font-black text-[10px] uppercase tracking-[0.15em] transition-all shadow-xl
+        ${completedLessons.includes(Number(activeLesson?.id)) 
+          ? 'bg-slate-900 text-white hover:bg-black shadow-slate-200' 
+          : canComplete 
+            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200' 
+            : 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-70 shadow-none'}`}
+    >
+      {completing ? (
+        <RefreshCw className="animate-spin" size={16} />
+      ) : completedLessons.includes(Number(activeLesson?.id)) ? (
+        <>Следующий урок <ChevronRight size={16} /></>
+      ) : canComplete ? (
+        <>Подтвердить прохождение <Check size={16} /></>
+      ) : (
+        <>Материал изучается <div className="w-1.5 h-1.5 bg-slate-300 rounded-full animate-pulse" /></>
+      )}
+    </button>
+  );
+})()}
+</div>
               </div>
             </div>
 
-            {/* DESCRIPTION & RESOURCES */}
             <div className="grid lg:grid-cols-3 gap-8 pb-20 items-start">
-              <div className="lg:col-span-2 bg-white/70 backdrop-blur-sm p-10 rounded-[1.5rem] border border-white shadow-sm">
+              <div className="lg:col-span-2 bg-white/70 backdrop-blur-sm p-10 rounded-[1.5rem] border border-white shadow-sm text-left">
                   <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6">Описание занятия</h3>
                   <div className="prose prose-slate max-w-none text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{activeLesson?.description || course?.description || "Описание отсутствует."}</div>
               </div>
-              <div className="bg-white p-8 rounded-[1.5rem] shadow-sm border border-white">
+              <div className="bg-white p-8 rounded-[1.5rem] shadow-sm border border-white text-left">
                   <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6 flex items-center gap-2"><Download size={16} /> Материалы</h3>
                   <div className="space-y-4">
-                    {(activeLesson?.resources || course?.course_resources)?.length > 0 ? (
-                      (activeLesson?.resources || course?.course_resources).map((resource, i) => (
-                        <a key={resource.id || i} href={resource.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 border border-slate-50 rounded-2xl hover:bg-slate-50 transition-all group">
+                    {(course?.course_resources || activeLesson?.resources)?.length > 0 ? (
+                      (course?.course_resources || activeLesson?.resources).map((resource, i) => (
+                        <a key={resource.id || i} href={resource.file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 border border-slate-50 rounded-2xl hover:bg-slate-50 transition-all group cursor-pointer">
                           <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all"><FileText size={20} /></div>
                           <div className="overflow-hidden"><p className="text-xs font-bold text-slate-800 truncate">{resource.title || 'Документ'}</p><p className="text-[10px] text-slate-400 font-black uppercase">Открыть файл</p></div>
                         </a>
                       ))
                     ) : (
-                      <p className="text-[10px] font-bold text-slate-300 uppercase italic">Материалов нет</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase px-2 italic">Дополнительных материалов нет</p>
                     )}
                   </div>
               </div>
