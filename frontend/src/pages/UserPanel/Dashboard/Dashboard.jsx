@@ -254,10 +254,7 @@ const StudentDashboard = () => {
                   Общее количество модулей: <span className="text-slate-900 font-black">{data.stats.total_modules}</span>
                 </p>
             </div>
-            
-            <button className="w-full py-5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-slate-900 transition-all shadow-xl shadow-blue-100 flex items-center justify-center gap-3 active:scale-95">
-              <FileText size={16} /> Выгрузить транскрипт
-            </button>
+
           </div>
         </div>
       </div>

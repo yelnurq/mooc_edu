@@ -22,28 +22,31 @@ public function getStudentStats()
     $avgProgress = $totalCourses > 0 
         ? round($userCourses->avg('pivot.progress'), 1) 
         : 0;
-
-    // 2. Активные курсы
-    $activeCourses = $userCourses->where('pivot.progress', '<', 100)
-        ->sortByDesc('pivot.updated_at')
-        ->take(5)
-        ->values()
-        ->map(function($course) {
-            return [
-                'id' => $course->id,
-                'title' => $course->title,
-                'progress' => $course->pivot->progress,
-                'instructor' => $course->author_display_name
-            ];
-        });
-
-    
+// 2. Активные курсы
+// 2. Активные курсы
+$activeCourses = $userCourses
+    // Фильтруем коллекцию через callback, чтобы залезть в pivot
+    ->filter(function($course) {
+        return $course->pivot->status === 'approved' && $course->pivot->progress < 100;
+    })
+    // Сортируем по дате обновления в pivot таблице
+    ->sortByDesc('pivot.updated_at')
+    ->take(5)
+    ->values()
+    ->map(function($course) {
+        return [
+            'id' => $course->id,
+            'title' => $course->title,
+            'category' => $course->category, 
+            'progress' => $course->pivot->progress,
+            'instructor' => $course->author_display_name,
+            'status' => $course->pivot->status // Берем статус из pivot
+        ];
+    });
 $totalLessons = \App\Models\Lesson::whereHas('module', function ($query) use ($userCourseIds) {
     $query->whereIn('course_id', $userCourseIds);
 })->count();
 
-// 2. Считаем, сколько из этих уроков пользователь реально завершил
-// (есть запись в таблице lesson_user)
 $completedLessons = \DB::table('lesson_user')
     ->where('user_id', $user->id)
     ->whereIn('lesson_id', function($query) use ($userCourseIds) {
@@ -119,7 +122,12 @@ $completedQuizzes = \App\Models\QuizResult::where('user_id', $user->id)
     ->where('score', '>=', 50)
     ->distinct('quiz_id')
     ->count();
-
+$approvedCourseIds = $user->courses()
+    ->wherePivot('status', 'approved')
+    ->pluck('courses.id'); // Явно указываем таблицу, чтобы не было конфликтов имен
+   
+    $totalModules = \App\Models\Module::whereIn('course_id', $approvedCourseIds)->count();
+    
     return response()->json([
         'user' => [
             'name' => $user->name,
@@ -137,13 +145,11 @@ $completedQuizzes = \App\Models\QuizResult::where('user_id', $user->id)
             'completed_lessons' => $completedLessons,
             'total_quizzes' => $totalQuizzes,
             'completed_quizzes' => $completedQuizzes,
-            // Добавим эти поля, чтобы React не ругался на undefined
-            'total_modules' => \App\Models\Module::whereIn('course_id', $userCourseIds)->count(),
+            'total_modules' => $totalModules,
             'hours' => $user->learning_hours ?? 0,
         ],
         'active_courses' => $activeCourses,
         'recent_tests' => $recentTests,
-        // ВЫНОСИМ список завершенных курсов на верхний уровень, как и active_courses
         'completed_courses_list' => $completedCourses, 
     ]);
 }

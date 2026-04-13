@@ -157,10 +157,10 @@ const AppLayout = () => {
           </header>
         )}
 
-        {/* Контейнер Outlet */}
-        <div className={`flex-1 flex flex-col ${!isCourseLearningPage ? 'p-8 max-w-[1600px] mx-auto w-full' : 'h-screen w-full overflow-hidden'}`}>
-          <Outlet /> 
-        </div>
+   {/* Контейнер Outlet */}
+<div className={`flex-1 flex flex-col ${!isCourseLearningPage ? 'p-8 w-full' : 'h-screen w-full overflow-hidden'}`}>
+  <Outlet /> 
+</div>
       </main>
     </div>
   );
