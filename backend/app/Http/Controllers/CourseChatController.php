@@ -12,19 +12,31 @@ use Illuminate\Support\Facades\Auth;
 class CourseChatController extends Controller 
 {
     // Список всех диалогов пользователя
-    public function index() 
-    {
-        $userId = Auth::id();
-        
-        return ChatRoom::with(['course:id,title', 'author:id,name', 'student:id,name'])
-            ->where('student_id', $userId)
-            ->orWhere('author_id', $userId)
-            ->withCount(['messages' => function($query) use ($userId) {
-                $query->where('is_read', false)->where('sender_id', '!=', $userId);
-            }])
-            ->orderBy('last_message_at', 'desc')
-            ->get();
-    }
+ public function index() 
+{
+    $userId = Auth::id();
+
+    // 1. Получаем существующие активные чаты
+    $activeRooms = ChatRoom::with(['course:id,title', 'author:id,name', 'student:id,name'])
+        ->where('student_id', $userId)
+        ->orWhere('author_id', $userId)
+        ->withCount(['messages' => function($query) use ($userId) {
+            $query->where('is_read', false)->where('sender_id', '!=', $userId);
+        }])
+        ->orderBy('last_message_at', 'desc')
+        ->get();
+
+    // 2. Получаем курсы, на которые записан студент (если у тебя есть таблица course_user или аналогичная)
+    // Если логика простая: студент видит все курсы, где он не автор:
+    $availableCourses = Course::where('author_id', '!=', $userId)
+        ->with('author:id,name')
+        ->get();
+
+    return response()->json([
+        'active_rooms' => $activeRooms,
+        'available_courses' => $availableCourses
+    ]);
+}
 
     // Инициализация чата через курс
     public function startChat(Request $request) 

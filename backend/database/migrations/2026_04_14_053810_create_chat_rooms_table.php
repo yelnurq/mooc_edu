@@ -12,9 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('chat_rooms', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-        });
+        $table->id();
+        $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
+        $table->foreignId('student_id')->constrained('users')->onDelete('cascade');
+        $table->foreignId('author_id')->constrained('users')->onDelete('cascade');
+        $table->timestamp('last_message_at')->nullable();
+        $table->timestamps();
+    });
     }
 
     /**
