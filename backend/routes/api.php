@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApiLogController;
 use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\ModuleController;
@@ -41,6 +42,11 @@ Route::middleware("logs")->group(function(){
         Route::get('/certificates/verify/{number}', [CertificateController::class, 'verifyCertificate']);
 
     Route::middleware(["token"])->group(function(){
+
+        Route::get('/user/courses/active', [ChatController::class, 'getStudentCourses']);
+        
+        Route::post('/ai/chat', ChatController::class);
+
 
         Route::get('/user/settings', [StudentController::class, 'settings']);
         Route::put('/user/settings', [StudentController::class, 'updateSettings']);
