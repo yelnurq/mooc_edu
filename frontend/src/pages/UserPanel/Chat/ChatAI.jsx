@@ -245,24 +245,20 @@ const AIChat = () => {
         </div>
       </div>
 
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 20px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+  <style jsx>{`
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 20px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-        .chat-pattern-bg::before {
-          content: "";
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 0;
-          opacity: 0.04;
-          background-image: url('/images/lcons/logo.png');
-          background-repeat: repeat;
-          background-size: 80px;
-          pointer-events: none;
-          z-index: 0;
-        }
-      `}</style>
+    .chat-pattern-bg {
+      background-color: #f1f5f9; /* slate-100 */
+      position: relative;
+      z-index: 1;
+    }
+
+   
+  `}</style>
     </div>
   );
 };
