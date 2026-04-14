@@ -25,6 +25,7 @@ import QuizEditor from './pages/UserPanel/Courses/QuizEditor/Quiz';
 import CertificateVerify from './pages/UserPanel/Certificate/Verify';
 import CertificateAppVerify from './pages/UserPanel/Certificate/VerifyApp';
 import AIChat from './pages/UserPanel/Chat/ChatAI';
+import MentorsChat from './pages/UserPanel/Chat/ChatMentors';
 
 // Локальный компонент для защиты роутов
 const ProtectedRoute = () => {
@@ -55,6 +56,7 @@ function App() {
               <Route path="/app/certificate/verify" element={<CertificateAppVerify />} />
               <Route path="/app/dashboard" element={<Dashboard />} />
               <Route path="/app/ai-chat" element={<AIChat/>} />
+              <Route path="/app/mentors-chat" element={<MentorsChat/>} />
               <Route path="/app/my-courses" element={<MyCourses />} />
               <Route path="/app/settings" element={<SettingsPage />} />
             </Route>

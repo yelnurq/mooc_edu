@@ -43,7 +43,7 @@ export const sidebarMenuItems = [
   // --- НОВЫЕ РАЗДЕЛЫ ---
   { 
     id: 'mentor-chat', 
-    path: '/app/mentor-chat', 
+    path: '/app/mentors-chat', 
     icon: <MessageSquare size={20} />, 
     label: 'Куратор' 
   },

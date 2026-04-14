@@ -3,6 +3,7 @@
 use App\Http\Controllers\ApiLogController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\CourseChatController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\ModuleController;
@@ -41,7 +42,15 @@ Route::middleware("logs")->group(function(){
     Route::post('/modules/{id}/lessons', [CourseController::class, 'addLesson']); // Добавить урок (PDF/Видео)
         Route::get('/certificates/verify/{number}', [CertificateController::class, 'verifyCertificate']);
 
+
     Route::middleware(["token"])->group(function(){
+
+
+
+    Route::get('/course-chats', [CourseChatController::class, 'index']);
+    Route::post('/course-chats/start', [CourseChatController::class, 'startChat']);
+    Route::get('/course-chats/{roomId}/messages', [CourseChatController::class, 'getMessages']);
+    Route::post('/course-chats/messages', [CourseChatController::class, 'sendMessage']);
 
         Route::get('/user/courses/active', [ChatController::class, 'getStudentCourses']);
         
