@@ -48,9 +48,9 @@ export const sidebarMenuItems = [
     label: 'Куратор' 
   },
   { 
-    id: 'ai-tutor', 
-    path: '/app/ai-tutor', 
-    icon: <Sparkles size={20} className="text-blue-500" />, // Можно подсветить синим
+    id: 'ai-chat', 
+    path: '/app/ai-chat', 
+    icon: <Sparkles size={20} className="text-blue-500" />, 
     label: 'AI Помощник' 
   },
   { 
