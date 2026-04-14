@@ -1,25 +1,40 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { 
   Send, User, Search, MessageCircle, Phone, 
-  MoreVertical, CheckCheck, BookOpen, Loader2 
+  MoreVertical, CheckCheck, Loader2, BookOpen,
+  Maximize2, Minimize2, Bot
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../api/axios';
 
-// Отдельный компонент для сообщения, чтобы не ререндерить весь список
-const ChatMessage = React.memo(({ msg, isOwn, time, isRead }) => (
+const ChatMessage = React.memo(({ msg, isOwn, time, isRead, courseTitle }) => (
   <motion.div 
-    initial={{ opacity: 0, y: 5 }}
+    initial={{ opacity: 0, y: 15 }}
     animate={{ opacity: 1, y: 0 }}
-    className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+    className={`flex items-start gap-4 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
   >
-    <div className={`max-w-[80%] p-3 rounded-2xl text-sm shadow-sm ${
-      isOwn ? 'bg-slate-900 text-white rounded-tr-none' : 'bg-white border border-slate-100 text-slate-800 rounded-tl-none'
-    }`}>
-      {msg.content}
-      <div className={`flex items-center justify-end gap-1 mt-1 opacity-60 text-[10px] ${isOwn ? 'text-slate-300' : 'text-slate-500'}`}>
-        {time}
-        {isOwn && <CheckCheck size={12} className={isRead ? "text-blue-400" : "text-slate-400"} />}
+    {/* Avatar Block */}
+    <div className={`p-2.5 rounded-xl shrink-0 ${isOwn ? 'bg-slate-900 text-white' : 'bg-blue-50 text-blue-600'}`}>
+      {isOwn ? <User size={18} /> : <Bot size={18} />}
+    </div>
+    
+    <div className={`flex flex-col max-w-[80%] ${isOwn ? 'items-end text-right' : 'items-start text-left'}`}>
+      {/* Course Context Label */}
+      <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1 px-2">
+        {courseTitle}
+      </span>
+
+      <div className={`p-5 rounded-2xl text-[13px] font-medium leading-relaxed ${
+        isOwn 
+        ? 'bg-slate-900 text-white rounded-tr-none shadow-lg shadow-slate-200' 
+        : 'bg-white border border-slate-100 text-slate-800 rounded-tl-none shadow-sm'
+      }`}>
+        <div className="whitespace-pre-wrap">{msg.content}</div>
+        
+        <div className={`flex items-center gap-1 mt-2 opacity-60 text-[10px] ${isOwn ? 'justify-end text-slate-300' : 'text-slate-500'}`}>
+          {time}
+          {isOwn && <CheckCheck size={12} className={isRead ? "text-blue-400" : "text-slate-400"} />}
+        </div>
       </div>
     </div>
   </motion.div>
@@ -34,252 +49,187 @@ const CourseMentorsChat = () => {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [messages, setMessages] = useState([]);
   const [sending, setSending] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   
   const scrollRef = useRef(null);
 
-  // Оптимизированная загрузка данных
   const fetchData = useCallback(async () => {
     try {
       const response = await api.get('/course-chats');
       setActiveRooms(response.data.active_rooms || []);
       setAvailableCourses(response.data.available_courses || []);
-    } catch (err) {
-      console.error("Fetch Error:", err);
-    } finally {
-      setRoomsLoading(false);
-    }
+    } catch (err) { console.error(err); } finally { setRoomsLoading(false); }
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Загрузка сообщений (Polling)
   const fetchMessages = useCallback(async (roomId) => {
     try {
       const response = await api.get(`/course-chats/${roomId}/messages`);
       setMessages(prev => JSON.stringify(prev) !== JSON.stringify(response.data) ? response.data : prev);
-    } catch (err) {
-      console.error("Messages Sync Error:", err);
-    }
+    } catch (err) { console.error(err); }
   }, []);
 
   useEffect(() => {
     if (!selectedRoom?.id) return;
-    
     fetchMessages(selectedRoom.id);
     const interval = setInterval(() => fetchMessages(selectedRoom.id), 5000);
     return () => clearInterval(interval);
   }, [selectedRoom?.id, fetchMessages]);
 
-  // Плавный скролл при новых сообщениях
-  const scrollToBottom = (behavior = 'smooth') => {
-    scrollRef.current?.scrollIntoView({ behavior });
-  };
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, sending]);
 
-  useEffect(() => { scrollToBottom(); }, [messages]);
-
-  // Обработка начала чата
-  const handleStartChat = useCallback(async (courseId) => {
-    try {
-      const res = await api.post('/course-chats/start', { course_id: courseId });
-      const room = res.data;
-      if (!activeRooms.find(r => r.id === room.id)) {
-        setActiveRooms(prev => [room, ...prev]);
-      }
-      setSelectedRoom(room);
-      setMessages([]);
-    } catch (err) {
-      console.error("Start Chat Error", err);
-    }
-  }, [activeRooms]);
-
-  // Отправка сообщения
   const handleSend = async () => {
     if (!message.trim() || !selectedRoom || sending) return;
-    
     const tempText = message;
     setMessage('');
     setSending(true);
-
     try {
       const response = await api.post('/course-chats/messages', {
         chat_room_id: selectedRoom.id,
         content: tempText
       });
       setMessages(prev => [...prev, response.data]);
-    } catch (err) {
-      setMessage(tempText); // Возвращаем текст в случае ошибки
-    } finally {
-      setSending(false);
-    }
+    } catch (err) { setMessage(tempText); } finally { setSending(false); }
   };
 
-  // Мемоизированные списки для исключения лишних фильтраций
   const filteredActive = useMemo(() => 
     activeRooms.filter(r => r.course.title.toLowerCase().includes(searchQuery)),
     [activeRooms, searchQuery]
   );
 
-  const filteredNew = useMemo(() => 
-    availableCourses.filter(c => 
-      !activeRooms.some(r => r.course_id === c.id) && 
-      c.title.toLowerCase().includes(searchQuery)
-    ), [availableCourses, activeRooms, searchQuery]
-  );
-
   return (
-    <main className="max-w-[1440px] mx-auto px-4 md:px-6 py-4 md:py-8 bg-[#f8fafc] h-screen flex flex-col font-sans">
-      <header className="mb-6 shrink-0">
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Mentors <span className="text-blue-600">Connect</span></h1>
-        <p className="text-sm text-slate-500 font-medium">Консультации по проектам: Lumina CRM, Argymaq и другие</p>
-      </header>
+    <main className={`transition-all duration-500 flex flex-col font-sans ${
+      isFullScreen 
+      ? 'fixed inset-0 z-[9999] bg-[#f8fafc] overflow-hidden' 
+      : 'max-w-[1400px] mx-auto px-6 py-8 bg-[#f8fafc] min-h-screen'
+    }`}>
+      
+      {/* HEADER (Style from AIChat) */}
+      <div className={`flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-200 pb-8 mb-8 shrink-0 ${isFullScreen ? 'px-8 pt-8' : ''}`}>
+        <div className="text-left">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Чат с кураторами</h1>
+          <p className="text-[13px] text-slate-500 font-medium mt-1 leading-relaxed">
+            Прямая связь с наставниками и экспертами. <br/>
+          </p>
+        </div>
+        
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setIsFullScreen(!isFullScreen)}
+            className="flex bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors text-slate-600"
+          >
+            {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+          </button>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1 min-h-0">
-        {/* SIDEBAR */}
-        <div className="lg:col-span-1 flex flex-col bg-white rounded-[2rem] border border-slate-200/60 shadow-xl shadow-slate-200/50 overflow-hidden">
-          <div className="p-4 bg-white/50 backdrop-blur-sm border-b border-slate-50">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={16} />
+      <div className={`grid grid-cols-1 lg:grid-cols-4 gap-8 flex-1 overflow-hidden ${isFullScreen ? 'px-8 pb-8' : ''}`}>
+        
+        {/* SIDEBAR (Style from AIChat) */}
+        <div className="lg:col-span-1 flex flex-col gap-4 overflow-hidden">
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <MessageCircle size={14} className="text-blue-600" /> Активные диалоги
+            </p>
+            
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
               <input 
                 type="text" 
-                placeholder="Поиск по курсам..."
-                className="w-full bg-slate-50/80 rounded-2xl py-2.5 pl-10 pr-4 text-sm outline-none ring-1 ring-transparent focus:ring-blue-500/20 focus:bg-white transition-all"
+                placeholder="Поиск..."
+                className="w-full bg-slate-50 border-none rounded-xl py-2 pl-9 pr-4 text-xs focus:ring-1 focus:ring-blue-500 transition-all"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value.toLowerCase())}
               />
             </div>
-          </div>
 
-          <div className="flex-1 overflow-y-auto p-3 space-y-6 custom-scrollbar">
-            {roomsLoading ? (
-              <div className="space-y-3 p-2">
-                {[1, 2, 3].map(i => <div key={i} className="h-16 w-full bg-slate-50 animate-pulse rounded-2xl" />)}
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {filteredActive.length > 0 && (
-                  <div>
-                    <h2 className="text-[10px] font-black text-slate-400 uppercase px-3 mb-3 tracking-[0.15em]">Активные чаты</h2>
-                    {filteredActive.map(room => (
-                      <button
-                        key={room.id}
-                        onClick={() => setSelectedRoom(room)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-2xl mb-1.5 transition-all duration-300 ${
-                          selectedRoom?.id === room.id ? 'bg-slate-900 text-white shadow-lg scale-[1.02]' : 'hover:bg-slate-50 active:scale-95'
-                        }`}
-                      >
-                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${selectedRoom?.id === room.id ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
-                          <BookOpen size={20} />
-                        </div>
-                        <div className="text-left overflow-hidden">
-                          <p className={`text-[10px] font-bold uppercase tracking-wider truncate mb-0.5 ${selectedRoom?.id === room.id ? 'text-blue-400' : 'text-blue-600'}`}>
-                            {room.course.title}
-                          </p>
-                          <p className="text-sm font-bold truncate leading-none">{room.author.name}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {filteredNew.length > 0 && (
-                  <div>
-                    <h2 className="text-[10px] font-black text-slate-400 uppercase px-3 mb-3 tracking-[0.15em]">Доступные авторы</h2>
-                    {filteredNew.map(course => (
-                      <button
-                        key={course.id}
-                        onClick={() => handleStartChat(course.id)}
-                        className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-white hover:shadow-md hover:ring-1 hover:ring-slate-100 transition-all active:scale-95 border border-dashed border-slate-200 mb-2 group"
-                      >
-                        <div className="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors shrink-0">
-                          <MessageCircle size={20} />
-                        </div>
-                        <div className="text-left overflow-hidden">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase truncate">{course.title}</p>
-                          <p className="text-sm font-bold text-slate-800 truncate leading-none">{course.author.name}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+              {roomsLoading ? (
+                [1, 2].map(i => <div key={i} className="w-full h-14 bg-slate-50 animate-pulse rounded-xl" />)
+              ) : (
+                filteredActive.map(room => (
+                  <button
+                    key={room.id}
+                    onClick={() => setSelectedRoom(room)}
+                    className={`w-full text-left p-4 rounded-xl border transition-all duration-300 ${
+                      selectedRoom?.id === room.id 
+                      ? 'bg-slate-900 border-slate-900 text-white shadow-xl scale-[1.02]' 
+                      : 'bg-white border-slate-100 text-slate-600 hover:bg-blue-50/30'
+                    }`}
+                  >
+                    <span className="text-[11px] font-black uppercase tracking-tight block truncate">{room.author.name}</span>
+                    <span className={`text-[9px] mt-1 block truncate font-medium ${selectedRoom?.id === room.id ? 'text-blue-400' : 'text-slate-400'}`}>
+                      {room.course.title}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
-        {/* CHAT MAIN */}
-        <div className="lg:col-span-3 flex flex-col bg-white rounded-[2.5rem] border border-slate-200/60 shadow-2xl shadow-slate-200/60 overflow-hidden relative">
+        {/* MAIN CHAT (Style from AIChat) */}
+        <div className="lg:col-span-3 flex flex-col bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden relative">
           {selectedRoom ? (
             <>
-              <div className="px-8 py-5 border-b border-slate-50 flex justify-between items-center bg-white/80 backdrop-blur-xl z-10">
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <div className="w-12 h-12 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                      <User size={24}/>
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-white rounded-full"></div>
-                  </div>
-                  <div>
-                    <h3 className="font-black text-slate-900 text-lg leading-none tracking-tight">{selectedRoom.author.name}</h3>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-md tracking-tighter">
-                        Курс: {selectedRoom.course.title}
-                      </span>
-                      <span className="text-[10px] text-emerald-500 font-bold uppercase">Онлайн</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                   <button className="p-3 text-slate-400 hover:bg-slate-50 rounded-2xl transition-colors"><Phone size={20}/></button>
-                   <button className="p-3 text-slate-400 hover:bg-slate-50 rounded-2xl transition-colors"><MoreVertical size={20}/></button>
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-slate-50/30 custom-scrollbar">
-                <AnimatePresence mode="popLayout">
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 bg-[#fcfdfe] custom-scrollbar scroll-smooth">
+                <AnimatePresence initial={false}>
                   {messages.map((msg) => (
                     <ChatMessage 
                       key={msg.id} 
                       msg={msg} 
                       isOwn={msg.sender_id === selectedRoom.student_id}
                       isRead={msg.is_read}
+                      courseTitle={selectedRoom.course.title}
                       time={new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     />
                   ))}
                 </AnimatePresence>
+                
+                {sending && (
+                  <div className="flex gap-4 flex-row-reverse">
+                    <div className="p-2.5 bg-slate-900 text-white rounded-xl"><User size={18} className="animate-pulse" /></div>
+                    <div className="bg-slate-900 text-white p-4 rounded-2xl rounded-tr-none opacity-50 text-xs">Отправка...</div>
+                  </div>
+                )}
                 <div ref={scrollRef} className="h-2" />
               </div>
 
-              <div className="p-6 bg-white border-t border-slate-50">
-                <div className="flex items-end gap-3 bg-slate-50 p-3 rounded-[1.5rem] ring-1 ring-slate-200/50 focus-within:ring-blue-500/30 focus-within:bg-white transition-all">
+              {/* Input Area (Style from AIChat) */}
+              <div className="p-6 md:p-8 bg-white border-t border-slate-100">
+                <div className="relative">
                   <textarea
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                    placeholder="Задайте технический вопрос..."
-                    className="flex-1 bg-transparent border-none outline-none px-3 py-2 text-sm font-medium resize-none max-h-32 min-h-[44px] custom-scrollbar"
-                    rows={1}
+                    placeholder="Напишите технический вопрос..."
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-5 pr-20 text-[14px] font-medium text-slate-900 focus:border-blue-600 focus:bg-white outline-none transition-all resize-none min-h-[100px] max-h-40"
                   />
-                  <button 
-                    onClick={handleSend}
-                    disabled={!message.trim() || sending}
-                    className="p-3.5 bg-blue-600 text-white rounded-2xl hover:bg-slate-900 transition-all disabled:opacity-30 disabled:grayscale shadow-lg shadow-blue-200 active:scale-95 shrink-0"
-                  >
-                    {sending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
-                  </button>
+                  <div className="absolute right-4 bottom-4">
+                    <button 
+                      onClick={handleSend}
+                      disabled={sending || !message.trim()}
+                      className="p-4 bg-blue-600 text-white rounded-xl hover:bg-slate-900 disabled:opacity-20 transition-all shadow-xl active:scale-95"
+                    >
+                      {sending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                    </button>
+                  </div>
                 </div>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-slate-50/10">
-              <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ repeat: Infinity, duration: 3 }}
-                className="w-24 h-24 bg-white rounded-full shadow-2xl flex items-center justify-center mb-6"
-              >
-                <MessageCircle size={40} className="text-blue-100" />
-              </motion.div>
-              <h3 className="text-slate-900 font-black text-xl mb-2">Центр поддержки курсов</h3>
-              <p className="text-sm max-w-[280px] text-center font-medium leading-relaxed">Выберите наставника в левой панели, чтобы получить помощь по урокам или коду.</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-12 text-center">
+              <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-4">
+                <Bot size={40} className="text-slate-200" />
+              </div>
+              <h3 className="text-slate-900 font-bold mb-1 tracking-tight text-xl">Центр связи с наставниками</h3>
+              <p className="text-sm max-w-[280px] font-medium leading-relaxed">
+                Выберите активный диалог из списка слева, чтобы продолжить обсуждение ваших проектов.
+              </p>
             </div>
           )}
         </div>
@@ -288,8 +238,8 @@ const CourseMentorsChat = () => {
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
       `}</style>
     </main>
   );
