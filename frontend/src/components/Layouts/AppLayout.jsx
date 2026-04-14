@@ -17,17 +17,18 @@ const AppLayout = () => {
   const location = useLocation(); 
   const navigate = useNavigate();
 
-  // 1. Проверки путей
+  // 1. Определение страниц для исключений (Focus Mode)
   const isCourseLearningPage = /^\/app\/courses\/[^/]+$/.test(location.pathname);
-  const isChatPage = location.pathname.includes('/app/ai-chat');
+  const isChatPage = location.pathname.includes('/app/mentors-chat');
+  const isAIChatPage = location.pathname.includes('/app/ai-chat'); // Добавлено исключение
 
-  // 2. Логика отображения хедера и отступов (Фокус-режим)
-  const isFocusMode = isCourseLearningPage || isChatPage;
+  // 2. Логика Focus Mode: скрываем хедер и убираем отступы
+  const isFocusMode = isCourseLearningPage || isChatPage || isAIChatPage;
 
   // 3. Логика сайдбара: 
-  // В обучении — всегда узкий (false). 
-  // В чате и на остальных страницах — зависит от выбора пользователя (isSidebarOpen).
-  const effectiveSidebarOpen = isCourseLearningPage ? false : isSidebarOpen;
+  // В обучении и AI-чате — всегда узкий (false) для экономии места. 
+  // В остальных случаях — зависит от выбора пользователя.
+  const effectiveSidebarOpen = (isCourseLearningPage || isAIChatPage || isChatPage) ? false : isSidebarOpen;
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -87,7 +88,7 @@ const AppLayout = () => {
           )}
         </div>
 
-        <nav className="flex-1 p-3 space-y-2 mt-4 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-2 mt-4 overflow-y-auto custom-scrollbar">
           {sidebarMenuItems.map((item) => {
             const isPathActive = location.pathname.includes(item.path);
             const isLearningActive = isCourseLearningPage && item.path.includes('courses');
@@ -123,12 +124,12 @@ const AppLayout = () => {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN CONTENT AREA */}
       <main className={`flex-1 transition-all duration-300 flex flex-col 
         ${effectiveSidebarOpen ? 'ml-72' : 'ml-20'}
       `}>
         
-        {/* GLOBAL HEADER - Скрываем на обучении и в чате */}
+        {/* GLOBAL HEADER - Скрываем в Focus Mode (обучение, чат менторов, AI-чат) */}
         {!isFocusMode && (
           <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-10 sticky top-0 z-40">
             <div className="flex items-center gap-4">
@@ -153,11 +154,22 @@ const AppLayout = () => {
           </header>
         )}
 
-        {/* Контентная область: на чате и обучении занимает h-screen без паддингов */}
-        <div className={`${!isFocusMode ? 'p-6 overflow-x-hidden' : 'h-screen w-full overflow-hidden'}`}>
+        {/* CONTENT */}
+        <div className={`
+          ${!isFocusMode 
+            ? 'p-6 overflow-x-hidden' 
+            : 'h-screen w-full overflow-hidden'
+          }
+        `}>
           <Outlet /> 
         </div>
       </main>
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+      `}</style>
     </div>
   );
 };
