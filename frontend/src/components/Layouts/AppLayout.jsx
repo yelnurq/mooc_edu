@@ -21,9 +21,10 @@ const AppLayout = () => {
   const isCourseLearningPage = /^\/app\/courses\/[^/]+$/.test(location.pathname);
   const isChatPage = location.pathname.includes('/app/mentors-chat');
   const isAIChatPage = location.pathname.includes('/app/ai-chat'); // Добавлено исключение
+  const isForumPage = location.pathname.includes('/app/forum'); // Добавлено исключение
 
   // 2. Логика Focus Mode: скрываем хедер и убираем отступы
-  const isFocusMode = isCourseLearningPage || isChatPage || isAIChatPage;
+  const isFocusMode = isCourseLearningPage || isChatPage || isAIChatPage || isForumPage;
 
   // 3. Логика сайдбара: 
   // В обучении и AI-чате — всегда узкий (false) для экономии места. 

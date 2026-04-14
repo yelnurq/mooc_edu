@@ -143,7 +143,7 @@ const ForumPage = () => {
                     </span>
                   </div>
                   
-                  <h3 className="text-[16px] font-bold text-slate-900 group-hover:text-blue-600 transition-colors mb-3">
+                  <h3 className="text-left text-[16px] font-bold text-slate-900 group-hover:text-blue-600 transition-colors mb-3">
                     {topic.title}
                   </h3>
 
