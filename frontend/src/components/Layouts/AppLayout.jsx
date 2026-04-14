@@ -19,7 +19,7 @@ const AppLayout = () => {
 
   // 1. Проверки путей
   const isCourseLearningPage = /^\/app\/courses\/[^/]+$/.test(location.pathname);
-  const isChatPage = location.pathname.includes('/app/mentors-chat');
+  const isChatPage = location.pathname.includes('/app/ai-chat');
 
   // 2. Логика отображения хедера и отступов (Фокус-режим)
   const isFocusMode = isCourseLearningPage || isChatPage;
