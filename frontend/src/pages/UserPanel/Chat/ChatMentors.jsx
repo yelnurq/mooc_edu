@@ -1,37 +1,37 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { 
-  Send, User, Search, MessageCircle, Phone, Video,
-  MoreVertical, CheckCheck, Loader2, Maximize2, Minimize2, 
-  Bot, Paperclip, Star, BookOpen, GraduationCap, ShieldCheck, Sparkles
+  Send, User, Search, MessageCircle, Video,
+  MoreVertical, CheckCheck, Loader2, Star, 
+  Paperclip, Image, Smile, Heart, Bell, 
+  ChevronDown,Phone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../../api/axios';
 
-const ChatMessage = React.memo(({ msg, isOwn, time, isRead, courseTitle }) => (
+const ChatMessage = React.memo(({ msg, isOwn, time, isRead }) => (
   <motion.div 
-    initial={{ opacity: 0, y: 15 }}
+    initial={{ opacity: 0, y: 5 }}
     animate={{ opacity: 1, y: 0 }}
-    className={`flex items-start gap-4 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
+    className={`flex items-end gap-3 mb-6 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
   >
-    <div className={`p-2.5 rounded-xl shrink-0 ${isOwn ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-600'}`}>
-      {isOwn ? <User size={18} /> : <Bot size={18} />}
+    <div className={`w-10 h-10 shrink-0 border border-slate-200`}>
+      <img 
+        src={isOwn ? "/images/avatars/user.jpg" : `https://ui-avatars.com/api/?name=Mentor&background=f1f5f9&color=64748b`} 
+        className="w-full h-full object-cover" 
+        alt="" 
+      />
     </div>
     
-    <div className={`flex flex-col max-w-[80%] ${isOwn ? 'items-end text-right' : 'items-start text-left'}`}>
-      <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-1 px-2">
-        {isOwn ? 'Вы' : courseTitle}
-      </span>
-
-      <div className={`p-5 rounded-2xl text-[13px] font-medium leading-relaxed ${
+    <div className={`flex flex-col max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
+      <div className={`px-4 py-3 shadow-sm ${
         isOwn 
-        ? 'bg-blue-600 text-white rounded-tr-none shadow-lg shadow-blue-100' 
-        : 'bg-white border border-slate-100 text-slate-700 rounded-tl-none shadow-sm'
+        ? 'bg-[#3b82f6] text-white' 
+        : 'bg-white text-slate-700 border border-slate-100'
       }`}>
-        <div className="whitespace-pre-wrap">{msg.content}</div>
-        
-        <div className={`flex items-center gap-1 mt-2 opacity-80 text-[10px] ${isOwn ? 'justify-end text-blue-100' : 'text-slate-400'}`}>
+        <div className="text-[14px] leading-relaxed font-medium">{msg.content}</div>
+        <div className={`flex items-center gap-1 mt-1.5 text-[10px] ${isOwn ? 'text-blue-100/70' : 'text-slate-400'}`}>
           {time}
-          {isOwn && <CheckCheck size={12} className={isRead ? "text-white" : "text-blue-300"} />}
+          {isOwn && <CheckCheck size={12} className={isRead ? "text-white" : "text-blue-200"} />}
         </div>
       </div>
     </div>
@@ -46,7 +46,6 @@ const CourseMentorsChat = () => {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [messages, setMessages] = useState([]);
   const [sending, setSending] = useState(false);
-  const [isFullScreen, setIsFullScreen] = useState(false);
   
   const scrollRef = useRef(null);
 
@@ -74,11 +73,8 @@ const CourseMentorsChat = () => {
   }, [selectedRoom?.id, fetchMessages]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [messages, sending]);
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSend = async () => {
     if (!message.trim() || !selectedRoom || sending) return;
@@ -91,11 +87,7 @@ const CourseMentorsChat = () => {
         content: tempText
       });
       setMessages(prev => [...prev, response.data]);
-    } catch (err) { 
-      setMessage(tempText); 
-    } finally { 
-      setSending(false); 
-    }
+    } catch (err) { setMessage(tempText); } finally { setSending(false); }
   };
 
   const filteredActive = useMemo(() => 
@@ -103,244 +95,206 @@ const CourseMentorsChat = () => {
     [activeRooms, searchQuery]
   );
 
-  const quickActions = [
-    { label: '🔗 GitHub Repo', value: 'Вот ссылка на мой репозиторий: ' },
-    { label: '📸 Скриншот ошибки', value: 'Прикрепляю скриншот ошибки: ' },
-    { label: '❓ Вопрос по коду', value: 'У меня возник вопрос в этом блоке кода: ' },
-  ];
-
   return (
-    <main className={`transition-all duration-500 flex flex-col font-sans ${
-      isFullScreen 
-      ? 'fixed inset-0 z-[9999] bg-[#f8fafc] overflow-hidden' 
-      : 'max-w-[1400px] mx-auto px-6 py-8 bg-[#f8fafc] min-h-screen'
-    }`}>
+    <div className="flex h-screen bg-white font-sans overflow-hidden">
       
-      {/* HEADER */}
-      <div className={`flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-slate-200 pb-8 mb-8 shrink-0 ${isFullScreen ? 'px-8 pt-8' : ''}`}>
-        <div className="text-left">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="text-blue-600" size={20} />
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Mentor Space</h1>
+      {/* 1. LEFT SIDEBAR (CHATS) */}
+      <div className="w-[360px] bg-white flex flex-col border-r border-slate-200">
+        <div className="p-6 border-b border-slate-100">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">Messages</h2>
+            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 tracking-widest uppercase">6 Running</span>
           </div>
-          <p className="text-[13px] text-slate-500 font-medium leading-relaxed">
-            Прямая связь с кураторами. Задавайте вопросы и получайте фидбек.
-          </p>
+          
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search conversations..."
+              className="w-full bg-slate-50 border-none py-3.5 pl-12 pr-4 text-[13px] placeholder:text-slate-400 focus:ring-0 outline-none"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
-        
-        <div className="flex gap-3">
-          <button 
-            onClick={() => setIsFullScreen(!isFullScreen)}
-            className="flex bg-white p-3 rounded-xl border border-slate-200 shadow-sm hover:bg-slate-50 transition-colors text-slate-600"
-          >
-            {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-          </button>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {roomsLoading ? (
+            [1, 2, 3, 4].map(i => <div key={i} className="w-full h-20 bg-slate-50/50 animate-pulse border-b border-slate-100" />)
+          ) : (
+            filteredActive.map(room => (
+              <button
+                key={room.id}
+                onClick={() => setSelectedRoom(room)}
+                className={`w-full flex items-center gap-4 p-5 transition-all border-b border-slate-100 relative ${
+                  selectedRoom?.id === room.id 
+                  ? 'bg-slate-50' 
+                  : 'hover:bg-slate-50/50'
+                }`}
+              >
+                {selectedRoom?.id === room.id && <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600" />}
+                <div className="relative shrink-0">
+                    <img src={`https://ui-avatars.com/api/?name=${room.author.name}&background=random&size=100`} className="w-12 h-12 object-cover border border-slate-200" alt="" />
+                </div>
+                <div className="flex-1 text-left overflow-hidden">
+                  <div className="flex justify-between items-center mb-0.5">
+                    <span className="text-[14px] font-bold text-slate-800 truncate">
+                        {room.author.name}
+                    </span>
+                    <span className="text-[10px] text-slate-400">12:45</span>
+                  </div>
+                  <p className="text-[12px] truncate font-medium text-slate-500">
+                    {room.course.title}
+                  </p>
+                </div>
+              </button>
+            ))
+          )}
         </div>
       </div>
 
-      <div className={`grid grid-cols-1 lg:grid-cols-4 gap-8 flex-1 overflow-hidden ${isFullScreen ? 'px-8 pb-8' : ''}`}>
-        
-        {/* SIDEBAR */}
-        <div className="lg:col-span-1 flex flex-col gap-4 overflow-hidden">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-              <MessageCircle size={14} className="text-blue-600" /> Активные диалоги
-            </p>
-            
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-              <input 
-                type="text" 
-                placeholder="Поиск чата..."
-                className="w-full bg-slate-50 border-none rounded-xl py-2.5 pl-9 pr-4 text-xs focus:ring-1 focus:ring-blue-500 transition-all outline-none"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar">
-              {roomsLoading ? (
-                [1, 2].map(i => <div key={i} className="w-full h-14 bg-slate-50 animate-pulse rounded-xl" />)
-              ) : (
-                filteredActive.map(room => (
-                  <button
-                    key={room.id}
-                    onClick={() => setSelectedRoom(room)}
-                    className={`w-full text-left p-4 rounded-xl border transition-all duration-300 ${
-                      selectedRoom?.id === room.id 
-                      ? 'bg-blue-50 border-blue-200 text-blue-900 shadow-sm scale-[1.02]' 
-                      : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <span className="text-[11px] font-black uppercase tracking-tight block truncate">
-                      {room.author.name}
-                    </span>
-                    <span className="text-[9px] mt-1 block truncate font-medium text-slate-400">
-                      {room.course.title}
-                    </span>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div className="p-6 bg-blue-600 rounded-2xl text-left text-white shadow-lg relative overflow-hidden shrink-0">
-             <p className="text-xs font-bold leading-relaxed relative z-10">
-               Ваши вопросы помогают делать обучение лучше.
-             </p>
-             <GraduationCap size={60} className="absolute -right-4 -bottom-4 opacity-10 transform rotate-12" />
-          </div>
-        </div>
-
-        {/* MAIN CONTENT AREA */}
-        <div className="lg:col-span-3 grid grid-cols-1 xl:grid-cols-3 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          
-          {/* Chat Container */}
-          <div className={`xl:col-span-2 flex flex-col border-r border-slate-100 bg-[#fcfdfe] ${selectedRoom ? '' : 'justify-center items-center'}`}>
-            {selectedRoom ? (
-              <>
-                <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar">
-                  <AnimatePresence initial={false}>
-                    {messages.map((msg) => (
-                      <ChatMessage 
-                        key={msg.id} 
-                        msg={msg} 
-                        isOwn={msg.sender_id === selectedRoom.student_id}
-                        isRead={msg.is_read}
-                        courseTitle={selectedRoom.course.title}
-                        time={new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      />
-                    ))}
-                  </AnimatePresence>
-                  {sending && (
-                    <div className="flex gap-4 flex-row-reverse animate-pulse opacity-50">
-                      <div className="p-2.5 bg-blue-600 text-white rounded-xl"><User size={18} /></div>
-                      <div className="bg-blue-600 text-white p-4 rounded-2xl rounded-tr-none text-[13px]">Отправка...</div>
-                    </div>
-                  )}
-                  <div ref={scrollRef} className="h-2" />
-                </div>
-
-                <div className="p-6 md:p-8 bg-white border-t border-slate-100 mt-auto">
-                  {/* Quick Actions */}
-                  <div className="flex gap-2 mb-4 overflow-x-auto pb-2 no-scrollbar">
-                    {quickActions.map((action, i) => (
-                      <button 
-                        key={i}
-                        onClick={() => setMessage(prev => prev + action.value)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-100 text-[10px] font-bold text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100 transition-all shrink-0"
-                      >
-                        {action.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="relative">
-                    <textarea
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-                      placeholder="Задайте технический вопрос..."
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-5 pr-20 text-[14px] font-medium text-slate-900 focus:border-blue-600 focus:bg-white outline-none transition-all resize-none min-h-[100px] max-h-40"
-                    />
-                    <div className="absolute right-4 bottom-4">
-                      <button 
-                        onClick={handleSend}
-                        disabled={sending || !message.trim()}
-                        className="p-4 bg-blue-600 text-white rounded-xl hover:bg-slate-900 disabled:opacity-20 transition-all shadow-xl active:scale-95"
-                      >
-                        {sending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center gap-1.5">
-                    <ShieldCheck size={12} className="text-blue-500" />
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Безопасный канал связи</span>
+      {/* 2. CENTER CHAT AREA */}
+      <div className="flex-1 bg-[#F8FAFC] flex flex-col relative min-w-0">
+        {selectedRoom ? (
+          <>
+            {/* Top Header */}
+            <div className="h-20 bg-white flex items-center justify-between px-8 border-b border-slate-200 shrink-0">
+              <div className="flex items-center gap-4">
+                <img src={`https://ui-avatars.com/api/?name=${selectedRoom.author.name}&background=3b82f6&color=fff&size=100`} className="w-10 h-10 border border-slate-200" alt="" />
+                <div>
+                  <h3 className="text-[15px] font-bold text-slate-800 uppercase tracking-tight">{selectedRoom.author.name}</h3>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 bg-green-500" />
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Online</p>
                   </div>
                 </div>
-              </>
-            ) : (
-              <div className="flex flex-col items-center text-slate-400 p-12 text-center">
-                <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-4">
-                  <Bot size={40} className="text-slate-200" />
-                </div>
-                <h3 className="text-slate-900 font-bold mb-1 tracking-tight text-xl">Центр связи</h3>
-                <p className="text-sm max-w-[280px] font-medium leading-relaxed">Выберите наставника слева, чтобы начать диалог.</p>
               </div>
-            )}
-          </div>
+              <div className="flex items-center gap-2">
+                <button className="p-2.5 text-slate-400 hover:text-slate-600 transition-all"><Search size={18} /></button>
+                <button className="p-2.5 text-slate-400 hover:text-slate-600 transition-all"><MoreVertical size={18} /></button>
+              </div>
+            </div>
 
-          {/* Right Sidebar (Profile) */}
-          <div className="hidden xl:flex flex-col p-8 bg-white overflow-y-auto custom-scrollbar">
-            {selectedRoom ? (
-              <div className="flex flex-col items-center">
-                <div className="w-full flex justify-between items-center mb-10">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Информация</h3>
-                    <MoreVertical size={18} className="text-slate-300 cursor-pointer" />
-                </div>
+            {/* Messages Content */}
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+              <div className="flex justify-center mb-10">
+                <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] border-b border-slate-200 pb-1">Today</span>
+              </div>
+              <AnimatePresence initial={false}>
+                {messages.map((msg) => (
+                  <ChatMessage 
+                    key={msg.id} 
+                    msg={msg} 
+                    isOwn={msg.sender_id === selectedRoom.student_id}
+                    isRead={msg.is_read}
+                    time={new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  />
+                ))}
+              </AnimatePresence>
+              <div ref={scrollRef} className="h-2" />
+            </div>
 
-                <div className="relative mb-6">
-                    <div className="w-28 h-28 rounded-[40px] overflow-hidden border-[6px] border-[#f8fafc] shadow-2xl rotate-3 group hover:rotate-0 transition-all duration-500">
-                        <img 
-                          src={`https://ui-avatars.com/api/?name=${selectedRoom.author.name}&background=2563eb&color=fff&size=200`} 
-                          alt="mentor" 
-                          className="w-full h-full object-cover scale-110" 
-                        />
-                    </div>
-                    <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white p-2 rounded-2xl shadow-lg">
-                        <Star size={14} fill="currentColor" />
-                    </div>
-                </div>
-                
-                <h3 className="text-lg font-bold text-slate-800 mb-1">{selectedRoom.author.name}</h3>
-                <p className="text-[11px] text-blue-500 font-black uppercase tracking-wider mb-8 text-center">Куратор дисциплины</p>
-
-                <div className="grid grid-cols-2 gap-3 w-full mb-10">
-                    <div className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-blue-50 transition-colors cursor-pointer group">
-                        <MessageCircle size={18} className="text-slate-400 group-hover:text-blue-500" />
-                        <span className="text-[9px] font-black text-slate-400 uppercase">Чат</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-blue-50 transition-colors cursor-pointer group">
-                        <Video size={18} className="text-slate-400 group-hover:text-blue-500" />
-                        <span className="text-[9px] font-black text-slate-400 uppercase">Call</span>
-                    </div>
-                </div>
-
-                <div className="w-full space-y-6">
-                    <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                           <BookOpen size={12} /> Дисциплина
-                        </p>
-                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                            <h4 className="text-[12px] font-bold text-slate-700 leading-tight">{selectedRoom.course.title}</h4>
-                            <div className="mt-3 flex items-center gap-2">
-                                <CheckCheck size={14} className="text-green-500" />
-                                <span className="text-[10px] text-slate-500 font-medium">Активный доступ</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button className="w-full py-4 border-2 border-slate-100 rounded-2xl text-[11px] font-black text-slate-400 uppercase hover:border-blue-500 hover:text-blue-500 transition-all active:scale-95">
-                        Открыть учебный план
+            {/* Bottom Input Area */}
+            <div className="p-6 bg-white border-t border-slate-200">
+                <div className="flex items-center gap-4">
+                    <button className="p-2 text-slate-400 hover:text-blue-600 transition-all">
+                        <Smile size={20} />
                     </button>
+                    <input 
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                        placeholder="Write a message..."
+                        className="flex-1 bg-transparent border-none outline-none text-[14px] font-medium text-slate-700 py-2"
+                    />
+                    <div className="flex items-center gap-3">
+                        <button className="text-slate-400 hover:text-slate-600"><Paperclip size={18} /></button>
+                        <button 
+                            onClick={handleSend}
+                            className="bg-slate-900 text-white px-6 py-2.5 text-[12px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center gap-2"
+                        >
+                            {sending ? <Loader2 size={16} className="animate-spin" /> : <>Send <Send size={14} /></>}
+                        </button>
+                    </div>
                 </div>
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center opacity-10">
-                <User size={48} />
-              </div>
-            )}
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-slate-300">
+            <MessageCircle size={48} className="mb-4 opacity-20" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Select Conversation</p>
           </div>
-        </div>
+        )}
+      </div>
+
+      {/* 3. RIGHT SIDEBAR (PROFILE) */}
+      <div className="hidden xl:flex w-[320px] bg-white flex-col border-l border-slate-200 overflow-y-auto custom-scrollbar">
+        {selectedRoom ? (
+          <div className="flex flex-col">
+            <div className="p-8 border-b border-slate-100 flex flex-col items-center">
+              <div className="w-32 h-32 mb-6 border border-slate-200 p-1">
+                <img src={`https://ui-avatars.com/api/?name=${selectedRoom.author.name}&background=3b82f6&color=fff&size=200`} className="w-full h-full object-cover" alt="" />
+              </div>
+
+              <h3 className="text-lg font-black text-slate-800 mb-1 text-center uppercase tracking-tight">
+                  {selectedRoom.author.name}
+              </h3>
+              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em] mb-8">
+                  Senior Mentor
+              </p>
+
+              <div className="grid grid-cols-2 w-full border border-slate-200">
+                <button className="flex flex-col items-center gap-2 py-4 border-r border-slate-200 hover:bg-slate-50 transition-all text-slate-600">
+                  <Phone size={18} />
+                  <span className="text-[9px] font-black uppercase tracking-widest">Call</span>
+                </button>
+                <button className="flex flex-col items-center gap-2 py-4 hover:bg-slate-50 transition-all text-slate-600">
+                  <Video size={18} />
+                  <span className="text-[9px] font-black uppercase tracking-widest">Video</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-8 space-y-8">
+               <div>
+                  <h5 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Information</h5>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[12px] text-slate-400">Course</span>
+                        <span className="text-[12px] font-bold text-slate-700">{selectedRoom.course.title}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="text-[12px] text-slate-400">Role</span>
+                        <span className="text-[12px] font-bold text-slate-700">Lead Instructor</span>
+                    </div>
+                  </div>
+               </div>
+
+               <div>
+                  <h5 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4">Media Attachments</h5>
+                  <div className="grid grid-cols-2 gap-px bg-slate-200 border border-slate-200">
+                    {['PDF', 'Video', 'MP3', 'Image'].map(item => (
+                        <div key={item} className="bg-white p-4 flex flex-col items-center gap-2 hover:bg-slate-50 cursor-pointer transition-all">
+                            <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{item}</span>
+                        </div>
+                    ))}
+                  </div>
+               </div>
+            </div>
+          </div>
+        ) : (
+          <div className="h-full flex items-center justify-center opacity-10">
+            <User size={80} />
+          </div>
+        )}
       </div>
 
       <style jsx>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; }
       `}</style>
-    </main>
+    </div>
   );
 };
 
