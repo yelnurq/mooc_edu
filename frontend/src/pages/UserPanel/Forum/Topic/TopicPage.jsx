@@ -4,7 +4,7 @@ import api from '../../../../api/axios';
 import { 
   User, MessageSquare, ArrowLeft, Send, 
   Calendar, Eye, Heart, 
-  Share2, ShieldCheck, 
+  Share2, ShieldCheck, ShieldAlert,
   Info, MessageSquarePlus, CheckCircle2,
   ChevronRight, Clock, Award
 } from 'lucide-react';
@@ -169,11 +169,31 @@ const TopicPage = () => {
           {/* TOPIC CONTENT */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 md:p-10 relative overflow-hidden"
+            className={`bg-white rounded-2xl border relative overflow-hidden transition-all shadow-sm ${
+              topic.is_bad ? 'border-rose-200 shadow-rose-50' : 'border-slate-200'
+            }`}
           >
-            <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-600" />
-            <div className="text-[15px] text-slate-700 leading-relaxed font-medium whitespace-pre-wrap selection:bg-blue-100">
-              {topic.content}
+            {/* Left Accent Line */}
+            <div className={`absolute top-0 left-0 w-1.5 h-full ${
+              topic.is_bad ? 'bg-rose-500' : 'bg-blue-600'
+            }`} />
+
+            {/* Moderation Banner */}
+            {!!topic.is_bad && (
+  <div className="bg-rose-50/50 border-b border-rose-100 px-8 py-3 flex items-center gap-3">
+    <ShieldAlert size={14} className="text-rose-500" />
+    <span className="text-[10px] font-black uppercase tracking-widest text-rose-600">
+      Обнаружено нарушение правил этики. Контент был отредактирован системой.
+    </span>
+  </div>
+)}
+
+            <div className="p-8 md:p-10">
+              <div className={`text-[15px] leading-relaxed font-medium whitespace-pre-wrap selection:bg-blue-100 ${
+                topic.is_bad ? 'text-slate-400 italic' : 'text-slate-700'
+              }`}>
+                {topic.content}
+              </div>
             </div>
           </motion.div>
 
@@ -231,27 +251,45 @@ const TopicPage = () => {
             <div className="space-y-4">
                <AnimatePresence mode='popLayout'>
                 {sortedComments.length > 0 ? (
-                  sortedComments.map((comment, index) => (
+                  sortedComments.map((comment) => (
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }} 
                       animate={{ opacity: 1, y: 0 }} 
                       exit={{ opacity: 0, scale: 0.95 }}
                       key={comment.id}
-                      className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
+                      className={`bg-white border p-6 rounded-2xl shadow-sm transition-all relative overflow-hidden group ${
+                        comment.is_bad ? 'border-rose-100 bg-rose-50/10' : 'border-slate-200 hover:shadow-md'
+                      }`}
                     >
-                      <div className="absolute top-0 left-0 w-1 h-full bg-slate-100 group-hover:bg-blue-500 transition-colors" />
+                      <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${
+                        comment.is_bad ? 'bg-rose-400' : 'bg-slate-100 group-hover:bg-blue-500'
+                      }`} />
+                      
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black text-xs">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs ${
+                              comment.is_bad ? 'bg-rose-500 text-white' : 'bg-slate-900 text-white'
+                            }`}>
                               {comment.author?.name?.charAt(0)}
                             </div>
                             <div>
-                              <p className="text-[11px] font-black text-slate-900 uppercase tracking-tight leading-none">
-                                {comment.author?.name}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className={`text-[11px] font-black uppercase tracking-tight leading-none ${
+                                  comment.is_bad ? 'text-rose-600' : 'text-slate-900'
+                                }`}>
+                                  {comment.author?.name}
+                                </p>
+                                {comment.is_bad && (
+                                  <span className="text-[7px] font-black px-1.5 py-0.5 bg-rose-100 text-rose-500 rounded uppercase tracking-tighter">
+                                    Содержит нарушения
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center gap-1 mt-1">
-                                <Award size={10} className="text-emerald-500" />
-                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Академическая активность</span>
+                                <Award size={10} className={comment.is_bad ? "text-rose-300" : "text-emerald-500"} />
+                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
+                                  {comment.is_bad ? "Замечание модератора" : "Академическая активность"}
+                                </span>
                               </div>
                             </div>
                         </div>
@@ -259,7 +297,9 @@ const TopicPage = () => {
                           {comment.time_ago}
                         </span>
                       </div>
-                      <div className="text-[14px] text-slate-600 leading-relaxed font-medium pl-1">
+                      <div className={`text-[14px] leading-relaxed font-medium pl-1 ${
+                        comment.is_bad ? 'text-slate-400 italic' : 'text-slate-600'
+                      }`}>
                         {comment.content}
                       </div>
                     </motion.div>

@@ -157,7 +157,7 @@ public function store(Request $request) {
     $request->validate([
         'title' => 'required|string|max:255',
         'content' => 'required|string',
-        'tags' => 'required|array', // Добавляем валидацию массива тегов
+        'tags' => 'required|array', 
     ]);
 
     $originalTitle = $request->title;
@@ -169,50 +169,74 @@ public function store(Request $request) {
     $cleanTitle = $censoredData['title'] ?? $originalTitle;
     $cleanContent = $censoredData['content'] ?? $originalContent;
 
-    // 1. Создаем топик
+    // ПРОВЕРКА: Если заголовок или контент изменились после цензуры — ставим true
+    $isBad = ($originalTitle !== $cleanTitle) || ($originalContent !== $cleanContent);
+
+    // 1. Создаем топик с полем is_bad
     $topic = Topic::create([
         'user_id' => auth()->id(),
         'title' => $originalTitle,
         'content' => $originalContent,
         'clean_title' => $cleanTitle,
         'clean_content' => $cleanContent,
+        'is_bad' => $isBad, // Сохраняем результат проверки
     ]);
 
-    // 2. СОХРАНЯЕМ ТЕГИ (Привязываем ID тегов к топику)
+    // 2. СОХРАНЯЕМ ТЕГИ
     if ($request->has('tags')) {
-        // Метод sync() запишет ID тегов в промежуточную таблицу topic_tag
         $topic->tags()->sync($request->tags);
     }
 
-    // Подгружаем теги для ответа фронтенду, чтобы они сразу отобразились
-    $topic->load('tags');
+    // Подгружаем связи
+    $topic->load(['tags', 'author']);
 
-    // Для фронтенда подменяем данные на "чистые"
-    $topic->title = $topic->clean_title;
-    $topic->content = $topic->clean_content;
+    // Для фронтенда подменяем данные на "чистые" (или оставляем как есть, если вы Admin)
+    $isAdmin = auth()->user() && auth()->user()->role === 'admin';
+    
+    if (!$isAdmin) {
+        $topic->title = $topic->clean_title;
+        $topic->content = $topic->clean_content;
+    }
+
+    // Удаляем технические поля перед отправкой
+    unset($topic->clean_title);
+    unset($topic->clean_content);
 
     return response()->json($topic);
 }
-public function toggleLike($id)
+public function vote($id, Request $request)
 {
+    // Валидируем значение: 1 (лайк) или -1 (дизлайк)
+    $value = $request->input('value') == 1 ? 1 : -1;
     $topic = Topic::findOrFail($id);
-    // Используем auth()->id(), чтобы не дергать весь объект User
-    $userId = auth()->id(); 
+    $userId = auth()->id();
 
-    $like = $topic->likes()->where('user_id', $userId)->first();
+    // Ищем существующую оценку (любую: и лайк, и дизлайк)
+    $existingVote = $topic->likes()->where('user_id', $userId)->first();
 
-    if ($like) {
-        $like->delete();
-        return response()->json([
-            'status' => 'unliked', 
-            'likes_count' => $topic->likes()->count()
-        ]);
+    if ($existingVote) {
+        if ($existingVote->value == $value) {
+            // Если нажал на ту же кнопку второй раз — отменяем оценку полностью
+            $existingVote->delete();
+            $status = 'removed';
+        } else {
+            // Если нажал на противоположную кнопку — меняем 1 на -1 или наоборот
+            $existingVote->update(['value' => $value]);
+            $status = 'changed';
+        }
     } else {
-        $topic->likes()->create(['user_id' => $userId]);
-        return response()->json([
-            'status' => 'liked', 
-            'likes_count' => $topic->likes()->count()
+        // Если оценки не было — создаем новую
+        $topic->likes()->create([
+            'user_id' => $userId,
+            'value' => $value
         ]);
+        $status = 'added';
     }
+
+    return response()->json([
+        'status' => $status,
+        'rating' => $topic->likes()->sum('value'), // Возвращаем актуальный баланс
+        'user_vote' => $status === 'removed' ? 0 : $value // Чтобы фронт знал, что подсветить
+    ]);
 }
 }

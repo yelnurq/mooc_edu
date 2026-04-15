@@ -12,7 +12,7 @@ class Topic extends Model
     protected $fillable = ['clean_title','clean_content','title', 'content', 'user_id', 'is_pinned', 'views', 'is_bad'];
 
     // Автоматически добавляем эти поля в JSON ответ
-    protected $appends = ['time_ago', 'is_liked', 'likes_count'];
+    protected $appends = ['time_ago', 'is_liked', 'likes_count', 'rating', 'user_vote'];
 
     // Связь с автором (пользователем)
     public function author(): BelongsTo
@@ -29,7 +29,18 @@ public function getIsLikedAttribute()
 {
     return $this->likes()->where('user_id', auth()->id())->exists();
 }
+public function getRatingAttribute()
+{
+    return $this->likes()->sum('value');
+}
 
+public function getUserVoteAttribute()
+{
+    if (!auth()->check()) return 0;
+    
+    // Возвращает 1, -1 или 0
+    return $this->likes()->where('user_id', auth()->id())->value('value') ?? 0;
+}
 // Количество лайков
 public function getLikesCountAttribute()
 {

@@ -4,7 +4,7 @@ import api from '../../../api/axios';
 import { 
   MessageSquare, Search, Plus, X, 
   Clock, Eye, MessageCircle, TrendingUp, 
-  ChevronRight, ShieldCheck, Filter, 
+  ChevronRight, ShieldCheck, Filter, ShieldAlert,
   AlertTriangle, PlusCircle, PieChart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -191,8 +191,33 @@ const ForumPage = () => {
             colorClass="bg-blue-50 text-blue-600" 
             description="Контент модерируется системой KazUTB для чистоты дискуссий" 
           />
-        </aside>
-
+          {/* НОВАЯ КАРТОЧКА: ПРЕДУПРЕЖДЕНИЕ О МОДЕРАЦИИ */}
+  <div className="bg-white p-6 rounded-2xl border border-rose-100 shadow-sm relative overflow-hidden transition-all group">
+    {/* Красная акцентная линия */}
+    <div className="absolute top-0 left-0 w-1 h-full bg-rose-500" />
+    
+    <div className="flex justify-between items-start mb-4">
+      <div className="space-y-1">
+        <p className="text-[10px] font-bold text-rose-500 uppercase tracking-[0.2em]">Внимание</p>
+        <h3 className="text-sm font-black text-slate-900 tracking-tight uppercase">Этикет форума</h3>
+      </div>
+      <div className="p-2.5 rounded-lg bg-rose-50 text-rose-500">
+        <ShieldAlert size={18} />
+      </div>
+    </div>
+    
+    <div className="space-y-3">
+      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-relaxed">
+        Темы, отмеченные <span className="text-rose-600 font-black italic">красной линией</span>, содержат нарушения правил сообщества или токсичный контент.
+      </p>
+      <div className="p-3 bg-rose-50/50 rounded-lg border border-rose-100/50">
+        <p className="text-[9px] font-black text-rose-600 uppercase tracking-widest leading-normal">
+          Рекомендуем воздержаться от участия в дискуссиях с низким качеством контента.
+        </p>
+      </div>
+    </div>
+  </div>
+</aside>
         {/* MAIN FEED */}
         <div className="lg:col-span-3 text-left">
           {isLoading ? (
@@ -202,77 +227,120 @@ const ForumPage = () => {
           ) : topics.length > 0 ? (
             <div className="space-y-4">
               <AnimatePresence mode='popLayout'>
-                {topics.map((topic) => (
-                  <motion.div 
-                    layout
-                    initial={{ opacity: 0, y: 10 }} 
-                    animate={{ opacity: 1, y: 0 }} 
-                    key={topic.id}
-                    onClick={() => navigate(`/app/forum/topic/${topic.id}`)}
-                    className={`group relative bg-white p-6 rounded-xl border transition-all cursor-pointer shadow-sm hover:border-blue-400 hover:shadow-lg flex flex-col justify-between ${
-                      topic.is_bad ? 'border-orange-200 ring-1 ring-orange-50' : 'border-slate-200'
-                    }`}
-                  >
-                    {/* Акцентная линия как в StatCard */}
-                    <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${
-                        topic.is_pinned ? 'bg-amber-400' : topic.is_bad ? 'bg-orange-400' : 'bg-slate-200 group-hover:bg-blue-600'
-                    }`} />
+ {topics.map((topic) => (
+  <motion.div 
+    layout
+    initial={{ opacity: 0, y: 10 }} 
+    animate={{ opacity: 1, y: 0 }} 
+    key={topic.id}
+    className={`group relative bg-white rounded-xl border transition-all shadow-sm hover:shadow-lg flex ${
+      !!topic.is_bad 
+        ? 'border-rose-200 bg-rose-50/10 shadow-rose-50' 
+        : 'border-slate-200 hover:border-blue-400'
+    }`}
+  >
+    {/* Акцентная линия */}
+    <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${
+        topic.is_pinned 
+          ? 'bg-amber-400' 
+          : !!topic.is_bad 
+            ? 'bg-rose-500' 
+            : 'bg-slate-200 group-hover:bg-blue-600'
+    }`} />
 
-                    <div className="flex justify-between items-start gap-6">
-                      <div className="space-y-3 flex-1">
-                        <div className="flex flex-wrap gap-2 items-center">
-                          {topic.is_pinned && (
-                            <span className="text-[8px] font-black px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded uppercase tracking-tighter">Закреплено</span>
-                          )}
-                          {topic.is_bad && (
-                             <span className="text-[8px] font-black px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded uppercase tracking-tighter flex items-center gap-1">
-                               <AlertTriangle size={10} /> Модерация
-                             </span>
-                          )}
-                          <div className="flex gap-1">
-                            {topic.tags?.map(tag => (
-                              <span key={tag.id} className="text-[9px] font-bold text-blue-600/70 uppercase tracking-widest">
-                                #{tag.name}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
+    {/* VOTE SYSTEM (LEFT SIDE) */}
+    <div className="flex flex-col items-center justify-center px-4 bg-slate-50/30 border-r border-slate-100 gap-1 py-4">
+      <button 
+        onClick={(e) => { e.stopPropagation(); /* logic */ }}
+        className="p-1 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-all text-slate-300"
+      >
+        <TrendingUp size={18} />
+      </button>
+      <span className={`text-[13px] font-black tracking-tighter ${
+        (topic.rating || 0) > 0 ? 'text-emerald-600' : (topic.rating || 0) < 0 ? 'text-rose-600' : 'text-slate-400'
+      }`}>
+        {topic.rating || 0}
+      </span>
+      <button 
+        onClick={(e) => { e.stopPropagation(); /* logic */ }}
+        className="p-1 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all text-slate-300"
+      >
+        <TrendingUp size={18} className="rotate-180" />
+      </button>
+    </div>
 
-                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight leading-snug group-hover:text-blue-600 transition-colors">
-                          {topic.title}
-                        </h3>
+    {/* CONTENT SIDE */}
+    <div 
+      onClick={() => navigate(`/app/forum/topic/${topic.id}`)}
+      className="flex-1 p-6 cursor-pointer flex flex-col justify-between"
+    >
+      <div className="flex justify-between items-start gap-6">
+        <div className="space-y-3 flex-1">
+          <div className="flex flex-wrap gap-2 items-center">
+            {topic.is_pinned && (
+              <span className="text-[8px] font-black px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded uppercase tracking-tighter">
+                Закреплено
+              </span>
+            )}
+            {!!topic.is_bad && (
+               <span className="text-[8px] font-black px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded uppercase tracking-tighter flex items-center gap-1">
+                 <ShieldAlert size={10} /> Модерация
+               </span>
+            )}
+            <div className="flex gap-1">
+              {topic.tags?.map(tag => (
+                <span key={tag.id} className="text-[9px] font-bold text-blue-600/70 uppercase tracking-widest">
+                  #{tag.name}
+                </span>
+              ))}
+            </div>
+          </div>
 
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                                <div className="w-5 h-5 bg-slate-900 rounded flex items-center justify-center text-[9px] text-white font-black">
-                                    {topic.author?.name?.charAt(0)}
-                                </div>
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{topic.author?.name}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-slate-400 uppercase text-[9px] font-bold tracking-tighter">
-                                <Clock size={12} /> {topic.time_ago}
-                            </div>
-                        </div>
-                      </div>
+          <h3 className={`text-sm font-bold uppercase tracking-tight leading-snug transition-colors ${
+            !!topic.is_bad ? 'text-slate-500 group-hover:text-rose-600' : 'text-slate-900 group-hover:text-blue-600'
+          }`}>
+            {topic.title}
+          </h3>
 
-                      <div className="flex flex-col items-end gap-2 shrink-0">
-                        <div className="flex items-center gap-4 bg-slate-50/50 px-3 py-2 rounded-lg border border-slate-100">
-                            <div className="flex items-center gap-1.5 text-slate-600">
-                                <MessageCircle size={14} className="text-slate-400" />
-                                <span className="text-[11px] font-black">{topic.replies_count || 0}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 text-slate-600">
-                                <Eye size={14} className="text-slate-400" />
-                                <span className="text-[11px] font-black">{topic.views || 0}</span>
-                            </div>
-                        </div>
-                        <div className="text-slate-300 group-hover:text-blue-600 transition-colors">
-                            <ChevronRight size={20} />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+          <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                  <div className={`w-5 h-5 rounded flex items-center justify-center text-[9px] text-white font-black ${
+                    !!topic.is_bad ? 'bg-rose-500' : 'bg-slate-900'
+                  }`}>
+                      {topic.author?.name?.charAt(0)}
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                    {topic.author?.name}
+                  </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-400 uppercase text-[9px] font-bold tracking-tighter">
+                  <Clock size={12} /> {topic.time_ago}
+              </div>
+          </div>
+        </div>
+
+        {/* RIGHT STATS */}
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <div className={`flex items-center gap-4 px-3 py-2 rounded-lg border transition-colors ${
+            !!topic.is_bad ? 'bg-rose-50/50 border-rose-100' : 'bg-slate-50/50 border-slate-100'
+          }`}>
+              <div className="flex items-center gap-1.5 text-slate-600">
+                  <MessageSquare size={14} className={!!topic.is_bad ? "text-rose-400" : "text-slate-400"} />
+                  <span className="text-[11px] font-black">{topic.replies_count || 0}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-600">
+                  <Eye size={14} className={!!topic.is_bad ? "text-rose-400" : "text-slate-400"} />
+                  <span className="text-[11px] font-black">{topic.views || 0}</span>
+              </div>
+          </div>
+          <div className={`transition-colors ${!!topic.is_bad ? 'text-rose-300 group-hover:text-rose-600' : 'text-slate-300 group-hover:text-blue-600'}`}>
+              <ChevronRight size={20} />
+          </div>
+        </div>
+      </div>
+    </div>
+  </motion.div>
+))}
               </AnimatePresence>
 
               {lastPage > 1 && (

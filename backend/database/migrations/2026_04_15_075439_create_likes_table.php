@@ -17,7 +17,7 @@ return new class extends Migration
             // Это создаст likeable_id и likeable_type для связи с любыми моделями
             $table->morphs('likeable'); 
             $table->timestamps();
-            
+            $table->tinyInteger('value')->default(1); // 1 для лайка, -1 для дизлайка
             // Чтобы один пользователь не мог лайкнуть одну и ту же сущность дважды
             $table->unique(['user_id', 'likeable_id', 'likeable_type']);
         });
