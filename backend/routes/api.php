@@ -46,10 +46,11 @@ Route::middleware("logs")->group(function(){
 
     Route::middleware(["token"])->group(function(){
 
-Route::get('/forum/tags', [ForumController::class, 'getTags']);
-Route::get('/forum/topics', [ForumController::class, 'index']);
-Route::post('/forum/topics', [ForumController::class, 'store']);
-
+    Route::get('/forum/tags', [ForumController::class, 'getTags']);
+    Route::get('/forum/topics', [ForumController::class, 'index']);
+    Route::post('/forum/topics', [ForumController::class, 'store']);
+    Route::get('/forum/topics/{id}', [ForumController::class, 'show']);
+    Route::post('/forum/topics/{id}/comments', [ForumController::class, 'storeComment']);
     Route::get('/course-chats', [CourseChatController::class, 'index']);
     Route::post('/course-chats/start', [CourseChatController::class, 'startChat']);
     Route::get('/course-chats/{roomId}/messages', [CourseChatController::class, 'getMessages']);

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Reply;
 use App\Models\Topic;
 use App\Models\Tag;
 use Illuminate\Http\Request;
@@ -31,7 +32,33 @@ class ForumController extends Controller {
         // Возвращаем все теги
         return response()->json(Tag::all());
     }
+public function show($id)
+{
+    $topic = Topic::with('author', 'tags')->findOrFail($id);
+    $comments = $topic->comments()->with('author')->get(); // Убедись, что связь создана
+    
+    // Если нужно обновить просмотры
+    $topic->increment('views');
 
+    return response()->json([
+        'topic' => $topic,
+        'comments' => $comments
+    ]);
+}
+public function storeComment(Request $request, $id)
+{
+    $validated = $request->validate(['content' => 'required|string']);
+
+    $comment = Reply::create([
+        'content' => $validated['content'],
+        'topic_id' => $id,
+        'user_id' => auth()->id()
+    ]);
+
+    return response()->json([
+        'comment' => $comment->load('author')
+    ], 201);
+}
 public function store(Request $request)
 {
     $validated = $request->validate([

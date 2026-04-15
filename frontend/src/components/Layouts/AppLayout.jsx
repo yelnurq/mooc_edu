@@ -155,15 +155,17 @@ const AppLayout = () => {
           </header>
         )}
 
-        {/* CONTENT */}
-        <div className={`
-          ${!isFocusMode 
-            ? 'p-6 overflow-x-hidden' 
-            : 'h-screen w-full overflow-hidden'
-          }
-        `}>
-          <Outlet /> 
-        </div>
+       {/* CONTENT AREA */}
+<div className={`
+  ${!isFocusMode 
+    ? 'p-6 overflow-x-hidden' 
+    : isForumPage // Если это форум в режиме Focus Mode
+      ? 'h-screen w-full overflow-y-auto' // Разрешаем вертикальный скролл
+      : 'h-screen w-full overflow-hidden' // Для чатов оставляем как было
+  }
+`}>
+  <Outlet /> 
+</div>
       </main>
 
       <style jsx>{`

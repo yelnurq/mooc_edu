@@ -27,10 +27,15 @@ class Topic extends Model
     }
 
     // Связь с комментариями (Один-ко-многим)
-    public function replies(): HasMany
+    public function comments(): HasMany
     {
         return $this->hasMany(Reply::class);
     }
+      public function replies(): HasMany
+    {
+        return $this->hasMany(Reply::class);
+    }
+
 
     // Аксессор для вывода даты как "2 часа назад" или "1 день назад"
     public function getTimeAgoAttribute()

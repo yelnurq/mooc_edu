@@ -27,6 +27,7 @@ import CertificateAppVerify from './pages/UserPanel/Certificate/VerifyApp';
 import AIChat from './pages/UserPanel/Chat/ChatAI';
 import MentorsChat from './pages/UserPanel/Chat/ChatMentors';
 import ForumPage from './pages/UserPanel/Forum/Forum';
+import TopicPage from './pages/UserPanel/Forum/Topic/TopicPage';
 
 // Локальный компонент для защиты роутов
 const ProtectedRoute = () => {
@@ -58,6 +59,7 @@ function App() {
               <Route path="/app/dashboard" element={<Dashboard />} />
               <Route path="/app/ai-chat" element={<AIChat/>} />
               <Route path="/app/forum" element={<ForumPage/>} />
+              <Route path="/app/forum/topic/:id" element={<TopicPage />} />
               <Route path="/app/mentors-chat" element={<MentorsChat/>} />
               <Route path="/app/my-courses" element={<MyCourses />} />
               <Route path="/app/settings" element={<SettingsPage />} />
