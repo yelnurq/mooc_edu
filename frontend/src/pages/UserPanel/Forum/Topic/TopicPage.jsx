@@ -249,45 +249,53 @@ const TopicPage = () => {
 </div>
 
             {/* COMMENTS LOOP */}
-            <div className="space-y-5 pt-4">
-               {sortedComments.length > 0 ? (
-                 sortedComments.map((comment, index) => (
-                   <motion.div 
-                    initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1 }}
-                    key={comment.id}
-                    className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm hover:shadow-xl hover:border-blue-100 transition-all group"
-                   >
-                     <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-4">
-                           <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center font-black text-sm border border-slate-100 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                             {comment.author?.name?.charAt(0)}
-                           </div>
-                           <div>
-                              <p className="text-base font-black text-slate-900 uppercase tracking-tight leading-none">{comment.author?.name}</p>
-                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                                <ShieldCheck size={10} className="text-emerald-500" /> Идентификатор подтвержден
-                              </p>
-                           </div>
-                        </div>
-                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-                          {comment.time_ago}
-                        </span>
-                     </div>
-                     <p className="text-slate-600 text-base md:text-lg leading-relaxed font-medium pl-2 border-l-2 border-slate-50 group-hover:border-blue-500 transition-colors">
-                        {comment.content}
-                     </p>
-                   </motion.div>
-                 ))
-               ) : (
-                 <div className="bg-white border-2 border-dashed border-slate-100 rounded-[2rem] py-24 text-center flex flex-col items-center">
-                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                      <MessageSquarePlus size={36} className="text-slate-200" />
-                    </div>
-                    <p className="text-[11px] font-black uppercase text-slate-400 tracking-[0.3em]">История обсуждения пуста</p>
-                    <p className="text-[10px] font-medium text-slate-300 uppercase mt-2">Будьте первым, кто оставит свой след</p>
-                 </div>
-               )}
+      {/* COMMENTS LIST - Компактный и строгий стиль */}
+<div className="space-y-4 pt-4">
+   {sortedComments.length > 0 ? (
+     sortedComments.map((comment, index) => (
+       <motion.div 
+         initial={{ opacity: 0, y: 10 }} 
+         animate={{ opacity: 1, y: 0 }} 
+         transition={{ delay: index * 0.05 }}
+         key={comment.id}
+         className="bg-white border border-slate-200 p-5 md:p-6 rounded-2xl shadow-sm hover:border-blue-200 transition-all group"
+       >
+         <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+               {/* Уменьшенная аватарка */}
+               <div className="w-10 h-10 bg-slate-100 text-slate-500 rounded-xl flex items-center justify-center font-black text-xs border border-slate-200 group-hover:bg-slate-900 group-hover:text-white transition-colors">
+                 {comment.author?.name?.charAt(0)}
+               </div>
+               <div>
+                  <p className="text-[13px] font-black text-slate-900 uppercase tracking-tight leading-none">
+                    {comment.author?.name}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <ShieldCheck size={10} className="text-emerald-500" />
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Подтвержден</span>
+                  </div>
+               </div>
             </div>
+            {/* Компактная дата */}
+            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter">
+              {comment.time_ago}
+            </span>
+         </div>
+         
+         {/* Текст комментария — такой же размер как в описании */}
+         <p className="text-[14px] md:text-[15px] text-slate-600 leading-relaxed font-medium pl-1">
+            {comment.content}
+         </p>
+       </motion.div>
+     ))
+   ) : (
+     /* Пустое состояние тоже подтянули под новый радиус */
+     <div className="bg-white border border-dashed border-slate-200 rounded-3xl py-16 text-center flex flex-col items-center">
+        <MessageSquarePlus size={24} className="text-slate-200 mb-3" />
+        <p className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em]">Обсуждение еще не начато</p>
+     </div>
+   )}
+</div>
           </div>
         </div>
       </div>
@@ -298,14 +306,11 @@ const TopicPage = () => {
           <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
             <ShieldCheck size={18} />
           </div>
-          <p className="text-[10px] font-bold text-slate-400 leading-tight uppercase tracking-widest">
-            Конфиденциальность данных защищена <br/> протоколами KazUTB.
+          <p className="text-left text-[10px] font-bold text-slate-400 leading-tight uppercase tracking-widest">
+            Конфиденциальность данных защищена.
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] italic">Digital Sign Platform</p>
-          <p className="text-[9px] font-bold text-slate-300 uppercase mt-1">Version 4.0.26 — Community Edition</p>
-        </div>
+       
       </footer>
     </main>
   );
