@@ -57,7 +57,7 @@ public function index(Request $request) {
         });
     }
 
-    // Поиск по зацензуренному заголовку
+    // Поиск по зацензуренному заголовку (так правильнее для обычных юзеров)
     if ($request->filled('search')) {
         $query->where('clean_title', 'like', '%' . $request->search . '%');
     }
@@ -67,22 +67,29 @@ public function index(Request $request) {
                     ->latest()
                     ->paginate(10);
 
-    // Проверяем, является ли пользователь админом
-    // (Замени на свою логику проверки ролей, например $user->hasRole('admin'))
+    // Определяем роль пользователя
     $isAdmin = auth()->user() && auth()->user()->role === 'admin';
 
-    // Трансформируем коллекцию
+    // Трансформируем коллекцию перед отправкой
     $topics->getCollection()->transform(function ($topic) use ($isAdmin) {
+        
+        // 1. Создаем флаг: был ли пост изменен цензурой
+        // Сравниваем оригинальный заголовок/контент с "чистым"
+        $topic->is_bad = ($topic->title !== $topic->clean_title) || ($topic->content !== $topic->clean_content);
+
+        // 2. Логика подмены полей в зависимости от роли
         if (!$isAdmin) {
-            // Если НЕ админ: подменяем оригинальные поля зацензуренными
+            // Обычный пользователь видит только версию с ***
             $topic->title = $topic->clean_title;
             $topic->content = $topic->clean_content;
         } else {
-            // Если админ: можно добавить префикс или оставить как есть
-            $topic->title = "[ORG] " . $topic->title;
+            // Админ видит оригинал. Можно добавить пометку для удобства
+            if ($topic->is_bad) {
+                $topic->title = "[⚠️ MODERATION] " . $topic->title;
+            }
         }
 
-        // Скрываем служебные поля clean_ из JSON ответа, чтобы не дублировать данные
+        // 3. Чистим JSON: удаляем вспомогательные поля, чтобы не загромождать ответ
         unset($topic->clean_title);
         unset($topic->clean_content);
 

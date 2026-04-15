@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('content');
             $table->boolean('is_pinned')->default(false); // Закреплена ли тема
+            $table->boolean('is_bad')->default(false);
             $table->integer('views')->default(0); // Просмотры
             $table->timestamps();
         });
