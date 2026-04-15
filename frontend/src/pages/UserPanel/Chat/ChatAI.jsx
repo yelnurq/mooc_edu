@@ -26,7 +26,7 @@ const AIChatMessage = React.memo(({ msg, isOwn, time }) => (
           ? 'bg-blue-600 border-blue-500 text-white rounded-tr-none' 
           : 'bg-white border-slate-200 text-slate-800 rounded-tl-none'
       }`}>
-        <div className="whitespace-pre-wrap">{msg.content}</div>
+        <div className="text-left whitespace-pre-wrap">{msg.content}</div>
         <div className={`flex items-center gap-1.5 mt-2 text-[9px] font-black uppercase tracking-tighter ${isOwn ? 'text-blue-100' : 'text-slate-400'}`}>
           <Clock size={10} /> {time}
           {isOwn && <CheckCheck size={12} className="text-sky-300" />}
