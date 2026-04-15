@@ -57,7 +57,7 @@ Route::middleware("logs")->group(function(){
     Route::post('/course-chats/messages', [CourseChatController::class, 'sendMessage']);
 
         Route::get('/user/courses/active', [ChatController::class, 'getStudentCourses']);
-        
+        Route::post('/forum/topics/{id}/like', [ForumController::class, 'toggleLike']);
         Route::post('/ai/chat', ChatController::class);
 
 

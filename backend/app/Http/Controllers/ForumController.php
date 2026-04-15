@@ -82,4 +82,26 @@ public function store(Request $request)
         'topic'   => $topic->load('tags')
     ], 201);
 }
+public function toggleLike($id)
+{
+    $topic = Topic::findOrFail($id);
+    // Используем auth()->id(), чтобы не дергать весь объект User
+    $userId = auth()->id(); 
+
+    $like = $topic->likes()->where('user_id', $userId)->first();
+
+    if ($like) {
+        $like->delete();
+        return response()->json([
+            'status' => 'unliked', 
+            'likes_count' => $topic->likes()->count()
+        ]);
+    } else {
+        $topic->likes()->create(['user_id' => $userId]);
+        return response()->json([
+            'status' => 'liked', 
+            'likes_count' => $topic->likes()->count()
+        ]);
+    }
+}
 }

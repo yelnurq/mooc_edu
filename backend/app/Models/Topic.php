@@ -12,14 +12,31 @@ class Topic extends Model
     protected $fillable = ['title', 'content', 'user_id', 'is_pinned', 'views'];
 
     // Автоматически добавляем эти поля в JSON ответ
-    protected $appends = ['time_ago'];
+    protected $appends = ['time_ago', 'is_liked', 'likes_count'];
 
     // Связь с автором (пользователем)
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+public function likes()
+{
+    return $this->morphMany(Like::class, 'likeable');
+}
 
+// Проверка, лайкнул ли текущий юзер
+public function getIsLikedAttribute()
+{
+    return $this->likes()->where('user_id', auth()->id())->exists();
+}
+
+// Количество лайков
+public function getLikesCountAttribute()
+{
+    return $this->likes()->count();
+}
+
+// Не забудь добавить в $appends, чтобы эти поля улетали во фронтенд
     // Связь с тегами (Многие-ко-многим)
     public function tags(): BelongsToMany
     {
