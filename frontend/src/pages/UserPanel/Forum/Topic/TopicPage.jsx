@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../../../api/axios';
 import { 
-  User, MessageSquare, ArrowLeft, Send, 
-  Calendar, Eye, Heart, 
+  MessageSquare, Send, Heart, 
   Share2, ShieldCheck, ShieldAlert,
-  Info, MessageSquarePlus, CheckCircle2,
-  ChevronRight, Clock, Award
+  Info, MessageSquarePlus,
+  ChevronRight, Clock, Eye, Award,
+  TrendingUp,
+  TrendingDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -20,8 +21,10 @@ const TopicPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest');
-  const [liked, setLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
+  
+  // Состояния для системы рейтинга
+  const [rating, setRating] = useState(0);
+  const [userVote, setUserVote] = useState(0); // 1, -1 или 0
 
   const fetchTopicDetails = useCallback(async () => {
     setIsLoading(true);
@@ -29,8 +32,10 @@ const TopicPage = () => {
       const res = await api.get(`/forum/topics/${id}`);
       setTopic(res.data.topic);
       setComments(res.data.comments);
-      setLikesCount(res.data.topic.likes_count || 0);
-      setLiked(res.data.topic.is_liked || false);
+      
+      // Предполагаем, что бэкенд возвращает эти поля в объекте topic
+      setRating(res.data.topic.rating || 0);
+      setUserVote(res.data.topic.user_vote || 0);
     } catch (err) {
       console.error("Ошибка загрузки темы", err);
     } finally {
@@ -40,23 +45,36 @@ const TopicPage = () => {
 
   useEffect(() => { fetchTopicDetails(); }, [fetchTopicDetails]);
 
-  const handleLike = async () => {
-    const prevLiked = liked;
-    const prevCount = likesCount;
-    setLiked(!liked);
-    setLikesCount(prev => liked ? prev - 1 : prev + 1);
+  const handleVote = async (value) => {
+    // Оптимистичное обновление: меняем UI сразу
+    const prevVote = userVote;
+    const prevRating = rating;
+
+    // Если нажал на ту же кнопку — отмена голоса (0)
+    const nextVote = userVote === value ? 0 : value;
+    const ratingChange = nextVote - prevVote;
+
+    setUserVote(nextVote);
+    setRating(prevRating + ratingChange);
+
     try {
-      const res = await api.post(`/forum/topics/${id}/like`);
-      if (res.data.likes_count !== undefined) setLikesCount(res.data.likes_count);
+      const res = await api.post(`/forum/topics/${id}/vote`, { value });
+      // Синхронизация с сервером (если сервер вернул точный баланс)
+      if (res.data.rating !== undefined) {
+        setRating(res.data.rating);
+        setUserVote(res.data.user_vote);
+      }
     } catch (err) {
-      setLiked(prevLiked);
-      setLikesCount(prevCount);
+      // Откат при ошибке
+      setUserVote(prevVote);
+      setRating(prevRating);
+      console.error("Ошибка при голосовании");
     }
   };
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert("Ссылка скопирована");
+    alert("Ссылка скопирована в буфер обмена");
   };
 
   const handleSendComment = async (e) => {
@@ -68,7 +86,7 @@ const TopicPage = () => {
       setComments([res.data.comment, ...comments]);
       setNewComment("");
     } catch (err) {
-      alert("Ошибка отправки");
+      alert("Ошибка отправки комментария");
     } finally {
       setIsSubmitting(false);
     }
@@ -103,21 +121,40 @@ const TopicPage = () => {
           </h1>
         </div>
 
+        {/* VOTING SYSTEM */}
         <div className="flex items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <button 
-              onClick={handleLike}
-              className={`flex-1 md:flex-none px-6 py-3 text-[10px] font-black uppercase tracking-[0.15em] rounded-xl transition-all flex items-center justify-center gap-2 border shadow-sm ${
-                liked ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-rose-300'
+              onClick={() => handleVote(1)}
+              className={`px-5 py-3 transition-all flex items-center justify-center ${
+                userVote === 1 ? 'bg-emerald-500 text-white' : 'text-slate-400 hover:bg-emerald-50 hover:text-emerald-500'
               }`}
             >
-              <Heart size={14} fill={liked ? "currentColor" : "none"} /> {likesCount}
+              <TrendingUp size={16} fill={userVote === 1 ? "currentColor" : "none"} />
             </button>
+            
+            <div className={`px-4 text-[12px] font-black min-w-[45px] text-center ${
+              rating > 0 ? 'text-emerald-600' : rating < 0 ? 'text-rose-600' : 'text-slate-400'
+            }`}>
+              {rating > 0 ? `+${rating}` : rating}
+            </div>
+
             <button 
-              onClick={handleShare}
-              className="p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
+              onClick={() => handleVote(-1)}
+              className={`px-5 py-3 transition-all flex items-center justify-center ${
+                userVote === -1 ? 'bg-rose-500 text-white' : 'text-slate-400 hover:bg-rose-50 hover:text-rose-500'
+              }`}
             >
-              <Share2 size={16} />
+              <TrendingDown size={16}  fill={userVote === -1 ? "currentColor" : "none"} />
             </button>
+          </div>
+
+          <button 
+            onClick={handleShare}
+            className="p-3 bg-white border border-slate-200 text-slate-400 rounded-xl hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm"
+          >
+            <Share2 size={16} />
+          </button>
         </div>
       </div>
 
@@ -125,7 +162,6 @@ const TopicPage = () => {
         
         {/* SIDEBAR */}
         <aside className="lg:col-span-1 space-y-6 text-left">
-          {/* AUTHOR CARD */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-slate-900" />
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Автор публикации</p>
@@ -143,7 +179,6 @@ const TopicPage = () => {
             </div>
           </div>
 
-          {/* STATS CARD */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
             <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
                <span className="flex items-center gap-1.5"><Clock size={12}/> Опубликовано</span>
@@ -165,28 +200,24 @@ const TopicPage = () => {
 
         {/* MAIN CONTENT */}
         <div className="lg:col-span-3 space-y-8 text-left">
-          
-          {/* TOPIC CONTENT */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
             className={`bg-white rounded-2xl border relative overflow-hidden transition-all shadow-sm ${
               topic.is_bad ? 'border-rose-200 shadow-rose-50' : 'border-slate-200'
             }`}
           >
-            {/* Left Accent Line */}
             <div className={`absolute top-0 left-0 w-1.5 h-full ${
               topic.is_bad ? 'bg-rose-500' : 'bg-blue-600'
             }`} />
 
-            {/* Moderation Banner */}
             {!!topic.is_bad && (
-  <div className="bg-rose-50/50 border-b border-rose-100 px-8 py-3 flex items-center gap-3">
-    <ShieldAlert size={14} className="text-rose-500" />
-    <span className="text-[10px] font-black uppercase tracking-widest text-rose-600">
-      Обнаружено нарушение правил этики. Контент был отредактирован системой.
-    </span>
-  </div>
-)}
+              <div className="bg-rose-50/50 border-b border-rose-100 px-8 py-3 flex items-center gap-3">
+                <ShieldAlert size={14} className="text-rose-500" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-rose-600">
+                  Обнаружено нарушение правил. Контент был отредактирован системой.
+                </span>
+              </div>
+            )}
 
             <div className="p-8 md:p-10">
               <div className={`text-[15px] leading-relaxed font-medium whitespace-pre-wrap selection:bg-blue-100 ${
@@ -205,18 +236,15 @@ const TopicPage = () => {
               </h3>
               
               <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
-                {[
-                  { id: 'newest', label: 'Новые' },
-                  { id: 'oldest', label: 'Старые' }
-                ].map(opt => (
+                {['newest', 'oldest'].map(type => (
                   <button 
-                    key={opt.id}
-                    onClick={() => setSortBy(opt.id)} 
+                    key={type}
+                    onClick={() => setSortBy(type)} 
                     className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
-                      sortBy === opt.id ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
+                      sortBy === type ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
                     }`}
                   >
-                    {opt.label}
+                    {type === 'newest' ? 'Новые' : 'Старые'}
                   </button>
                 ))}
               </div>
@@ -253,9 +281,7 @@ const TopicPage = () => {
                 {sortedComments.length > 0 ? (
                   sortedComments.map((comment) => (
                     <motion.div 
-                      initial={{ opacity: 0, y: 10 }} 
-                      animate={{ opacity: 1, y: 0 }} 
-                      exit={{ opacity: 0, scale: 0.95 }}
+                      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
                       key={comment.id}
                       className={`bg-white border p-6 rounded-2xl shadow-sm transition-all relative overflow-hidden group ${
                         comment.is_bad ? 'border-rose-100 bg-rose-50/10' : 'border-slate-200 hover:shadow-md'
@@ -281,14 +307,14 @@ const TopicPage = () => {
                                 </p>
                                 {comment.is_bad && (
                                   <span className="text-[7px] font-black px-1.5 py-0.5 bg-rose-100 text-rose-500 rounded uppercase tracking-tighter">
-                                    Содержит нарушения
+                                    Нарушение
                                   </span>
                                 )}
                               </div>
                               <div className="flex items-center gap-1 mt-1">
                                 <Award size={10} className={comment.is_bad ? "text-rose-300" : "text-emerald-500"} />
                                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
-                                  {comment.is_bad ? "Замечание модератора" : "Академическая активность"}
+                                  {comment.is_bad ? "Замечание" : "Активность"}
                                 </span>
                               </div>
                             </div>
@@ -309,7 +335,7 @@ const TopicPage = () => {
                     <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-200">
                        <MessageSquarePlus size={24} />
                     </div>
-                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Ваш ответ может быть первым</p>
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Станьте первым, кто ответит</p>
                   </div>
                 )}
                </AnimatePresence>

@@ -43,53 +43,79 @@ private function censorWithAI($title, $content) {
     }
 }
 public function index(Request $request) {
-    $query = Topic::with(['author', 'tags'])->withCount('replies');
+    // 1. Инициализация запроса со всеми нужными счетчиками
+    $query = Topic::with(['author', 'tags'])
+        ->withCount([
+            'positiveLikes as upvotes_count', 
+            'negativeLikes as downvotes_count', 
+            'replies as replies_count'
+        ]);
 
-    // Фильтр: Только мои вопросы
+    // 2. Базовые фильтры
     if ($request->boolean('my_topics')) {
         $query->where('user_id', auth()->id());
     }
 
-    // Фильтр по тегам
-    if ($request->filled('tag')) {
+    if ($request->filled('tag') && $request->tag !== 'Все') {
         $query->whereHas('tags', function($q) use ($request) {
             $q->where('name', $request->tag);
         });
     }
 
-    // Поиск по зацензуренному заголовку (так правильнее для обычных юзеров)
     if ($request->filled('search')) {
+        // Поиск ведем по clean_title, чтобы не палить мат в поиске для юзеров
         $query->where('clean_title', 'like', '%' . $request->search . '%');
     }
 
-    // Получаем пагинацию
-    $topics = $query->orderBy('is_pinned', 'desc')
-                    ->latest()
-                    ->paginate(10);
+    // 3. Логика сортировки и спец. фильтры
+    $sort = $request->get('sort', 'latest');
 
-    // Определяем роль пользователя
+    // Сначала всегда учитываем закрепленные темы
+    $query->orderByDesc('is_pinned');
+
+    switch ($sort) {
+        case 'unanswered':
+            // ФИЛЬТР: Только те темы, где количество ответов ровно 0
+            $query->has('replies', '=', 0);
+            $query->latest(); // Сортируем новые без ответов в начале
+            break;
+
+        case 'popular':
+            $query->orderByRaw('(upvotes_count - downvotes_count) DESC');
+            break;
+
+        case 'discussed':
+            $query->orderByDesc('replies_count');
+            break;
+
+        case 'latest':
+        default:
+            $query->latest();
+            break;
+    }
+
+    // 4. Выполнение запроса с пагинацией
+    $topics = $query->paginate(10);
+
+    // 5. Трансформация данных (Модерация и роли)
     $isAdmin = auth()->user() && auth()->user()->role === 'admin';
 
-    // Трансформируем коллекцию перед отправкой
     $topics->getCollection()->transform(function ($topic) use ($isAdmin) {
-        
-        // 1. Создаем флаг: был ли пост изменен цензурой
-        // Сравниваем оригинальный заголовок/контент с "чистым"
+        // Определяем "плохой" контент
         $topic->is_bad = ($topic->title !== $topic->clean_title) || ($topic->content !== $topic->clean_content);
 
-        // 2. Логика подмены полей в зависимости от роли
         if (!$isAdmin) {
-            // Обычный пользователь видит только версию с ***
+            // Обычный юзер видит только чистую версию
             $topic->title = $topic->clean_title;
             $topic->content = $topic->clean_content;
         } else {
-            // Админ видит оригинал. Можно добавить пометку для удобства
+            // Админ видит оригинал, если там есть мат — добавляем метку
             if ($topic->is_bad) {
                 $topic->title = "[⚠️ MODERATION] " . $topic->title;
             }
         }
 
-        // 3. Чистим JSON: удаляем вспомогательные поля, чтобы не загромождать ответ
+        // Скрываем технические поля из API ответа
         unset($topic->clean_title);
         unset($topic->clean_content);
 

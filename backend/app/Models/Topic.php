@@ -12,8 +12,29 @@ class Topic extends Model
     protected $fillable = ['clean_title','clean_content','title', 'content', 'user_id', 'is_pinned', 'views', 'is_bad'];
 
     // Автоматически добавляем эти поля в JSON ответ
-    protected $appends = ['time_ago', 'is_liked', 'likes_count', 'rating', 'user_vote'];
+    protected $appends = ['time_ago', 'is_liked', 'likes_count', 'rating', 'user_vote','upvotes_count', 'downvotes_count'];
+// Связи для конкретных типов
+public function positiveLikes()
+{
+    return $this->morphMany(Like::class, 'likeable')->where('value', 1);
+}
 
+public function negativeLikes()
+{
+    return $this->morphMany(Like::class, 'likeable')->where('value', -1);
+}
+
+
+
+public function getUpvotesCountAttribute()
+{
+    return $this->positiveLikes()->count();
+}
+
+public function getDownvotesCountAttribute()
+{
+    return $this->negativeLikes()->count();
+}
     // Связь с автором (пользователем)
     public function author(): BelongsTo
     {
