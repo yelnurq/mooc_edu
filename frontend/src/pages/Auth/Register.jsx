@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { User, Mail, Lock, Phone, Eye, EyeOff, Loader2, UserPlus, ArrowLeft } from 'lucide-react';
+import { 
+  User, Mail, Lock, Phone, Eye, 
+  EyeOff, Loader2, UserPlus, ArrowLeft 
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -17,7 +21,7 @@ const RegisterPage = () => {
   });
 
   const navigate = useNavigate();
-  const location = useLocation(); // Перехватываем стейт откуда пришли
+  const location = useLocation();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -53,19 +57,15 @@ const RegisterPage = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // --- АВТОМАТИЧЕСКИЙ ВХОД ПОСЛЕ РЕГИСТРАЦИИ ---
         localStorage.setItem('token', data.access_token);
         localStorage.setItem('user', JSON.stringify(data.user));
         
-        // --- ЛОГИКА УМНОГО РЕДИРЕКТА ---
         const origin = location.state?.from;
         const autoEnroll = location.state?.autoEnroll;
 
         if (origin) {
-          // Если регистрировались через страницу курса — возвращаемся и записываемся
           navigate(origin, { state: { autoEnroll: autoEnroll } });
         } else {
-          // Обычная регистрация — в дашборд
           navigate('/app/dashboard');
         }
         
@@ -83,83 +83,88 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-lg">
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-xl"
+      >
         
         <Link 
           to="/login" 
-          state={location.state} // Пробрасываем стейт обратно в логин при переключении
-          className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-900 font-bold text-[10px] uppercase tracking-widest mb-8 transition-colors group"
+          state={location.state}
+          className="inline-flex items-center gap-2 text-slate-400 hover:text-slate-900 font-black text-[10px] uppercase tracking-[0.2em] mb-10 transition-colors group"
         >
-          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Назад к входу
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> Вернуться ко входу
         </Link>
 
-        <div className="mb-10">
-          <h1 className="text-3xl font-black tracking-tighter text-slate-900">Создать аккаунт</h1>
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Регистрация нового сотрудника KAZUTB</p>
+        <div className="mb-10 text-left">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-black uppercase tracking-widest rounded">Новый профиль</span>
+          </div>
+          <h1 className="text-3xl font-black tracking-tighter text-slate-900 uppercase">Регистрация</h1>
+          <p className="text-slate-500 text-[13px] font-medium mt-2">
+            Присоединяйтесь к экосистеме <span className="text-slate-900 font-bold">KAZUTB MOOC</span>
+          </p>
         </div>
 
-        <div className="bg-white p-10 rounded-[40px] shadow-sm border border-slate-100">
+        <div className="bg-white p-8 md:p-12 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-slate-900" />
+          
           {serverError && (
-            <div className="mb-6 p-4 bg-red-50 text-red-600 text-xs font-bold rounded-2xl border border-red-100">
+            <div className="mb-8 p-4 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-xl border border-rose-100 flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
               {serverError}
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form onSubmit={handleRegister} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5 text-left">
             
             {/* NAME */}
             <div className="space-y-2 md:col-span-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 tracking-widest">ФИО полностью</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Полное имя (ФИО)</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
-                  <User size={18} />
-                </div>
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" size={18} />
                 <input 
                   name="name"
                   type="text" 
                   value={formData.name}
                   onChange={handleChange}
-                  className={`w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-2 transition-all outline-none ${errors.name ? 'ring-2 ring-red-500/20' : 'focus:ring-blue-500/20'}`}
-                  placeholder="Иванов Иван Иванович"
+                  className={`w-full bg-slate-50 border-none rounded-xl py-4 pl-12 pr-4 text-sm font-bold transition-all outline-none ring-1 ${errors.name ? 'ring-rose-500/50' : 'ring-slate-100 focus:ring-blue-500/20 focus:bg-white'}`}
+                  placeholder="ИВАНОВ ИВАН"
                   required
                 />
               </div>
-              {errors.name && <p className="text-[9px] text-red-500 font-bold ml-4 uppercase">{errors.name[0]}</p>}
+              {errors.name && <p className="text-[9px] text-rose-500 font-black uppercase tracking-tighter ml-1">{errors.name[0]}</p>}
             </div>
 
             {/* EMAIL */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 tracking-widest">Email / Логин</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Логин / Почта</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
-                  <Mail size={18} />
-                </div>
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" size={18} />
                 <input 
                   name="email"
                   type="text" 
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-2 transition-all outline-none ${errors.email ? 'ring-2 ring-red-500/20' : 'focus:ring-blue-500/20'}`}
-                  placeholder="i.ivanov"
+                  className={`w-full bg-slate-50 border-none rounded-xl py-4 pl-12 pr-4 text-sm font-bold transition-all outline-none ring-1 ${errors.email ? 'ring-rose-500/50' : 'ring-slate-100 focus:ring-blue-500/20 focus:bg-white'}`}
+                  placeholder="I.IVANOV"
                   required
                 />
               </div>
-              {errors.email && <p className="text-[9px] text-red-500 font-bold ml-4 uppercase">{errors.email[0]}</p>}
             </div>
 
             {/* MOBILE */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 tracking-widest">Телефон</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Телефон</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
-                  <Phone size={18} />
-                </div>
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" size={18} />
                 <input 
                   name="mobile"
                   type="text" 
                   value={formData.mobile}
                   onChange={handleChange}
-                  className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+                  className="w-full bg-slate-50 border-none ring-1 ring-slate-100 rounded-xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-blue-500/20 focus:bg-white transition-all outline-none"
                   placeholder="+7 (707) 000-0000"
                 />
               </div>
@@ -167,66 +172,62 @@ const RegisterPage = () => {
 
             {/* PASSWORD */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 tracking-widest">Пароль</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Пароль</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
-                  <Lock size={18} />
-                </div>
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" size={18} />
                 <input 
                   name="password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-2 transition-all outline-none ${errors.password ? 'ring-2 ring-red-500/20' : 'focus:ring-blue-500/20'}`}
+                  className={`w-full bg-slate-50 border-none rounded-xl py-4 pl-12 pr-12 text-sm font-bold transition-all outline-none ring-1 ${errors.password ? 'ring-rose-500/50' : 'ring-slate-100 focus:ring-blue-500/20 focus:bg-white'}`}
                   placeholder="••••••••"
                   required
                 />
                 <button 
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
             {/* CONFIRM PASSWORD */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 tracking-widest">Повтор</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Подтверждение</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
-                  <Lock size={18} />
-                </div>
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-600 transition-colors" size={18} />
                 <input 
                   name="password_confirmation"
                   type={showPassword ? "text" : "password"}
                   value={formData.password_confirmation}
                   onChange={handleChange}
-                  className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
+                  className="w-full bg-slate-50 border-none ring-1 ring-slate-100 rounded-xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-blue-500/20 focus:bg-white transition-all outline-none"
                   placeholder="••••••••"
                   required
                 />
               </div>
             </div>
 
-            <div className="md:col-span-2 pt-4">
+            <div className="md:col-span-2 pt-6">
               <button 
                 type="submit"
                 disabled={loading}
-                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-200 disabled:opacity-50 transition-all flex items-center justify-center gap-3 group"
+                className="w-full bg-slate-900 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-500/10 disabled:opacity-50 transition-all flex items-center justify-center gap-3 group"
               >
-                {loading ? <Loader2 size={18} className="animate-spin" /> : 'Зарегистрироваться'}
-                {!loading && <UserPlus size={18} className="group-hover:scale-110 transition-transform" />}
+                {loading ? <Loader2 size={16} className="animate-spin" /> : 'Создать аккаунт'}
+                {!loading && <UserPlus size={16} className="group-hover:scale-110 transition-transform" />}
               </button>
             </div>
           </form>
         </div>
 
-        <p className="text-center mt-10 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] opacity-50">
-          © 2026 KAZUTB — Department of IT
+        <p className="text-center mt-12 text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] opacity-40">
+          Kazakhstan University of Technology and Business © 2026
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 };
