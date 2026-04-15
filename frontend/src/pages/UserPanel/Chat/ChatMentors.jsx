@@ -47,12 +47,13 @@ const CourseMentorsChat = () => {
   const [showInfo, setShowInfo] = useState(true);
   const scrollRef = useRef(null);
 
-  const fetchData = useCallback(async () => {
-    try {
-      const response = await api.get('/course-chats');
-      setActiveRooms(response.data.active_rooms || []);
-    } catch (err) { console.error(err); } finally { setRoomsLoading(false); }
-  }, []);
+ const fetchData = useCallback(async () => {
+  try {
+    const response = await api.get('/course-chats');
+    // Теперь мы сохраняем единый массив chats
+    setActiveRooms(response.data.chats || []);
+  } catch (err) { console.error(err); } finally { setRoomsLoading(false); }
+}, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 

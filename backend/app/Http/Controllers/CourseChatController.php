@@ -8,36 +8,53 @@ use App\Models\ChatMessage;
 use App\Models\Course;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class CourseChatController extends Controller 
 {
     // Список всех диалогов пользователя
- public function index() 
+public function index() 
 {
     $userId = Auth::id();
 
-    // 1. Получаем существующие активные чаты
-    $activeRooms = ChatRoom::with(['course:id,title', 'author:id,name', 'student:id,name'])
-        ->where('student_id', $userId)
-        ->orWhere('author_id', $userId)
-        ->withCount(['messages' => function($query) use ($userId) {
-            $query->where('is_read', false)->where('sender_id', '!=', $userId);
-        }])
-        ->orderBy('last_message_at', 'desc')
-        ->get();
+    // 1. Получаем все курсы, на которые подписан пользователь и которые ОДОБРЕНЫ
+    $myEnrolledCourses = DB::table('course_user')
+        ->where('user_id', $userId)
+        ->where('status', 'approved')
+        ->pluck('course_id');
 
-    // 2. Получаем курсы, на которые записан студент (если у тебя есть таблица course_user или аналогичная)
-    // Если логика простая: студент видит все курсы, где он не автор:
-    $availableCourses = Course::where('author_id', '!=', $userId)
+    // 2. Загружаем эти курсы с их авторами
+    $courses = Course::whereIn('id', $myEnrolledCourses)
         ->with('author:id,name')
         ->get();
 
+    // 3. Получаем существующие комнаты для этих курсов, чтобы знать, где уже есть переписка
+    $existingRooms = ChatRoom::where('student_id', $userId)
+        ->withCount(['messages' => function($query) use ($userId) {
+            $query->where('is_read', false)->where('sender_id', '!=', $userId);
+        }])
+        ->get()
+        ->keyBy('course_id');
+
+    // 4. Формируем единый список для фронтенда
+    $chatList = $courses->map(function($course) use ($existingRooms) {
+        $room = $existingRooms->get($course->id);
+        
+        return [
+            'course_id' => $course->id,
+            'course_title' => $course->title,
+            'author_name' => $course->author->name ?? $course->custom_author_name ?? 'Автор',
+            'author_id' => $course->author_id,
+            'chat_room_id' => $room ? $room->id : null, // Если null - чат еще не начат
+            'unread_count' => $room ? $room->messages_count : 0,
+            'last_message_at' => $room ? $room->last_message_at : null,
+        ];
+    })->sortByDesc('last_message_at')->values();
+
     return response()->json([
-        'active_rooms' => $activeRooms,
-        'available_courses' => $availableCourses
+        'chats' => $chatList
     ]);
 }
-
     // Инициализация чата через курс
     public function startChat(Request $request) 
     {
