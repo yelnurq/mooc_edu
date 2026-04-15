@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('topics', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->text('clean_content')->nullable(); // Здесь будет версия с ***
+            $table->string('clean_title')->nullable();
             $table->string('title');
             $table->text('content');
             $table->boolean('is_pinned')->default(false); // Закреплена ли тема

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Topic extends Model
 {
-    protected $fillable = ['title', 'content', 'user_id', 'is_pinned', 'views'];
+    protected $fillable = ['clean_title','clean_content','title', 'content', 'user_id', 'is_pinned', 'views'];
 
     // Автоматически добавляем эти поля в JSON ответ
     protected $appends = ['time_ago', 'is_liked', 'likes_count'];

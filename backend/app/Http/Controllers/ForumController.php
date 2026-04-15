@@ -8,15 +8,45 @@ use App\Models\Topic;
 use App\Models\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class ForumController extends Controller {
     
-  public function index(Request $request) {
+private function censorWithAI($title, $content) {
+    try {
+        $response = Http::withToken(env('OPENAI_API_KEY'))
+            ->timeout(10) // Добавляем таймаут на всякий случай
+            ->post('https://api.openai.com/v1/chat/completions', [
+                'model' => 'gpt-4o-mini',
+                'messages' => [
+                    [
+                        'role' => 'system', 
+                        'content' => 'Ты — модератор. Проверь заголовок и контент на маты и оскорбления. Замени их на "***". Верни ответ СТРОГО в формате JSON: {"title": "...", "content": "..."}. Не пиши ничего, кроме JSON.'
+                    ],
+                    [
+                        'role' => 'user', 
+                        'content' => "Title: $title \nContent: $content"
+                    ]
+                ],
+                'response_format' => ['type' => 'json_object'], // Форсируем JSON режим (для моделей 4o/4o-mini)
+                'temperature' => 0
+            ]);
+
+        $data = $response->json('choices.0.message.content');
+        return json_decode($data, true); // Превращаем строку JSON в массив PHP
+    } catch (\Exception $e) {
+        // Если API упало, возвращаем оригиналы
+        return [
+            'title' => $title,
+            'content' => $content
+        ];
+    }
+}
+public function index(Request $request) {
     $query = Topic::with(['author', 'tags'])->withCount('replies');
 
     // Фильтр: Только мои вопросы
     if ($request->boolean('my_topics')) {
-        // Убедись, что поле в БД называется user_id или author_id
         $query->where('user_id', auth()->id());
     }
 
@@ -27,34 +57,79 @@ class ForumController extends Controller {
         });
     }
 
-    // Поиск по заголовку
+    // Поиск по зацензуренному заголовку
     if ($request->filled('search')) {
-        $query->where('title', 'like', '%' . $request->search . '%');
+        $query->where('clean_title', 'like', '%' . $request->search . '%');
     }
 
-    // Сначала закрепленные, потом новые
-    return response()->json(
-        $query->orderBy('is_pinned', 'desc')
-              ->latest()
-              ->paginate(10)
-    );
-}
+    // Получаем пагинацию
+    $topics = $query->orderBy('is_pinned', 'desc')
+                    ->latest()
+                    ->paginate(10);
 
+    // Проверяем, является ли пользователь админом
+    // (Замени на свою логику проверки ролей, например $user->hasRole('admin'))
+    $isAdmin = auth()->user() && auth()->user()->role === 'admin';
+
+    // Трансформируем коллекцию
+    $topics->getCollection()->transform(function ($topic) use ($isAdmin) {
+        if (!$isAdmin) {
+            // Если НЕ админ: подменяем оригинальные поля зацензуренными
+            $topic->title = $topic->clean_title;
+            $topic->content = $topic->clean_content;
+        } else {
+            // Если админ: можно добавить префикс или оставить как есть
+            $topic->title = "[ORG] " . $topic->title;
+        }
+
+        // Скрываем служебные поля clean_ из JSON ответа, чтобы не дублировать данные
+        unset($topic->clean_title);
+        unset($topic->clean_content);
+
+        return $topic;
+    });
+
+    return response()->json($topics);
+}
     public function getTags() {
         // Возвращаем все теги
         return response()->json(Tag::all());
     }
 public function show($id)
 {
-    $topic = Topic::with('author', 'tags')->findOrFail($id);
-    $comments = $topic->comments()->with('author')->get(); // Убедись, что связь создана
+    // Загружаем тему со всеми связями
+    $topic = Topic::with(['author', 'tags', 'comments.author'])->findOrFail($id);
     
-    // Если нужно обновить просмотры
+    // Увеличиваем просмотры
     $topic->increment('views');
+
+    // Проверка прав (админ или нет)
+    $isAdmin = auth()->user() && auth()->user()->role === 'admin';
+
+    // 1. Обработка основной темы
+    if (!$isAdmin) {
+        // Подменяем оригинал на чистую версию для студента
+        $topic->title = $topic->clean_title;
+        $topic->content = $topic->clean_content;
+    }
+
+    // Удаляем технические поля из JSON
+    unset($topic->clean_title);
+    unset($topic->clean_content);
+
+    // 2. Обработка комментариев (если в них тоже есть цензура)
+    $topic->comments->each(function ($comment) use ($isAdmin) {
+        if (!$isAdmin && isset($comment->clean_content)) {
+            $comment->content = $comment->clean_content;
+        }
+        
+        // Прячем техническое поле
+        unset($comment->clean_content);
+    });
 
     return response()->json([
         'topic' => $topic,
-        'comments' => $comments
+        'comments' => $topic->comments // Используем уже загруженную и обработанную коллекцию
     ]);
 }
 public function storeComment(Request $request, $id)
@@ -71,28 +146,45 @@ public function storeComment(Request $request, $id)
         'comment' => $comment->load('author')
     ], 201);
 }
-public function store(Request $request)
-{
-    $validated = $request->validate([
-        'title'   => 'required|string|max:255',
+public function store(Request $request) {
+    $request->validate([
+        'title' => 'required|string|max:255',
         'content' => 'required|string',
-        'tags'    => 'required|array', // Массив ID тегов
+        'tags' => 'required|array', // Добавляем валидацию массива тегов
     ]);
 
-    // Создаем тему
+    $originalTitle = $request->title;
+    $originalContent = $request->content;
+
+    // Получаем структурированный ответ от ИИ
+    $censoredData = $this->censorWithAI($originalTitle, $originalContent);
+    
+    $cleanTitle = $censoredData['title'] ?? $originalTitle;
+    $cleanContent = $censoredData['content'] ?? $originalContent;
+
+    // 1. Создаем топик
     $topic = Topic::create([
-        'title'   => $validated['title'],
-        'content' => $validated['content'],
-        'user_id' => Auth::id(), // Берем ID из токена (интерцептор его передает)
+        'user_id' => auth()->id(),
+        'title' => $originalTitle,
+        'content' => $originalContent,
+        'clean_title' => $cleanTitle,
+        'clean_content' => $cleanContent,
     ]);
 
-    // Привязываем теги в таблицу tag_topic
-    $topic->tags()->attach($validated['tags']);
+    // 2. СОХРАНЯЕМ ТЕГИ (Привязываем ID тегов к топику)
+    if ($request->has('tags')) {
+        // Метод sync() запишет ID тегов в промежуточную таблицу topic_tag
+        $topic->tags()->sync($request->tags);
+    }
 
-    return response()->json([
-        'message' => 'Тема успешно создана',
-        'topic'   => $topic->load('tags')
-    ], 201);
+    // Подгружаем теги для ответа фронтенду, чтобы они сразу отобразились
+    $topic->load('tags');
+
+    // Для фронтенда подменяем данные на "чистые"
+    $topic->title = $topic->clean_title;
+    $topic->content = $topic->clean_content;
+
+    return response()->json($topic);
 }
 public function toggleLike($id)
 {
