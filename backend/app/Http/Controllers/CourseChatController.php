@@ -109,42 +109,5 @@ class CourseChatController extends Controller
 
         return response()->json($message->load('sender:id,name'));
     }
-    // 1. Получить курсы, на которые студент подписан, но по которым еще НЕТ чата
-public function getAvailableCourses() {
-    $studentId = auth()->id();
     
-    // Предположим, подписки хранятся в таблице course_student
-    $courses = Course::whereHas('students', function($q) use ($studentId) {
-            $q->where('user_id', $studentId);
-        })
-        ->whereDoesntHave('chatRooms', function($q) use ($studentId) {
-            $q->where('student_id', $studentId);
-        })
-        ->with('author:id,name') // Загружаем ментора
-        ->get()
-        ->map(function($course) {
-            return [
-                'id' => $course->id,
-                'title' => $course->title,
-                'mentor_name' => $course->author->name
-            ];
-        });
-
-    return response()->json($courses);
-}
-
-// 2. Создать комнату
-public function createRoom(Request $request) {
-    $course = Course::findOrFail($request->course_id);
-    
-    // Создаем или находим комнату
-    $room = ChatRoom::firstOrCreate([
-        'course_id' => $course->id,
-        'student_id' => auth()->id(),
-        'author_id' => $course->user_id // ID ментора (автора курса)
-    ]);
-
-    // Возвращаем комнату со связями для фронтенда
-    return response()->json($room->load(['author', 'course']));
-}
 }
