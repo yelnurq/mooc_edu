@@ -1,167 +1,146 @@
-import React, { useState } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { LogIn, Mail, Lock, Eye, EyeOff, Loader2, UserPlus } from 'lucide-react';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { 
+  ArrowRight, Sparkles, ShieldCheck, 
+  Zap, Globe, ChevronLeft, Mail, Lock 
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const navigate = useNavigate();
-  const location = useLocation(); // Добавили для получения пути возврата
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    let formattedEmail = email.trim();
-    if (formattedEmail && !formattedEmail.includes('@')) {
-      formattedEmail = `${formattedEmail}@kaztbu.edu.kz`;
-    }
-
-    try {
-      const response = await fetch('http://localhost:8000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ email: formattedEmail, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem('token', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        const role = data.user.role;
-        const adminRoles = ['super_admin', 'academic_office', 'dean', 'head_of_dept'];
-
-        // --- ЛОГИКА УМНОГО РЕДИРЕКТА ---
-        const origin = location.state?.from;
-        const autoEnroll = location.state?.autoEnroll;
-
-        if (origin) {
-          // Если пользователь пришел с конкретной страницы (например, курса),
-          // возвращаем его назад и прокидываем флаг для авто-записи
-          navigate(origin, { state: { autoEnroll: autoEnroll } });
-        } else {
-          // Стандартная логика перенаправления по ролям
-          if (adminRoles.includes(role)) {
-            navigate('/admin');
-          } else {
-            navigate('/app/dashboard');
-          }
-        }
-      } else {
-        setError(data.message || 'Ошибка авторизации.');
-      }
-      
-    } catch (err) {
-      setError('Не удалось связаться с сервером.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-md">
-        {/* LOGO */}
-        <div className="flex flex-col items-center mb-10">
-          <div className="min-w-[45px] h-20 flex items-center justify-center overflow-hidden">
-            <img src="images/icons/logo.png" alt="Logo" className="h-full w-full object-contain" />
-          </div>
-          <h1 className="mt-4 text-2xl font-black tracking-tighter text-slate-900">
-            KAZ<span className="text-blue-400">UTB</span>
-          </h1>
-          <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-2">Система управления эффективностью</p>
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row overflow-hidden">
+      
+      {/* --- ЛЕВАЯ ЧАСТЬ: БРЕНД И ПРЕИМУЩЕСТВА (MOOC STYLE) --- */}
+      <div className="hidden md:flex md:w-1/2 bg-[#0F172A] relative p-16 flex-col justify-between overflow-hidden">
+        
+        {/* Декоративные элементы как на Home */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-[-10%] left-[-20%] w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[140px]" />
+          <div className="absolute inset-0 opacity-[0.05]" 
+               style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         </div>
 
-        {/* CARD */}
-        <div className="bg-white p-10 rounded-[40px] shadow-sm border border-slate-100">
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 text-red-600 text-xs font-bold rounded-2xl border border-red-100">
-              {error}
-            </div>
-          )}
+        <div className="relative z-10">
+          <Link to="/" className="inline-flex items-center gap-2 text-blue-400 font-bold text-sm mb-12 hover:text-blue-300 transition-colors group">
+            <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Вернуться на главную
+          </Link>
 
-          <form onSubmit={handleLogin} className="space-y-6">
-            {/* EMAIL */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 tracking-widest">Email или Логин</label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
-                  <Mail size={18} />
+          <div className="mb-14">
+            <h2 className="text-white font-black text-2xl tracking-tighter mb-8">
+              KAZUTB <span className="text-blue-500">OPEN</span>
+            </h2>
+            <h1 className="text-5xl lg:text-7xl font-black text-white leading-[0.9] tracking-tighter mb-6">
+              С ВОЗВРАЩЕНИЕМ <br /> 
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+                В БУДУЩЕЕ
+              </span>
+            </h1>
+            <p className="text-slate-400 text-lg max-w-sm font-medium leading-relaxed">
+              Твой ИИ-куратор уже подготовил новые материалы для обучения.
+            </p>
+          </div>
+
+          {/* Инфо-карточки (MOOC Features) */}
+          <div className="space-y-4 max-w-md">
+            {[
+              { icon: <Zap className="text-amber-400" size={20}/>, title: "AI-Ассистент 24/7", desc: "Бесплатная помощь в решении задач" },
+              { icon: <ShieldCheck className="text-blue-400" size={20}/>, title: "Сертификация", desc: "Твои достижения сохраняются в профиле" },
+              { icon: <Globe className="text-emerald-400" size={20}/>, title: "Сообщество", desc: "Обсуждай уроки на форуме" }
+            ].map((item, i) => (
+              <motion.div 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                key={i} 
+                className="flex items-center gap-5 p-4 bg-white/[0.03] backdrop-blur-md rounded-[24px] border border-white/5"
+              >
+                <div className="p-3 bg-slate-800 rounded-xl">{item.icon}</div>
+                <div>
+                  <h4 className="text-white font-bold text-sm">{item.title}</h4>
+                  <p className="text-slate-500 text-xs">{item.desc}</p>
                 </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Нижняя часть */}
+        <div className="relative z-10 flex items-center gap-4 border-t border-white/5 pt-8">
+          <div className="flex -space-x-2">
+            {[1, 2, 3].map(i => (
+              <img key={i} className="w-8 h-8 rounded-full border-2 border-[#0F172A]" src={`https://ui-avatars.com/api/?name=U${i}&background=random`} alt="user" />
+            ))}
+          </div>
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
+            Присоединяйся к 50k+ студентов
+          </p>
+        </div>
+      </div>
+
+      {/* --- ПРАВАЯ ЧАСТЬ: ФОРМА ВХОДА --- */}
+      <div className="flex-1 flex items-center justify-center p-8 lg:p-24 bg-white">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
+          <div className="mb-10">
+            <h3 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Войти в аккаунт</h3>
+            <p className="text-slate-500 font-medium">Нет аккаунта? <Link to="/register" className="text-blue-600 font-bold hover:underline">Создать бесплатно</Link></p>
+          </div>
+
+          <form className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Электронная почта</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
                 <input 
-                  type="text" 
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all outline-none placeholder:text-slate-300"
-                  placeholder="name (домен добавится сам)"
-                  required
+                  type="email" 
+                  className="w-full pl-12 pr-4 py-5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-slate-900"
+                  placeholder="name@example.com"
                 />
               </div>
             </div>
 
-            {/* PASSWORD */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 tracking-widest">Пароль</label>
+              <div className="flex justify-between items-center ml-1">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Пароль</label>
+                <Link to="/reset" className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 hover:text-blue-700">Забыли пароль?</Link>
+              </div>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
-                  <Lock size={18} />
-                </div>
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" size={20} />
                 <input 
-                  type={showPassword ? "text" : "password"} 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-50 border-none rounded-2xl py-4 pl-12 pr-12 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all outline-none placeholder:text-slate-300"
+                  type="password" 
+                  className="w-full pl-12 pr-4 py-5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:border-blue-500 focus:bg-white transition-all font-medium text-slate-900"
                   placeholder="••••••••"
-                  required
                 />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
               </div>
             </div>
 
-            {/* ACTION BUTTON */}
-            <button 
-              type="submit"
-              disabled={loading}
-              className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-200 disabled:opacity-50 disabled:bg-slate-400 transition-all flex items-center justify-center gap-3 group"
-            >
-              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Войти в систему'}
-              {!loading && <LogIn size={18} className="group-hover:translate-x-1 transition-transform" />}
+            <button className="w-full py-6 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-900 transition-all shadow-xl shadow-blue-500/10 flex items-center justify-center gap-3 group">
+              Войти в кабинет <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </form>
 
-          {/* REGISTER LINK */}
-          <div className="mt-8 pt-8 border-t border-slate-50 flex flex-col items-center">
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-4">Нет аккаунта?</p>
-            <Link 
-              to="/register" 
-              className="flex items-center gap-2 text-slate-900 hover:text-blue-600 font-black text-xs uppercase tracking-tighter transition-colors group"
-            >
-              <UserPlus size={16} className="text-blue-400 group-hover:scale-110 transition-transform" />
-              Создать аккаунт сотрудника
-            </Link>
-          </div>
-        </div>
+          {/* Social Login */}
+          <div className="mt-10">
+            <div className="relative mb-8">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+              <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest text-slate-400">
+                <span className="bg-white px-4">Или войти через</span>
+              </div>
+            </div>
 
-        <p className="text-center mt-10 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] opacity-50">
-          © 2026 KAZUTB — Department of IT
-        </p>
+            <div className="grid grid-cols-2 gap-4">
+              <button className="flex items-center justify-center gap-3 py-4 border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all font-bold text-sm text-slate-700">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5" alt="google" /> Google
+              </button>
+              <button className="flex items-center justify-center gap-3 py-4 border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all font-bold text-sm text-slate-700">
+                <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" className="h-5" alt="fb" /> Facebook
+              </button>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
