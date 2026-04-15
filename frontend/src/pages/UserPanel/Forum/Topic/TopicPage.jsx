@@ -169,26 +169,7 @@ const TopicPage = () => {
           </div>
 
           {/* STATS BLOCK */}
-          <div className="bg-slate-900 p-6 rounded-3xl shadow-2xl text-white space-y-6 relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 blur-2xl" />
-             <div className="flex items-center justify-between relative">
-                <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Активность</p>
-                <TrendingUp size={18} className="text-blue-400" />
-             </div>
-             <div className="space-y-4 relative">
-                <div className="flex justify-between items-end">
-                   <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Всего ответов</span>
-                   <span className="text-2xl font-black italic">{comments.length}</span>
-                </div>
-                <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
-                   <motion.div 
-                    initial={{ width: 0 }} 
-                    animate={{ width: '75%' }} 
-                    className="bg-blue-500 h-full shadow-[0_0_15px_rgba(59,130,246,0.5)]" 
-                   />
-                </div>
-             </div>
-          </div>
+        
 
           {/* RULES BLOCK */}
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
