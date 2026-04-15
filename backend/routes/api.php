@@ -5,6 +5,7 @@ use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CourseChatController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ForumController;
 use App\Http\Controllers\LessonController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\AuthController;
@@ -45,7 +46,9 @@ Route::middleware("logs")->group(function(){
 
     Route::middleware(["token"])->group(function(){
 
-
+Route::get('/forum/tags', [ForumController::class, 'getTags']);
+Route::get('/forum/topics', [ForumController::class, 'index']);
+Route::post('/forum/topics', [ForumController::class, 'store']);
 
     Route::get('/course-chats', [CourseChatController::class, 'index']);
     Route::post('/course-chats/start', [CourseChatController::class, 'startChat']);

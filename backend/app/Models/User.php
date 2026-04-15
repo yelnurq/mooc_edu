@@ -29,6 +29,17 @@ class User extends Authenticatable
     {
         return $this->hasMany(QuizResult::class);
     }
+    // Добавьте это внутрь класса User в app/Models/User.php
+
+public function topics()
+{
+    return $this->hasMany(Topic::class);
+}
+
+public function replies()
+{
+    return $this->hasMany(Reply::class);
+}
   public function courses()
 {
     return $this->belongsToMany(Course::class)
