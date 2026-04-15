@@ -102,29 +102,58 @@ public function index()
     }
 
     // Отправка сообщения
-    public function sendMessage(Request $request) 
-    {
-        $request->validate([
-            'chat_room_id' => 'required|exists:chat_rooms,id',
-            'content' => 'required|string|max:5000'
-        ]);
+public function sendMessage(Request $request)
+{
+    $request->validate([
+        'content' => 'required|string',
+        'chat_room_id' => 'required_without:course_id|nullable',
+        'course_id' => 'required_without:chat_room_id|nullable',
+    ]);
 
-        $room = ChatRoom::findOrFail($request->chat_room_id);
-        $userId = Auth::id();
+    $userId = Auth::id();
+    $roomId = $request->chat_room_id;
 
-        if ($userId !== $room->student_id && $userId !== $room->author_id) {
-            return response()->json(['message' => 'Ошибка доступа'], 403);
+    if (!$roomId) {
+        $course = Course::findOrFail($request->course_id);
+        
+        // ВАЖНО: Проверяем, как называется колонка автора. 
+        // Если author_id пустой, пробуем взять user_id
+        $authorId = $course->author_id ?? $course->user_id;
+
+        if (!$authorId) {
+            return response()->json([
+                'message' => "Ошибка: У курса #{$course->id} не найден ID автора. Проверьте поле author_id или user_id в таблице courses."
+            ], 422);
         }
 
-        $message = ChatMessage::create([
-            'chat_room_id' => $room->id,
-            'sender_id' => $userId,
-            'content' => $request->content
-        ]);
+        // Ищем существующую комнату или создаем новую
+        $room = ChatRoom::where('course_id', $course->id)
+                        ->where('student_id', $userId)
+                        ->first();
 
-        $room->update(['last_message_at' => now()]);
-
-        return response()->json($message->load('sender:id,name'));
+        if (!$room) {
+            $room = ChatRoom::create([
+                'course_id'       => $course->id,
+                'student_id'      => $userId,
+                'author_id'       => $authorId, 
+                'last_message_at' => now(),
+            ]);
+        }
+        $roomId = $room->id;
     }
-    
+
+    // Создаем сообщение (используем ChatMessage, как в вашей модели)
+    $message = ChatMessage::create([
+        'chat_room_id' => $roomId,
+        'sender_id'    => $userId,
+        'content'      => $request->content,
+        'is_read'      => false
+    ]);
+
+    ChatRoom::where('id', $roomId)->update(['last_message_at' => now()]);
+
+    return response()->json(array_merge($message->toArray(), [
+        'chat_room_id' => $roomId
+    ]));
+}  
 }

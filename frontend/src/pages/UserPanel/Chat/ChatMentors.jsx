@@ -40,67 +40,98 @@ const CourseMentorsChat = () => {
   const [roomsLoading, setRoomsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [message, setMessage] = useState('');
-  const [activeRooms, setActiveRooms] = useState([]);
-  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [chats, setChats] = useState([]); // Единый список курсов/чатов
+  const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [sending, setSending] = useState(false);
   const [showInfo, setShowInfo] = useState(true);
   const scrollRef = useRef(null);
 
- const fetchData = useCallback(async () => {
-  try {
-    const response = await api.get('/course-chats');
-    // Теперь мы сохраняем единый массив chats
-    setActiveRooms(response.data.chats || []);
-  } catch (err) { console.error(err); } finally { setRoomsLoading(false); }
-}, []);
+  // 1. Загрузка списка чатов и доступных курсов
+  const fetchData = useCallback(async () => {
+    try {
+      const response = await api.get('/course-chats');
+      setChats(response.data.chats || []);
+    } catch (err) { 
+      console.error("Fetch error:", err); 
+    } finally { 
+      setRoomsLoading(false); 
+    }
+  }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // 2. Загрузка сообщений (только если есть chat_room_id)
   const fetchMessages = useCallback(async (roomId) => {
+    if (!roomId) return;
     try {
       const response = await api.get(`/course-chats/${roomId}/messages`);
       setMessages(prev => JSON.stringify(prev) !== JSON.stringify(response.data) ? response.data : prev);
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error("Messages fetch error:", err); 
+    }
   }, []);
 
   useEffect(() => {
-    if (!selectedRoom?.id) return;
-    fetchMessages(selectedRoom.id);
-    const interval = setInterval(() => fetchMessages(selectedRoom.id), 5000);
+    if (!selectedChat?.chat_room_id) {
+      setMessages([]); // Очищаем экран, если это новый чат без истории
+      return;
+    };
+    
+    fetchMessages(selectedChat.chat_room_id);
+    const interval = setInterval(() => fetchMessages(selectedChat.chat_room_id), 5000);
     return () => clearInterval(interval);
-  }, [selectedRoom?.id, fetchMessages]);
+  }, [selectedChat?.chat_room_id, fetchMessages]);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // 3. Отправка сообщения
   const handleSend = async () => {
-    if (!message.trim() || !selectedRoom || sending) return;
+    if (!message.trim() || !selectedChat || sending) return;
+    
     const tempText = message;
     setMessage('');
     setSending(true);
+
+    // Если чат уже существует, шлем chat_room_id, если нет — course_id
+    const payload = selectedChat.chat_room_id 
+      ? { chat_room_id: selectedChat.chat_room_id, content: tempText }
+      : { course_id: selectedChat.course_id, content: tempText };
+
     try {
-      const response = await api.post('/course-chats/messages', {
-        chat_room_id: selectedRoom.id,
-        content: tempText
-      });
+      const response = await api.post('/course-chats/messages', payload);
+      
+      // Если это был первый запуск чата, бэкенд вернет объект сообщения с данными о комнате
+      if (!selectedChat.chat_room_id && response.data.chat_room_id) {
+        const newRoomId = response.data.chat_room_id;
+        setSelectedChat(prev => ({ ...prev, chat_room_id: newRoomId }));
+        // Обновляем общий список, чтобы проставить ID комнаты
+        setChats(prev => prev.map(c => c.course_id === selectedChat.course_id ? { ...c, chat_room_id: newRoomId } : c));
+      }
+
       setMessages(prev => [...prev, response.data]);
-    } catch (err) { setMessage(tempText); } finally { setSending(false); }
+    } catch (err) { 
+      setMessage(tempText); 
+      console.error("Send error:", err);
+    } finally { 
+      setSending(false); 
+    }
   };
 
-  const filteredRooms = useMemo(() => 
-    activeRooms.filter(r => 
-      r.course.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      r.author.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredChats = useMemo(() => 
+    chats.filter(c => 
+      c.course_title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      c.author_name.toLowerCase().includes(searchQuery.toLowerCase())
     ),
-    [activeRooms, searchQuery]
+    [chats, searchQuery]
   );
 
   return (
     <div className="flex h-screen bg-[#F8FAFC] font-sans overflow-hidden text-slate-900">
       
-      {/* 1. LEFT SIDEBAR (STYLE: FORUM ASIDE) */}
+      {/* 1. LEFT SIDEBAR */}
       <div className="w-[340px] flex flex-col border-r border-slate-200 bg-white z-20">
         <div className="p-8 border-b border-slate-100">
           <div className="flex items-center justify-between mb-8 text-left">
@@ -115,7 +146,7 @@ const CourseMentorsChat = () => {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
             <input 
               type="text" 
-              placeholder="ПОИСК ПО МЕНТОРАМ..."
+              placeholder="ПОИСК КУРСА ИЛИ МЕНТОРА..."
               className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 text-[10px] font-black uppercase tracking-wider outline-none focus:border-blue-500 transition-all shadow-sm placeholder:text-slate-300"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -126,33 +157,35 @@ const CourseMentorsChat = () => {
         <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
           {roomsLoading ? (
             [1,2,3].map(i => <div key={i} className="h-20 bg-slate-50 animate-pulse rounded-2xl border border-slate-100" />)
-          ) : filteredRooms.map(room => (
+          ) : filteredChats.map(chat => (
             <button
-              key={room.id}
-              onClick={() => setSelectedRoom(room)}
+              key={chat.course_id}
+              onClick={() => setSelectedChat(chat)}
               className={`group w-full flex items-center gap-4 p-4 rounded-2xl transition-all relative overflow-hidden border ${
-                selectedRoom?.id === room.id 
+                selectedChat?.course_id === chat.course_id 
                   ? 'bg-white shadow-xl border-slate-200' 
                   : 'bg-white border-slate-50 hover:border-slate-200 opacity-70 hover:opacity-100'
               }`}
             >
               <div className={`absolute top-0 left-0 w-1 h-full transition-colors ${
-                selectedRoom?.id === room.id ? 'bg-blue-600' : 'bg-transparent'
+                selectedChat?.course_id === chat.course_id ? 'bg-blue-600' : 'bg-transparent'
               }`} />
 
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
-                selectedRoom?.id === room.id ? 'bg-slate-900 border-slate-900 text-white' : 'bg-slate-50 border-slate-100 text-slate-400'
+                selectedChat?.course_id === chat.course_id ? 'bg-slate-900 border-slate-900 text-white' : 'bg-slate-50 border-slate-100 text-slate-400'
               }`}>
                 <User size={22} />
               </div>
 
               <div className="flex-1 text-left overflow-hidden">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-[13px] font-black text-slate-900 truncate uppercase tracking-tight">{room.author.name}</span>
-                  {selectedRoom?.id === room.id && <ChevronRight size={14} className="text-blue-600" />}
+                  <span className="text-[13px] font-black text-slate-900 truncate uppercase tracking-tight">{chat.author_name}</span>
+                  {chat.unread_count > 0 && (
+                    <span className="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded-md font-black">{chat.unread_count}</span>
+                  )}
                 </div>
                 <span className="text-[9px] font-bold text-blue-600 uppercase tracking-widest block truncate">
-                  {room.course.title}
+                  {chat.course_title}
                 </span>
               </div>
             </button>
@@ -162,7 +195,7 @@ const CourseMentorsChat = () => {
 
       {/* 2. CENTER CHAT AREA */}
       <div className="flex-1 flex flex-col bg-white relative">
-        {selectedRoom ? (
+        {selectedChat ? (
           <>
             <header className="h-24 px-10 border-b border-slate-100 flex items-center justify-between bg-white z-10">
               <div className="flex items-center gap-5 text-left">
@@ -170,7 +203,7 @@ const CourseMentorsChat = () => {
                   <User size={28} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 tracking-tight uppercase">{selectedRoom.author.name}</h3>
+                  <h3 className="text-lg font-bold text-slate-900 tracking-tight uppercase">{selectedChat.author_name}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">На связи</span>
@@ -194,17 +227,24 @@ const CourseMentorsChat = () => {
 
             <div className="flex-1 overflow-y-auto p-10 custom-scrollbar bg-[#F8FAFC]">
               <div className="max-w-4xl mx-auto">
-                <AnimatePresence initial={false}>
-                  {messages.map((msg) => (
-                    <ChatMessage 
-                      key={msg.id} 
-                      msg={msg} 
-                      isOwn={msg.sender_id === selectedRoom.student_id}
-                      isRead={msg.is_read}
-                      time={new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    />
-                  ))}
-                </AnimatePresence>
+                {messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 opacity-40">
+                        <Smile size={48} className="mb-4" />
+                        <p className="text-[11px] font-black uppercase tracking-widest">История сообщений пуста. Начните диалог первым!</p>
+                    </div>
+                ) : (
+                    <AnimatePresence initial={false}>
+                    {messages.map((msg) => (
+                        <ChatMessage 
+                        key={msg.id} 
+                        msg={msg} 
+                        isOwn={msg.sender_id !== selectedChat.author_id} // Если отправитель не автор, значит студент (вы)
+                        isRead={msg.is_read}
+                        time={new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        />
+                    ))}
+                    </AnimatePresence>
+                )}
                 <div ref={scrollRef} />
               </div>
             </div>
@@ -216,7 +256,7 @@ const CourseMentorsChat = () => {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="НАПИШИТЕ СООБЩЕНИЕ..."
+                  placeholder="НАПИШИТЕ СООБЩЕНИЕ МЕНТОРУ..."
                   className="flex-1 bg-transparent border-none outline-none text-[13px] font-bold text-slate-700 px-2 uppercase tracking-tight placeholder:text-slate-300"
                 />
                 <button 
@@ -236,15 +276,15 @@ const CourseMentorsChat = () => {
             </div>
             <h3 className="text-2xl font-black text-slate-900 mb-3 uppercase tracking-tight">Образовательный хаб</h3>
             <p className="text-[11px] font-bold text-slate-400 max-w-xs leading-relaxed uppercase tracking-[0.1em]">
-              Выберите наставника в левой панели для получения консультации по курсу
+              Выберите курс в левой панели, чтобы связаться с наставником и получить помощь в обучении
             </p>
           </div>
         )}
       </div>
 
-      {/* 3. RIGHT INFO SIDEBAR (STYLE: FORUM STATS) */}
+      {/* 3. RIGHT INFO SIDEBAR */}
       <AnimatePresence>
-        {showInfo && selectedRoom && (
+        {showInfo && selectedChat && (
           <motion.div 
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 340, opacity: 1 }}
@@ -261,7 +301,7 @@ const CourseMentorsChat = () => {
                     <ShieldCheck size={16} className="text-white" />
                   </div>
                 </div>
-                <h4 className="text-lg font-black text-slate-900 tracking-tight uppercase leading-none">{selectedRoom.author.name}</h4>
+                <h4 className="text-lg font-black text-slate-900 tracking-tight uppercase leading-none">{selectedChat.author_name}</h4>
                 <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mt-3">Verified Mentor</p>
                 
                 <div className="grid grid-cols-2 gap-3 mt-8 w-full">
@@ -277,13 +317,12 @@ const CourseMentorsChat = () => {
               <div className="space-y-6">
                 <div className="bg-slate-900 p-6 rounded-3xl text-white shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-blue-600/20 rounded-full -mr-12 -mt-12" />
-                  <p className="text-[9px] font-black uppercase opacity-60 mb-2 tracking-widest">Прогресс по курсу</p>
+                  <p className="text-[9px] font-black uppercase opacity-60 mb-2 tracking-widest">Инфо о курсе</p>
                   <div className="flex items-end gap-2 mb-4">
-                    <span className="text-3xl font-black italic">64%</span>
-                    <span className="text-[10px] mb-1.5 opacity-60 font-black uppercase">Complete</span>
+                    <span className="text-xl font-black italic max-w-full truncate">{selectedChat.course_title}</span>
                   </div>
                   <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 w-[64%] shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                    <div className="h-full bg-blue-500 w-[100%]" />
                   </div>
                 </div>
 
@@ -293,35 +332,9 @@ const CourseMentorsChat = () => {
                       <BookOpen size={18}/>
                     </div>
                     <div>
-                      <p className="text-[13px] font-black text-slate-900 leading-none">24 ЛЕКЦИИ</p>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Доступный контент</p>
+                      <p className="text-[13px] font-black text-slate-900 leading-none">КОНСУЛЬТАЦИИ</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Доступны 24/7</p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-900 shadow-sm shrink-0 border border-slate-100">
-                      <Layout size={18}/>
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-black text-slate-900 leading-none">12 МОДУЛЕЙ</p>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-1">Текущая программа</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">План обучения</h5>
-                    <div className="h-[1px] flex-1 bg-slate-100 ml-4" />
-                  </div>
-                  <div className="space-y-2">
-                    {['Архитектура приложений', 'Масштабирование'].map((topic, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-blue-400 transition-all cursor-default">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-blue-600 animate-pulse' : 'bg-slate-200'}`} />
-                          <span className={`text-[11px] font-black uppercase tracking-tight ${i === 0 ? 'text-slate-900' : 'text-slate-400'}`}>{topic}</span>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </div>
