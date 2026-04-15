@@ -55,7 +55,8 @@ Route::middleware("logs")->group(function(){
     Route::post('/course-chats/start', [CourseChatController::class, 'startChat']);
     Route::get('/course-chats/{roomId}/messages', [CourseChatController::class, 'getMessages']);
     Route::post('/course-chats/messages', [CourseChatController::class, 'sendMessage']);
-
+    Route::get('/course-chats/available-courses', [CourseChatController::class, 'getAvailableCourses']);
+    Route::post('/course-chats/rooms', [CourseChatController::class, 'createRoom']);
         Route::get('/user/courses/active', [ChatController::class, 'getStudentCourses']);
         Route::post('/forum/topics/{id}/vote', [ForumController::class, 'vote']);
         Route::post('/ai/chat', ChatController::class);
