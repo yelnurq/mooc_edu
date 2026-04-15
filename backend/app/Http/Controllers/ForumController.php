@@ -11,22 +11,34 @@ use Illuminate\Support\Facades\Auth;
 
 class ForumController extends Controller {
     
-    public function index(Request $request) {
-        $query = Topic::with(['author', 'tags'])->withCount('replies');
+  public function index(Request $request) {
+    $query = Topic::with(['author', 'tags'])->withCount('replies');
 
-        if ($request->filled('tag')) {
-            $query->whereHas('tags', function($q) use ($request) {
-                $q->where('name', $request->tag);
-            });
-        }
-
-        if ($request->filled('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
-        }
-
-        // Возвращаем пагинацию
-        return response()->json($query->latest()->paginate(10));
+    // Фильтр: Только мои вопросы
+    if ($request->boolean('my_topics')) {
+        // Убедись, что поле в БД называется user_id или author_id
+        $query->where('user_id', auth()->id());
     }
+
+    // Фильтр по тегам
+    if ($request->filled('tag')) {
+        $query->whereHas('tags', function($q) use ($request) {
+            $q->where('name', $request->tag);
+        });
+    }
+
+    // Поиск по заголовку
+    if ($request->filled('search')) {
+        $query->where('title', 'like', '%' . $request->search . '%');
+    }
+
+    // Сначала закрепленные, потом новые
+    return response()->json(
+        $query->orderBy('is_pinned', 'desc')
+              ->latest()
+              ->paginate(10)
+    );
+}
 
     public function getTags() {
         // Возвращаем все теги
