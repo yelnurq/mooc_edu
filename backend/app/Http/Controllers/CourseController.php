@@ -161,7 +161,7 @@ public function myCourses()
     $courses = $user->courses()
         ->with([
             'category',
-            'quiz', // Исправлено: просто загружаем связь
+            'quiz', 
             'modules' => function($query) {
                 $query->select('id', 'course_id')->withCount('lessons');
             }
@@ -179,8 +179,6 @@ public function myCourses()
 
             // --- ПОЛУЧЕНИЕ БАЛЛА ---
             $examScore = null;
-            
-            // Теперь $course->quiz сработает, так как мы определили morphOne
             if ($course->quiz) {
                 $examScore = \Illuminate\Support\Facades\DB::table('quiz_results')
                     ->where('user_id', $user->id)
@@ -188,16 +186,27 @@ public function myCourses()
                     ->value('score'); 
             }
 
+            // --- ГЕНЕРАЦИЯ ВРЕМЕННОЙ ССЫЛКИ ДЛЯ МИНИО ---
+            $imageUrl = null;
+            if ($course->image) {
+                $imageUrl = \Illuminate\Support\Facades\Storage::disk('s3')->temporaryUrl(
+                    $course->image, 
+                    now()->addHours(24)
+                );
+            }
+
             return [
                 'id' => $course->id,
                 'title' => $course->title,
                 'description' => $course->description,
-                'image' => $course->image ? asset('storage/' . $course->image) : null,
+                // ИСПОЛЬЗУЕМ ВРЕМЕННУЮ ССЫЛКУ
+                'image_url' => $imageUrl, 
+                'image' => $course->image, // Оставляем оригинальный путь для совместимости
                 'lessons_count' => $totalLessons,
                 'modules_count' => $modulesCount,
                 'status' => $course->pivot->status ?? 'pending',
                 'category' => $course->category->name ?? 'Разработка', 
-                'author_display_name' => $course->author_display_name, // Добавь это
+                'author_display_name' => $course->author_display_name,
                 'quiz' => $course->quiz ? ['id' => $course->quiz->id] : null,
                 
                 'last_lesson_title' => $course->pivot->last_lesson_title ?? 'Основы Laravel', 
@@ -262,8 +271,7 @@ public function show(Request $request, $id)
         return response()->json(['message' => 'Пользователь не авторизован'], 401);
     }
 
-    // 2. Проверка существования курса (СРАЗУ)
-    // Используем find(), чтобы не грузить лишние связи, если курса нет
+    // 2. Проверка существования курса
     $course = \App\Models\Course::find($id);
 
     if (!$course) {
@@ -273,7 +281,7 @@ public function show(Request $request, $id)
         ], 404);
     }
 
-    // 3. Проверка прав доступа (status в course_user)
+    // 3. Проверка прав доступа
     $enrollment = \Illuminate\Support\Facades\DB::table('course_user')
         ->where('user_id', $user->id)
         ->where('course_id', $id)
@@ -296,14 +304,15 @@ public function show(Request $request, $id)
         ], 403);
     }
 
-    // 4. Загрузка данных только для валидных пользователей
+    // 4. Загрузка данных
     $course->load([
         'resources',
         'quiz.questions.options', 
         'modules.lessons',
         'modules.quiz.questions.options'
     ]);
-    // --- Логика получения результатов тестов и сертификата ---
+
+    // --- Логика получения результатов тестов ---
     $quizIds = collect([$course->quiz?->id])
         ->merge($course->modules->pluck('quiz.id'))
         ->filter()
@@ -331,7 +340,7 @@ public function show(Request $request, $id)
             return $item;
         });
 
-    // 5. Сбор ID пройденных уроков
+    // 5. Пройденные уроки
     $courseLessonIds = $course->modules->flatMap(function($module) {
         return $module->lessons->pluck('id');
     })->toArray();
@@ -344,10 +353,20 @@ public function show(Request $request, $id)
         ->values()
         ->toArray();
 
-    // 6. Обработка ресурсов и путей
+    // 6. ОБРАБОТКА МИНИО (Генерация временных ссылок)
+    
+    // Временная ссылка для обложки курса
+    if ($course->image) {
+        $course->image_url = \Illuminate\Support\Facades\Storage::disk('s3')->temporaryUrl($course->image, now()->addHours(24));
+    }
+
+    // Временные ссылки для ресурсов курса (файлы)
     $course->resources->transform(function ($resource) {
         if ($resource->file_path) {
-            $resource->file_url = asset('storage/' . $resource->file_path);
+            // Заменяем asset() на temporaryUrl()
+            $resource->file_url = \Illuminate\Support\Facades\Storage::disk('s3')->temporaryUrl(
+                $resource->file_path, now()->addHours(24)
+            );
         }
         return $resource;
     });
@@ -355,10 +374,14 @@ public function show(Request $request, $id)
     $course->setRelation('course_resources', $course->resources);
     $course->unsetRelation('resources');
 
+    // Временные ссылки для PDF-уроков в модулях
     $course->modules->each(function ($module) {
         $module->lessons->transform(function ($lesson) {
             if ($lesson->type === 'pdf' && $lesson->file_path) {
-                $lesson->file_url = asset('storage/' . $lesson->file_path);
+                // Заменяем asset() на temporaryUrl()
+                $lesson->file_url = \Illuminate\Support\Facades\Storage::disk('s3')->temporaryUrl(
+                    $lesson->file_path, now()->addHours(24)
+                );
             }
             return $lesson;
         });

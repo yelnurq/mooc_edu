@@ -80,9 +80,9 @@ const MyCourseCard = ({ course }) => {
     >
       {/* ИЗОБРАЖЕНИЕ КУРСА */}
       <div className="relative h-32 w-full overflow-hidden bg-slate-100">
-        {course.image ? (
+        {course.image_url ? (
           <img 
-            src={course.image} 
+            src={course.image_url} 
             alt={course.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
