@@ -263,34 +263,48 @@ public function show(Request $request, $id)
         return response()->json(['message' => 'Пользователь не авторизован'], 401);
     }
 
-    // 2. Находим базовую инфо о курсе (пока без всех связей, чтобы сэкономить ресурсы)
+    // 2. Находим базовую инфо о курсе
     $course = \App\Models\Course::find($id);
 
     if (!$course) {
         return response()->json(['message' => 'Курс не найден'], 404);
     }
 
-    // 3. ПРОВЕРКА ПОДПИСКИ (Важно сделать это ЗДЕСЬ)
-    $isEnrolled = $user->courses()->where('course_id', $id)->exists();
+    // 3. ПРОВЕРКА ПОДПИСКИ И СТАТУСА
+    // Ищем запись в сводной таблице course_user
+    $enrollment = \Illuminate\Support\Facades\DB::table('course_user')
+        ->where('user_id', $user->id)
+        ->where('course_id', $id)
+        ->first();
 
-    if (!$isEnrolled) {
-        // Возвращаем 403 и флаг. 
-        // Фронтенд увидит is_enrolled: false и покажет экран блокировки.
+    // Если записи нет ИЛИ статус не 'approved' — доступ закрыт
+    if (!$enrollment || $enrollment->status !== 'approved') {
+        
+        // Определяем понятное сообщение для пользователя
+        $reason = 'Вы не подписаны на этот курс.';
+        if ($enrollment) {
+            if ($enrollment->status === 'pending') {
+                $reason = 'Ваша заявка на курс находится на рассмотрении.';
+            } elseif ($enrollment->status === 'rejected') {
+                $reason = 'Ваша заявка на этот курс была отклонена.';
+            }
+        }
+
         return response()->json([
-            'message' => 'Доступ запрещен. Вы не подписаны на этот курс.',
+            'message' => 'Доступ запрещен. ' . $reason,
             'is_enrolled' => false,
-            'title' => $course->title // Можно вернуть название для заголовка
+            'status' => $enrollment->status ?? 'none', // Отправляем статус для фронта
+            'title' => $course->title
         ], 403);
     }
 
-    // 4. Если проверка прошла — загружаем все связи
+    // 4. Если статус 'approved' — продолжаем загрузку данных
     $course->load([
         'resources',
         'quiz.questions.options', 
         'modules.lessons',
         'modules.quiz.questions.options'
     ]);
-
     // --- Логика получения результатов тестов и сертификата ---
     $quizIds = collect([$course->quiz?->id])
         ->merge($course->modules->pluck('quiz.id'))
