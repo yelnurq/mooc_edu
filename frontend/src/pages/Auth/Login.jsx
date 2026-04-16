@@ -72,7 +72,7 @@ const LoginPage = () => {
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row overflow-hidden font-sans">
       
       {/* --- ЛЕВАЯ ЧАСТЬ (БРЕНД) --- */}
-      <div className="hidden md:flex md:w-1/2 bg-[#0F172A] relative p-16 flex-col justify-between overflow-hidden">
+      <div className="hidden md:flex md:w-1/2 bg-[#0F182A] relative p-16 flex-col justify-between overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute top-[-10%] left-[-20%] w-[700px] h-[700px] bg-blue-600/10 rounded-full blur-[120px]" />
           <div className="absolute inset-0 opacity-[0.03]" 
@@ -202,21 +202,6 @@ const LoginPage = () => {
             </button>
           </form>
 
-          <div className="mt-12">
-            <div className="relative mb-8 text-center">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-              <span className="relative bg-white px-4 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Или через</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <button type="button" className="flex items-center justify-center gap-3 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all text-[10px] font-black uppercase tracking-wider text-slate-600">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-4" alt="google" /> Google
-              </button>
-              <button type="button" className="flex items-center justify-center gap-3 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all text-[10px] font-black uppercase tracking-wider text-slate-600">
-                <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" className="h-4" alt="fb" /> FB
-              </button>
-            </div>
-          </div>
         </motion.div>
       </div>
     </div>

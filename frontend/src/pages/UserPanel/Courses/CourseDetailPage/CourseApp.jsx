@@ -173,20 +173,37 @@ const CourseAppPage = () => {
   const [pendingQuiz, setPendingQuiz] = useState(null);
   const [canComplete, setCanComplete] = useState(false);
   const [watchProgress, setWatchProgress] = useState(0);
+  const [accessDenied, setAccessDenied] = useState(false);
+useEffect(() => {
+  const fetchCourseData = async () => {
+    try {
+      const response = await api.get(`/courses/${id}`);
+      const data = response.data;
 
-  useEffect(() => {
-    const fetchCourseData = async () => {
-      try {
-        const response = await api.get(`/courses/${id}`);
-        const data = response.data;
-        setCourse(data);
-        setCompletedLessons((data.completed_lessons_ids || []).map(id => Number(id)));
-        const allLessons = data.modules?.flatMap(m => m.lessons) || [];
-        setActiveLesson(allLessons[0]);
-      } catch (err) { console.error(err); } finally { setLoading(false); }
-    };
-    fetchCourseData();
-  }, [id]);
+      // ПРОВЕРКА ДОСТУПА
+      // Предполагаем, что бэкенд возвращает флаг is_enrolled или доступность курса
+      if (data.is_enrolled === false) {
+        setAccessDenied(true);
+        setLoading(false);
+        return;
+      }
+
+      setCourse(data);
+      setCompletedLessons((data.completed_lessons_ids || []).map(id => Number(id)));
+      const allLessons = data.modules?.flatMap(m => m.lessons) || [];
+      setActiveLesson(allLessons[0]);
+    } catch (err) {
+      console.error(err);
+      // Если бэкенд настроен возвращать 403 Forbidden для некупленных курсов
+      if (err.response?.status === 403 || err.response?.status === 401) {
+        setAccessDenied(true);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchCourseData();
+}, [id]);
 
  useEffect(() => {
   if (activeLesson) {
@@ -337,8 +354,29 @@ const downloadCertificate = async () => {
     }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 font-black text-slate-400 tracking-widest uppercase">Загрузка...</div>;
+if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50 font-black text-slate-400 tracking-widest uppercase">Загрузка...</div>;
 
+if (accessDenied) {
+  return (
+    <div className="h-screen w-full flex flex-col items-center justify-center bg-[#F0F2F9] p-6 text-center">
+      <div className="bg-white p-10 rounded-[2rem] shadow-xl max-w-md border border-white">
+        <div className="w-20 h-20 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <Lock size={40} />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">Доступ ограничен</h2>
+        <p className="text-slate-500 font-medium mb-8">
+          Этот курс не привязан к вашему аккаунту. Пожалуйста, приобретите доступ или свяжитесь с администрацией.
+        </p>
+        <button 
+          onClick={() => window.location.href = '/courses'} 
+          className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
+        >
+          Вернуться к каталогу
+        </button>
+      </div>
+    </div>
+  );
+}
   return (
     <div className="h-screen w-full flex bg-[#F0F2F9] overflow-hidden font-sans">
       {showQuizIntro && (

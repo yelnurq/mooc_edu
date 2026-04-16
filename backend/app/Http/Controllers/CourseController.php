@@ -263,36 +263,41 @@ public function show(Request $request, $id)
         return response()->json(['message' => 'Пользователь не авторизован'], 401);
     }
 
-    // 2. Загружаем курс со всеми связями
-    $course = \App\Models\Course::with([
-        'resources',
-        'quiz.questions.options', 
-        'modules.lessons',
-        'modules.quiz.questions.options'
-    ])->find($id);
+    // 2. Находим базовую инфо о курсе (пока без всех связей, чтобы сэкономить ресурсы)
+    $course = \App\Models\Course::find($id);
 
     if (!$course) {
         return response()->json(['message' => 'Курс не найден'], 404);
     }
 
-    // 3. Проверка подписки
+    // 3. ПРОВЕРКА ПОДПИСКИ (Важно сделать это ЗДЕСЬ)
     $isEnrolled = $user->courses()->where('course_id', $id)->exists();
 
     if (!$isEnrolled) {
+        // Возвращаем 403 и флаг. 
+        // Фронтенд увидит is_enrolled: false и покажет экран блокировки.
         return response()->json([
             'message' => 'Доступ запрещен. Вы не подписаны на этот курс.',
-            'is_enrolled' => false
+            'is_enrolled' => false,
+            'title' => $course->title // Можно вернуть название для заголовка
         ], 403);
     }
 
-    // --- ОБНОВЛЕНО: Загружаем результаты тестов вместе с номером сертификата ---
+    // 4. Если проверка прошла — загружаем все связи
+    $course->load([
+        'resources',
+        'quiz.questions.options', 
+        'modules.lessons',
+        'modules.quiz.questions.options'
+    ]);
+
+    // --- Логика получения результатов тестов и сертификата ---
     $quizIds = collect([$course->quiz?->id])
         ->merge($course->modules->pluck('quiz.id'))
         ->filter()
         ->unique()
         ->toArray();
 
-    // Делаем Join с таблицей certificates, чтобы забрать номер, если он есть
     $quizResults = \Illuminate\Support\Facades\DB::table('quiz_results')
         ->leftJoin('certificates', function($join) use ($id) {
             $join->on('quiz_results.user_id', '=', 'certificates.user_id')
@@ -304,18 +309,17 @@ public function show(Request $request, $id)
             'quiz_results.quiz_id', 
             'quiz_results.score', 
             'quiz_results.passed',
-            'certificates.certificate_number' // Достаем номер сертификата
+            'certificates.certificate_number'
         )
         ->get()
         ->map(function($item) {
             $item->quiz_id = (int)$item->quiz_id;
             $item->passed = (bool)$item->passed;
             $item->score = (int)$item->score;
-            // certificate_number будет либо строкой, либо null
             return $item;
         });
 
-    // 4. Сбор ID пройденных уроков
+    // 5. Сбор ID пройденных уроков
     $courseLessonIds = $course->modules->flatMap(function($module) {
         return $module->lessons->pluck('id');
     })->toArray();
@@ -328,7 +332,7 @@ public function show(Request $request, $id)
         ->values()
         ->toArray();
 
-    // 5. Обработка ресурсов курса
+    // 6. Обработка ресурсов и путей
     $course->resources->transform(function ($resource) {
         if ($resource->file_path) {
             $resource->file_url = asset('storage/' . $resource->file_path);
@@ -339,7 +343,6 @@ public function show(Request $request, $id)
     $course->setRelation('course_resources', $course->resources);
     $course->unsetRelation('resources');
 
-    // 6. Обработка путей в уроках
     $course->modules->each(function ($module) {
         $module->lessons->transform(function ($lesson) {
             if ($lesson->type === 'pdf' && $lesson->file_path) {
@@ -349,7 +352,7 @@ public function show(Request $request, $id)
         });
     });
 
-    // 7. Добавляем мета-данные
+    // 7. Итоговые мета-данные
     $course->is_enrolled = true;
     $course->completed_lessons_ids = $completedLessonsIds;
     $course->quiz_results = $quizResults; 
