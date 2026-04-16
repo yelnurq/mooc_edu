@@ -256,49 +256,47 @@ public function enroll(Request $request, $courseId)
 }
 public function show(Request $request, $id)
 {
-    // 1. Получаем юзера
+    // 1. Авторизация
     $user = $this->getAuthenticatedUser($request);
-    
     if (!$user) {
         return response()->json(['message' => 'Пользователь не авторизован'], 401);
     }
 
-    // 2. Находим базовую инфо о курсе
+    // 2. Проверка существования курса (СРАЗУ)
+    // Используем find(), чтобы не грузить лишние связи, если курса нет
     $course = \App\Models\Course::find($id);
 
     if (!$course) {
-        return response()->json(['message' => 'Курс не найден'], 404);
+        return response()->json([
+            'message' => 'Запрашиваемый курс не существует или был удален.',
+            'error_code' => 'COURSE_NOT_FOUND'
+        ], 404);
     }
 
-    // 3. ПРОВЕРКА ПОДПИСКИ И СТАТУСА
-    // Ищем запись в сводной таблице course_user
+    // 3. Проверка прав доступа (status в course_user)
     $enrollment = \Illuminate\Support\Facades\DB::table('course_user')
         ->where('user_id', $user->id)
         ->where('course_id', $id)
         ->first();
 
-    // Если записи нет ИЛИ статус не 'approved' — доступ закрыт
     if (!$enrollment || $enrollment->status !== 'approved') {
+        $status = $enrollment->status ?? 'none';
         
-        // Определяем понятное сообщение для пользователя
-        $reason = 'Вы не подписаны на этот курс.';
-        if ($enrollment) {
-            if ($enrollment->status === 'pending') {
-                $reason = 'Ваша заявка на курс находится на рассмотрении.';
-            } elseif ($enrollment->status === 'rejected') {
-                $reason = 'Ваша заявка на этот курс была отклонена.';
-            }
-        }
+        $messages = [
+            'pending' => 'Ваша заявка на курс находится на рассмотрении.',
+            'rejected' => 'Ваша заявка на этот курс была отклонена.',
+            'none' => 'Вы не подписаны на этот курс.'
+        ];
 
         return response()->json([
-            'message' => 'Доступ запрещен. ' . $reason,
+            'message' => 'Доступ запрещен. ' . ($messages[$status] ?? $messages['none']),
             'is_enrolled' => false,
-            'status' => $enrollment->status ?? 'none', // Отправляем статус для фронта
+            'enrollment_status' => $status,
             'title' => $course->title
         ], 403);
     }
 
-    // 4. Если статус 'approved' — продолжаем загрузку данных
+    // 4. Загрузка данных только для валидных пользователей
     $course->load([
         'resources',
         'quiz.questions.options', 

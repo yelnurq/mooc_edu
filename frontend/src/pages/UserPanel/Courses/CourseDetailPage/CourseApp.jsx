@@ -177,14 +177,13 @@ const CourseAppPage = () => {
 useEffect(() => {
   const fetchCourseData = async () => {
     try {
+      setLoading(true); // Сбрасываем лоадинг при смене id
       const response = await api.get(`/courses/${id}`);
       const data = response.data;
 
-      // ПРОВЕРКА ДОСТУПА
-      // Предполагаем, что бэкенд возвращает флаг is_enrolled или доступность курса
+      // Если бэкенд вернул 200, но флаг доступа false
       if (data.is_enrolled === false) {
         setAccessDenied(true);
-        setLoading(false);
         return;
       }
 
@@ -192,12 +191,11 @@ useEffect(() => {
       setCompletedLessons((data.completed_lessons_ids || []).map(id => Number(id)));
       const allLessons = data.modules?.flatMap(m => m.lessons) || [];
       setActiveLesson(allLessons[0]);
+      setAccessDenied(false); // Сбрасываем ошибку, если курс найден
     } catch (err) {
-      console.error(err);
-      // Если бэкенд настроен возвращать 403 Forbidden для некупленных курсов
-      if (err.response?.status === 403 || err.response?.status === 401) {
-        setAccessDenied(true);
-      }
+      console.error("Course fetch error:", err);
+      // Если 404 (нет курса) или 403 (нет доступа)
+      setAccessDenied(true); 
     } finally {
       setLoading(false);
     }
@@ -278,6 +276,7 @@ useEffect(() => {
     setShowQuizIntro(true);
   };
 const downloadCertificate = async () => {
+  if (!course) return; 
   // 1. Находим результат финального экзамена, чтобы получить номер сертификата (certNumber)
   const examResult = course.quiz_results?.find(r => Number(r.quiz_id) === Number(course.quiz?.id));
   
