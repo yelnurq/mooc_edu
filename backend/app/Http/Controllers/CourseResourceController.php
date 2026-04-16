@@ -35,7 +35,7 @@ class CourseResourceController extends Controller
             ];
 
             if ($request->hasFile('file')) {
-                $path = $request->file('file')->store('course_resources', 'public');
+                $path = $request->file('file')->store('course_resources', 's3');
                 $resourceData['file_path'] = $path;
             }
 

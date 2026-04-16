@@ -56,16 +56,19 @@ export const CourseCard = ({ course, toggleFavorite, isFavorite, isMyCourse }) =
       {/* --- Media Area --- */}
       <div className="relative h-56 m-3 rounded-2xl overflow-hidden bg-slate-900">
         <img 
-          src={
-            course.image 
-              ? course.image.startsWith('http') 
+    src={
+      // 1. Приоритет - временная ссылка от Laravel (MinIO)
+      course.image_url 
+        ? course.image_url 
+        : (course.image 
+            ? (course.image.startsWith('http') 
                 ? course.image 
-                : `${ASSET_URL}${course.image}`
-              : '/placeholder-image.jpg' // Путь к заглушке, если фото нет
-          }
-          alt={course.title} 
-          className={`w-full h-full object-cover transition-all duration-700 ${showPreview ? 'scale-110 blur-md opacity-30' : 'scale-100 group-hover:scale-105'}`} 
-        />
+                : `${ASSET_URL}${course.image}`)
+            : '/placeholder-image.jpg')
+    }
+    alt={course.title} 
+    className={`w-full h-full object-cover transition-all duration-700 ${showPreview ? 'scale-110 blur-md opacity-30' : 'scale-100 group-hover:scale-105'}`} 
+  />
         <AnimatePresence>
           {showPreview && (
             <motion.div

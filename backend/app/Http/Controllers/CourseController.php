@@ -371,6 +371,7 @@ public function show(Request $request, $id)
 
     return response()->json($course);
 }
+
 public function showPublic(Request $request, $id)
 {
     $user = $this->getAuthenticatedUser($request);
@@ -379,40 +380,51 @@ public function showPublic(Request $request, $id)
     if (!$course) {
         return response()->json(['message' => 'Курс не найден'], 404);
     }
+
+    // --- ССЫЛКИ НА ИЗОБРАЖЕНИЕ И СИЛЛАБУС (MinIO) ---
+ if ($course->image) {
+    $course->image_url = Storage::disk('s3')->temporaryUrl($course->image, now()->addDays(1));
+}
+    if ($course->syllabus_path) {
+        $course->syllabus_url = Storage::disk('s3')->url($course->syllabus_path);
+    }
+
     $promoResource = $course->resources->firstWhere('is_promo', true);
     $course->promo_video_url = $promoResource ? $promoResource->video_url : null;
-    // --- ОБНОВЛЕННАЯ ЛОГИКА ПРОВЕРКИ СТАТУСА ---
+
+    // --- ПРОВЕРКА СТАТУСА ---
     $enrollment = null;
     if ($user) {
-        // Получаем запись из связующей таблицы
         $enrollment = \Illuminate\Support\Facades\DB::table('course_user')
             ->where('user_id', $user->id)
             ->where('course_id', $id)
             ->first();
     }
 
-    // Определяем статус для фронтенда
-    $enrollmentStatus = $enrollment ? $enrollment->status : null; // 'pending', 'approved', etc.
+    $enrollmentStatus = $enrollment ? $enrollment->status : null;
     $isApproved = ($enrollmentStatus === 'approved');
 
-    // 4. РЕСУРСЫ (без изменений)
+    // --- РЕСУРСЫ (MinIO) ---
     $course->resources->transform(function ($resource) {
         if ($resource->file_path) {
-            $resource->file_url = asset('storage/' . $resource->file_path);
+            // Используем url() для публичных ресурсов
+            $resource->file_url = Storage::disk('s3')->url($resource->file_path);
         }
         return $resource;
     });
 
-    // 5. УРОКИ — используем $isApproved вместо $isEnrolled
+    // --- УРОКИ (MinIO) ---
     $course->modules->each(function ($module) use ($isApproved) {
         $module->lessons->transform(function ($lesson) use ($isApproved) {
             if (!$isApproved) {
+                // Прячем данные для неавторизованных/неоплативших
                 $lesson->makeHidden(['file_path', 'video_url', 'content']);
                 $lesson->file_url = null;
                 $lesson->is_locked = true; 
             } else {
+                // Если доступ одобрен — генерируем ссылку
                 if ($lesson->type === 'pdf' && $lesson->file_path) {
-                    $lesson->file_url = asset('storage/' . $lesson->file_path);
+                    $lesson->file_url = Storage::disk('s3')->url($lesson->file_path);
                 }
                 $lesson->is_locked = false;
             }
@@ -420,11 +432,8 @@ public function showPublic(Request $request, $id)
         });
     });
 
-    // 6. Добавляем статус в ответ
-    $course->user_status = $enrollmentStatus; // Передаем 'pending' или 'approved'
+    $course->user_status = $enrollmentStatus;
     $course->is_enrolled = (bool)$enrollment;
-    
-    // ... остальная логика прогресса ...
     
     return response()->json($course);
 }
@@ -489,7 +498,7 @@ public function addResource(Request $request, $courseId)
     $data = $request->only(['title', 'type', 'video_url', 'order']);
 
     if ($request->hasFile('file') && $request->type === 'pdf') {
-        $data['file_path'] = $request->file('file')->store('courses/resources', 'public');
+        $data['file_path'] = $request->file('file')->store('courses/resources', 's3');
     }
 
     $resource = $course->resources()->create($data);
@@ -499,6 +508,7 @@ public function addResource(Request $request, $courseId)
      * Получить список всех курсов
      */
 
+
 public function index(Request $request)
 {
     try {
@@ -506,13 +516,10 @@ public function index(Request $request)
             ->withCount(['modules', 'lessons']);
 
         // --- ФИЛЬТРАЦИЯ ---
-
-        // Поиск по названию
         $query->when($request->search, function ($q, $search) {
             $q->where('title', 'like', "%{$search}%");
         });
 
-        // Фильтр по категории (по имени категории)
         $query->when($request->category, function ($q, $categoryName) {
             $q->whereHas('category', function ($q) use ($categoryName) {
                 $q->where('name', $categoryName);
@@ -520,33 +527,35 @@ public function index(Request $request)
         });
 
         // --- СОРТИРОВКА ---
-        
         switch ($request->sort) {
-            case 'new':
-                $query->latest();
-                break;
-            case 'duration':
-                // Если есть колонка с длительностью
-                $query->orderBy('duration', 'desc'); 
-                break;
-            case 'popular':
-            default:
-                $query->orderBy('created_at', 'desc');
-                break;
+            case 'new': $query->latest(); break;
+            case 'duration': $query->orderBy('duration', 'desc'); break;
+            default: $query->orderBy('created_at', 'desc'); break;
         }
 
         $courses = $query->get();
 
-        // Дополнительная обработка данных (URL и ручной подсчет уроков)
-        $courses->each(function ($course) {
-            // Ручной подсчет, если связь lessons не прямая
+        // --- ОБРАБОТКА ДАННЫХ (MinIO + Temporary URLs) ---
+        $courses->transform(function ($course) {
             if (!$course->lessons_count) {
                 $course->lessons_count = $course->modules->pluck('lessons')->flatten()->count();
             }
 
+            // Временная ссылка на силлабус (на 24 часа)
             if ($course->syllabus_path) {
-                $course->syllabus_url = asset('storage/' . $course->syllabus_path);
+                $course->syllabus_url = Storage::disk('s3')->temporaryUrl(
+                    $course->syllabus_path, now()->addHours(24)
+                );
             }
+
+            // Временная ссылка на обложку (на 24 часа)
+            if ($course->image) {
+                $course->image_url = Storage::disk('s3')->temporaryUrl(
+                    $course->image, now()->addHours(24)
+                );
+            }
+
+            return $course;
         });
 
         return response()->json($courses, 200);
@@ -562,42 +571,40 @@ public function index(Request $request)
 public function indexCourses(Request $request)
 {
     try {
-        // 1. Формируем основной запрос с подсчетом связанных записей
-        $query = Course::with(['category', 'user']) // 'user' - если это автор курса
+        $query = Course::with(['category', 'user'])
             ->withCount([
-                'modules', // Добавит поле modules_count
-                'lessons', // Добавит поле lessons_count (если связь Lesson прописана напрямую в Course)
-                'users as students_count' // Добавит поле students_count из таблицы course_user
+                'modules', 
+                'lessons', 
+                'users as students_count'
             ]);
 
-        // 2. Фильтрация (Поиск)
         if ($request->filled('search')) {
             $query->where('title', 'like', '%' . $request->search . '%');
         }
 
-        // 3. Пагинация
         $courses = $query->latest()->paginate(10);
 
-        // 4. Общая статистика для всего раздела (Top Cards)
         $globalStats = [
             'total' => Course::count(),
             'active' => Course::count(), 
             'total_students' => \DB::table('course_user')->distinct('user_id')->count(),
-            'total_lessons' => \App\Models\Lesson::count(), // Если есть такая модель
+            'total_lessons' => \App\Models\Lesson::count(),
         ];
 
-        // 5. Формируем ответ, добавляя данные об авторе и структуре в каждый курс
         $formattedData = collect($courses->items())->map(function ($course) {
             return [
                 'id' => $course->id,
                 'title' => $course->title,
                 'category' => $course->category->name ?? 'Без категории',
-                'author' => $course->getAuthorDisplayNameAttribute() ?? 'Администратор', // Автор курса
+                'author' => $course->getAuthorDisplayNameAttribute() ?? 'Администратор',
                 'modules_count' => $course->modules_count,
                 'lessons_count' => $course->lessons_count,
                 'students_count' => $course->students_count,
                 'created_at' => $course->created_at->format('d.m.Y'),
-                // Можно добавить статус или цену, если они есть в БД
+                // Генерируем временную ссылку для админки
+                'image_url' => $course->image 
+                    ? Storage::disk('s3')->temporaryUrl($course->image, now()->addHours(24)) 
+                    : null,
             ];
         });
 
@@ -619,7 +626,6 @@ public function indexCourses(Request $request)
         ], 500);
     }
 }
-
 public function store(Request $request)
 {
     // 1. Предварительная очистка: превращаем пустые строки в реальный null
@@ -643,7 +649,7 @@ public function store(Request $request)
 
     // 2. Обработка изображения
     if ($request->hasFile('image')) {
-        $path = $request->file('image')->store('courses', 'public');
+        $path = $request->file('image')->store('courses', 's3');
         $validated['image'] = $path;
     } else {
         $validated['image'] = null;
@@ -682,9 +688,9 @@ public function store(Request $request)
         if ($request->hasFile('syllabus_file')) {
             // Удаляем старый файл, если он был
             if ($course->syllabus_path) {
-                Storage::disk('public')->delete($course->syllabus_path);
+                Storage::disk('s3')->delete($course->syllabus_path);
             }
-            $data['syllabus_path'] = $request->file('syllabus_file')->store('courses/syllabus', 'public');
+            $data['syllabus_path'] = $request->file('syllabus_file')->store('courses/syllabus', 's3');
         }
 
         $course->update($data);
@@ -713,7 +719,7 @@ public function store(Request $request)
         $data = $request->only(['title', 'type', 'video_url', 'order']);
 
         if ($request->hasFile('file') && $request->type === 'pdf') {
-            $data['file_path'] = $request->file('file')->store('lessons', 'public');
+            $data['file_path'] = $request->file('file')->store('lessons', 's3');
         }
 
         $lesson = $module->lessons()->create($data);
