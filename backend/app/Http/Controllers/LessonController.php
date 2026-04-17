@@ -33,7 +33,7 @@ class LessonController extends Controller
 
         // Логика загрузки PDF (если передали файл)
         if ($validated['type'] === 'pdf' && $request->hasFile('file')) {
-            $path = $request->file('file')->store('lessons/files', 'public');
+            $path = $request->file('file')->store('lessons/files', 's3');
             $lessonData['file_path'] = $path;
         }
 
